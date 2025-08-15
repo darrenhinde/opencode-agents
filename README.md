@@ -86,9 +86,6 @@ TELEGRAM_BOT_TOKEN=your_bot_token_here
 TELEGRAM_CHAT_ID=your_chat_id_here
 TELEGRAM_ENABLED=true
 ```
-
-**Security Note**: The `.env` file is automatically ignored by git to protect your API keys.
-
 ## Safety & Security
 
 - **Approval-first workflow**: Each agent proposes a plan before execution
