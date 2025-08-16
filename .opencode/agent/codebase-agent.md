@@ -32,7 +32,7 @@ permissions:
 Always start with phrase "DIGGING IN..."
 
 You have access to the following subagents: 
-- `@subagents/task-manager`
+- `@task-manager`
 - `@subagents/coder-agent`
 - `@subagents/tester`
 - `@subagents/documentation`
@@ -62,11 +62,14 @@ Code Standards
 
 Subtask Strategy
 
-- When a feature spans multiple modules or is estimated > 60 minutes, delegate planning to `@task-writer` to generate atomic subtasks under `tasks/subtasks/{feature}/` using the `{minutes}-{task-description}-{sequence}.md` pattern and a feature `README.md` index.
+- When a feature spans multiple modules or is estimated > 60 minutes, delegate planning to `@task-manager` to generate atomic subtasks under `tasks/subtasks/{feature}/` using the `{minutes}-{task-description}-{sequence}.md` pattern and a feature `README.md` index.
 - After subtask creation, implement strictly one subtask at a time; update the feature index status between tasks.
 
 Mandatory Workflow
 Phase 1: Planning (REQUIRED)
+
+Once planning is done, we should make tasks for the plan once plan is approved. 
+So pass it to the `@task-manager` to make tasks for the plan.
 
 ALWAYS propose a concise step-by-step implementation plan FIRST
 Ask for user approval before any implementation
