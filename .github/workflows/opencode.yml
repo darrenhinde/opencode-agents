@@ -14,8 +14,8 @@ on:
     types: [submitted]
 
 jobs:
-  # Manual opencode execution via comments
-  opencode-manual:
+  # Handle opencode execution via comments
+  opencode:
     if: |
       github.event_name == 'issue_comment' && (
         contains(github.event.comment.body, ' /oc') ||
@@ -42,72 +42,54 @@ jobs:
         with:
           model: anthropic/claude-sonnet-4-20250514
 
-  # Automatic PR review when PR is opened or updated
-  opencode-pr-review:
+  # Automatically create review comment when PR is opened
+  auto-review-trigger:
     if: |
       github.event_name == 'pull_request' && (
         github.event.action == 'opened' ||
-        github.event.action == 'synchronize' ||
         github.event.action == 'ready_for_review'
       ) && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       pull-requests: write
-      issues: write
-      id-token: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Create auto-review comment
+        uses: actions/github-script@v7
         with:
-          fetch-depth: 0
-          
-      - name: Checkout PR branch
-        run: |
-          gh pr checkout ${{ github.event.number }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: '/opencode Please review this PR. Check for code quality, potential bugs, security issues, and adherence to best practices. Provide constructive feedback and suggestions for improvement.'
+            });
 
-      - name: Auto-review PR
-        uses: sst/opencode/github@latest
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENCODE_COMMENT: "/opencode @codebase-agent Please review this PR. Check for code quality, potential bugs, security issues, and adherence to best practices. Provide constructive feedback and suggestions for improvement."
-        with:
-          model: anthropic/claude-sonnet-4-20250514
-
-  # Re-review when specifically requested via PR review
-  opencode-re-review:
+  # Automatically trigger re-review when requested
+  re-review-trigger:
     if: |
       github.event_name == 'pull_request_review' &&
       github.event.review.state == 'commented' && (
         contains(github.event.review.body, 're-review') ||
         contains(github.event.review.body, 'check again') ||
-        contains(github.event.review.body, '/oc') ||
-        contains(github.event.review.body, '/opencode')
+        contains(github.event.review.body, 'review again')
       )
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       pull-requests: write
-      issues: write
-      id-token: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Create re-review comment
+        uses: actions/github-script@v7
         with:
-          fetch-depth: 0
-          
-      - name: Checkout PR branch
-        run: |
-          gh pr checkout ${{ github.event.pull_request.number }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Re-review PR
-        uses: sst/opencode/github@latest
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENCODE_COMMENT: "/opencode Please re-review this PR based on the latest changes. Focus on the recent updates and provide feedback on improvements made."
-        with:
-          model: anthropic/claude-sonnet-4-20250514
+          script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: '/opencode @review Please re-review this PR based on the latest changes. Focus on the recent updates and provide feedback on improvements made since the last review.'
+            });
