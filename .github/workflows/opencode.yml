@@ -64,7 +64,7 @@ jobs:
               owner,
               repo,
               issue_number,
-              body: '/opencode Please review this PR. Check for code quality, potential bugs, security issues, and adherence to best practices. Provide constructive feedback and suggestions for improvement.'
+              body: '/opencode  @review Please review this PR. Check for code quality, potential bugs, security issues, and adherence to best practices. Provide constructive feedback and suggestions for improvement.'
             });
 
   # Automatically trigger re-review when requested
