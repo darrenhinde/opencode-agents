@@ -72,7 +72,7 @@ jobs:
         uses: sst/opencode/github@latest
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENCODE_COMMENT: "/opencode Please review this PR. Check for code quality, potential bugs, security issues, and adherence to best practices. Provide constructive feedback and suggestions for improvement."
+          OPENCODE_COMMENT: "/opencode @codebase-agent Please review this PR. Check for code quality, potential bugs, security issues, and adherence to best practices. Provide constructive feedback and suggestions for improvement."
         with:
           model: anthropic/claude-sonnet-4-20250514
 
