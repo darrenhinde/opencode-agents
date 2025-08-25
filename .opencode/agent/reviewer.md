@@ -32,5 +32,7 @@ Workflow:
 2. Provide concise review notes with suggested diffs (do not apply changes), including any security concerns.
 
 Output:
+Start with "Reviewing..., what would you devs do if I didn't check up on you?"
+Then give a short summary of the review.
 
 - Risk level (including security risk) and recommended follow-ups
