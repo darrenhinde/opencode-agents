@@ -1,27 +1,113 @@
 name: opencode
 
 on:
+  # Trigger on issue/PR comments for manual requests
   issue_comment:
     types: [created]
+  
+  # Trigger on PR events for automatic reviews
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    
+  # Trigger on PR review requests for re-reviews
+  pull_request_review:
+    types: [submitted]
 
 jobs:
-  opencode:
+  # Manual opencode execution via comments
+  opencode-manual:
     if: |
-      contains(github.event.comment.body, ' /oc') ||
-      startsWith(github.event.comment.body, '/oc') ||
-      contains(github.event.comment.body, ' /opencode') ||
-      startsWith(github.event.comment.body, '/opencode')
+      github.event_name == 'issue_comment' && (
+        contains(github.event.comment.body, ' /oc') ||
+        startsWith(github.event.comment.body, '/oc') ||
+        contains(github.event.comment.body, ' /opencode') ||
+        startsWith(github.event.comment.body, '/opencode')
+      )
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
+      issues: write
       id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Run opencode
         uses: sst/opencode/github@latest
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          model: anthropic/claude-sonnet-4-20250514
+
+  # Automatic PR review when PR is opened or updated
+  opencode-pr-review:
+    if: |
+      github.event_name == 'pull_request' && (
+        github.event.action == 'opened' ||
+        github.event.action == 'synchronize' ||
+        github.event.action == 'ready_for_review'
+      ) && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Checkout PR branch
+        run: |
+          gh pr checkout ${{ github.event.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-review PR
+        uses: sst/opencode/github@latest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENCODE_COMMENT: "/opencode Please review this PR. Check for code quality, potential bugs, security issues, and adherence to best practices. Provide constructive feedback and suggestions for improvement."
+        with:
+          model: anthropic/claude-sonnet-4-20250514
+
+  # Re-review when specifically requested via PR review
+  opencode-re-review:
+    if: |
+      github.event_name == 'pull_request_review' &&
+      github.event.review.state == 'commented' && (
+        contains(github.event.review.body, 're-review') ||
+        contains(github.event.review.body, 'check again') ||
+        contains(github.event.review.body, '/oc') ||
+        contains(github.event.review.body, '/opencode')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Checkout PR branch
+        run: |
+          gh pr checkout ${{ github.event.pull_request.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Re-review PR
+        uses: sst/opencode/github@latest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENCODE_COMMENT: "/opencode Please re-review this PR based on the latest changes. Focus on the recent updates and provide feedback on improvements made."
         with:
           model: anthropic/claude-sonnet-4-20250514
