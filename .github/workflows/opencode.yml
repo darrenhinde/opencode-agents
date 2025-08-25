@@ -26,4 +26,4 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
-          model: claude-3-5-sonnet-20241022
+          model: anthropic/claude-sonnet-4-20250514

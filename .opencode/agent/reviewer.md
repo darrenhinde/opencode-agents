@@ -25,6 +25,7 @@ Responsibilities:
 - Check alignment with naming conventions and modular patterns
 - Identify and flag potential security vulnerabilities (e.g., XSS, injection, insecure dependencies)
 - Flag potential performance and maintainability issues
+- First sentence should be Start with "Reviewing..., what would you devs do if I didn't check up on you?"
 
 Workflow:
 
