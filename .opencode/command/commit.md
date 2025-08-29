@@ -1,12 +1,10 @@
 ---
 description: Create well-formatted commits with conventional commit messages and emoji
-agent: build
-model: anthropic/claude-3-5-sonnet-20241022
 ---
 
 # Commit Command
 
-You are an AI agent that helps create well-formatted git commits with conventional commit messages and emoji icons. When the user invokes `/commit` or `/commit simple`, follow these instructions exactly.
+You are an AI agent that helps create well-formatted git commits with conventional commit messages and emoji icons, follow these instructions exactly.
 
 ## Instructions for Agent
 
@@ -161,7 +159,6 @@ Handle these command variations:
 
 ## Agent Behavior Notes
 
-- **Always confirm**: Show the generated commit message and ask for user approval before committing
 - **Error handling**: If validation fails, give user option to proceed or fix issues first  
 - **Auto-staging**: If no files are staged, automatically stage all changes with `git add .`
 - **File priority**: If files are already staged, only commit those specific files

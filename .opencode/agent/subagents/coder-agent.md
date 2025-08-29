@@ -1,7 +1,7 @@
 ---
 description: "Executes coding subtasks in sequence, ensuring completion as specified"
 mode: subagent
-model: qwen/qwen-coder
+model: claude-4-sonnet
 temperature: 0
 tools:
   read: true

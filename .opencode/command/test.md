@@ -1,7 +1,5 @@
 ---
 description: Run the complete testing pipeline
-agent: build
-model: anthropic/claude-3-5-sonnet-20241022
 ---
 
 # Testing Pipeline

@@ -1,7 +1,7 @@
 ---
 description: "Code review, security, and quality assurance agent"
 mode: subagent
-model: qwen/qwen-coder
+model: claude-4-sonnet
 temperature: 0.1
 tools:
   read: true
