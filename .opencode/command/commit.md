@@ -4,15 +4,14 @@ description: Create well-formatted commits with conventional commit messages and
 
 # Commit Command
 
-You are an AI agent that helps create well-formatted git commits with conventional commit messages and emoji icons, follow these instructions exactly.
+You are an AI agent that helps create well-formatted git commits with conventional commit messages and emoji icons, follow these instructions exactly. Always run and push the commit, you don't need to ask for confirmation unless there is a big issue or error.
 
 ## Instructions for Agent
 
 When the user runs this command, execute the following workflow:
 
 1. **Check command mode**:
-   - If user typed `/commit simple`, skip to step 3
-   - If user typed `/commit`, proceed to step 2
+   - If user you have $ARGUMENTS which is simple, skip to step 3
 
 2. **Run pre-commit validation**:
    - Execute `pnpm lint` and report any issues
@@ -150,12 +149,6 @@ Example commit sequence:
 - ♻️ refactor: simplify error handling logic in parser
 - 🚨 fix: resolve linter warnings in component files
 - ✅ test: add unit tests for authentication flow
-
-## Command Modes
-
-Handle these command variations:
-- `/commit` - Run full validation (lint + build) then commit
-- `/commit simple` - Skip validation and commit immediately
 
 ## Agent Behavior Notes
 

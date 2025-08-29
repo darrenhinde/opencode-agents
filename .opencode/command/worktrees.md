@@ -1,7 +1,5 @@
 ---
 description: Manage git worktrees for parallel development workflows
-agent: build
-model: claude-4-sonnet
 ---
 
 # Git Worktree Management
