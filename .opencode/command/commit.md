@@ -6,39 +6,50 @@ model: anthropic/claude-3-5-sonnet-20241022
 
 # Commit Command
 
-This command helps you create well-formatted commits with conventional commit messages and emoji.
+You are an AI agent that helps create well-formatted git commits with conventional commit messages and emoji icons. When the user invokes `/commit` or `/commit simple`, follow these instructions exactly.
 
-## Usage
+## Instructions for Agent
 
-To create a commit, just type:
-```
-/commit
-```
+When the user runs this command, execute the following workflow:
 
-Or with options:
-```
-/commit --no-verify
-```
+1. **Check command mode**:
+   - If user typed `/commit simple`, skip to step 3
+   - If user typed `/commit`, proceed to step 2
 
-## What This Command Does
+2. **Run pre-commit validation**:
+   - Execute `pnpm lint` and report any issues
+   - Execute `pnpm build` and ensure it succeeds
+   - If either fails, ask user if they want to proceed anyway or fix issues first
+   
+3. **Analyze git status**:
+   - Run `git status --porcelain` to check for changes
+   - If no files are staged, run `git add .` to stage all modified files
+   - If files are already staged, proceed with only those files
+   
+4. **Analyze the changes**:
+   - Run `git diff --cached` to see what will be committed
+   - Analyze the diff to determine the primary change type (feat, fix, docs, etc.)
+   - Identify the main scope and purpose of the changes
+   
+5. **Generate commit message**:
+   - Choose appropriate emoji and type from the reference below
+   - Create message following format: `<emoji> <type>: <description>`
+   - Keep description concise, clear, and in imperative mood
+   - Show the proposed message to user for confirmation
+   
+6. **Execute the commit**:
+   - Run `git commit -m "<generated message>"`
+   - Display the commit hash and confirm success
+   - Provide brief summary of what was committed
 
-1. Unless specified with `--no-verify`, automatically runs pre-commit checks:
-   - `pnpm lint` to ensure code quality
-   - `pnpm build` to verify the build succeeds
-   - `pnpm generate:docs` to update documentation
-2. Checks which files are staged with `git status`
-3. If 0 files are staged, automatically adds all modified and new files with `git add`
-4. Performs a `git diff` to understand what changes are being committed
-5. Analyzes the diff to determine if multiple distinct logical changes are present
-6. If multiple distinct changes are detected, suggests breaking the commit into multiple smaller commits
-7. For each commit (or the single commit if not split), creates a commit message using emoji conventional commit format
+## Commit Message Guidelines
 
-## Best Practices for Commits
+When generating commit messages, follow these rules:
 
-- **Verify before committing**: Ensure code is linted, builds correctly, and documentation is updated
 - **Atomic commits**: Each commit should contain related changes that serve a single purpose
-- **Split large changes**: If changes touch multiple concerns, split them into separate commits
-- **Conventional commit format**: Use the format `<type>: <description>` where type is one of:
+- **Imperative mood**: Write as commands (e.g., "add feature" not "added feature")
+- **Concise first line**: Keep under 72 characters
+- **Conventional format**: Use `<emoji> <type>: <description>` where type is one of:
   - `feat`: A new feature
   - `fix`: A bug fix
   - `docs`: Documentation changes
@@ -114,19 +125,9 @@ Or with options:
   - 🦺 `feat`: Add or update code related to validation
   - ✈️ `feat`: Improve offline support
 
-## Guidelines for Splitting Commits
+## Reference: Good Commit Examples
 
-When analyzing the diff, consider splitting commits based on these criteria:
-
-1. **Different concerns**: Changes to unrelated parts of the codebase
-2. **Different types of changes**: Mixing features, fixes, refactoring, etc.
-3. **File patterns**: Changes to different types of files (e.g., source code vs documentation)
-4. **Logical grouping**: Changes that would be easier to understand or review separately
-5. **Size**: Very large changes that would be clearer if broken down
-
-## Examples
-
-Good commit messages:
+Use these as examples when generating commit messages:
 - ✨ feat: add user authentication system
 - 🐛 fix: resolve memory leak in rendering process
 - 📝 docs: update API documentation with new endpoints
@@ -144,27 +145,25 @@ Good commit messages:
 - 🔒️ fix: strengthen authentication password requirements
 - ♿️ feat: improve form accessibility for screen readers
 
-Example of splitting commits:
-- First commit: ✨ feat: add new solc version type definitions
-- Second commit: 📝 docs: update documentation for new solc versions
-- Third commit: 🔧 chore: update package.json dependencies
-- Fourth commit: 🏷️ feat: add type definitions for new API endpoints
-- Fifth commit: 🧵 feat: improve concurrency handling in worker threads
-- Sixth commit: 🚨 fix: resolve linting issues in new code
-- Seventh commit: ✅ test: add unit tests for new solc version features
-- Eighth commit: 🔒️ fix: update dependencies with security vulnerabilities
+Example commit sequence:
+- ✨ feat: add user authentication system
+- 🐛 fix: resolve memory leak in rendering process  
+- 📝 docs: update API documentation with new endpoints
+- ♻️ refactor: simplify error handling logic in parser
+- 🚨 fix: resolve linter warnings in component files
+- ✅ test: add unit tests for authentication flow
 
-## Command Options
+## Command Modes
 
-- `--no-verify`: Skip running the pre-commit checks (lint, build, generate:docs)
+Handle these command variations:
+- `/commit` - Run full validation (lint + build) then commit
+- `/commit simple` - Skip validation and commit immediately
 
-## Important Notes
+## Agent Behavior Notes
 
-- By default, pre-commit checks (`pnpm lint`, `pnpm build`, `pnpm generate:docs`) will run to ensure code quality
-- If these checks fail, you'll be asked if you want to proceed with the commit anyway or fix the issues first
-- If specific files are already staged, the command will only commit those files
-- If no files are staged, it will automatically stage all modified and new files
-- The commit message will be constructed based on the changes detected
-- Before committing, the command will review the diff to identify if multiple commits would be more appropriate
-- If suggesting multiple commits, it will help you stage and commit the changes separately
-- Always reviews the commit diff to ensure the message matches the changes
+- **Always confirm**: Show the generated commit message and ask for user approval before committing
+- **Error handling**: If validation fails, give user option to proceed or fix issues first  
+- **Auto-staging**: If no files are staged, automatically stage all changes with `git add .`
+- **File priority**: If files are already staged, only commit those specific files
+- **Message quality**: Ensure commit messages are clear, concise, and follow conventional format
+- **Success feedback**: After successful commit, show commit hash and brief summary
