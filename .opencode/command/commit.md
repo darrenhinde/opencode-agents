@@ -155,6 +155,6 @@ Example commit sequence:
 - **Error handling**: If validation fails, give user option to proceed or fix issues first  
 - **Auto-staging**: If no files are staged, automatically stage all changes with `git add .`
 - **File priority**: If files are already staged, only commit those specific files
-- **Always run and push the commit**: You don't need to ask for confirmation unless there is a big issue or error.
+- **Always run and push the commit**: You don't need to ask for confirmation unless there is a big issue or error `git push`.
 - **Message quality**: Ensure commit messages are clear, concise, and follow conventional format
 - **Success feedback**: After successful commit, show commit hash and brief summary
