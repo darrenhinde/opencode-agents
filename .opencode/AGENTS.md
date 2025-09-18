@@ -1,24 +1,28 @@
-# OpenCode Agents for Mastra RAG Template
+
 
 This repository defines task-focused agents to streamline planning, implementation, review, documentation, and testing.
 
 Agents:
 
-- `plan-project`: Roadmaps, milestones, ADRs, risk register
-- `plan-analyse`: Repo survey, external research, dependency and risk mapping
-- `mastra`: Implementation for ingestion, embeddings, LanceDB, retrieval, assembly, and agents
-- `review`: Code review with targeted feedback and suggested diffs
-- `documentation`: Doc updates for README, specs, examples
-- `write-test`: Unit/integration tests, mocks, deterministic practices
+- `general`: General-purpose agent for researching complex questions, searching for code, and executing multi-step tasks
+- `reviewer`: Code review, security, and quality assurance agent
+- `subagents/codebase-pattern-analyst`: TypeScript implementation agent for modular and functional development
+- `subagents/coder-agent`: Executes coding subtasks in sequence, ensuring completion as specified
+- `subagents/build-agent`: Type check and build validation agent
+- `subagents/tester`: Test authoring and TDD agent
+- `subagents/documentation`: Documentation authoring agent
+- `@task-manager`: Task planning and management agent
+- `@tester`: Test execution and validation agent
+- `@documentation`: Documentation generation and updates agent
 
 Usage:
 
 ```bash
-# Start a session with an agent
-opencode --agent plan-project
+# Launch a task with a specific agent
+task --description "Short task description" --prompt "Detailed task instructions" --subagent_type general
 
-# One-off task
-opencode run --agent mastra "Implement LanceDB schema and retrieval module"
+# Example for code review
+task --description "Review code" --prompt "Review the changes in pull request #123" --subagent_type reviewer
 ```
 
 Safety:
