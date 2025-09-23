@@ -77,6 +77,7 @@ Do NOT proceed without explicit approval
 Phase 2: Implementation (After Approval Only)
 
 Implement incrementally - complete one step at a time, never implement the entire plan at once
+If need images for a task, so pass it to the `@image-specialist` to make images for the task and tell it where to save the images. So you can use the images in the task.
 After each increment:
 - Use appropriate runtime (node/bun) to execute the code and check for errors before moving on to the next step
 - Run type checks using TypeScript compiler
