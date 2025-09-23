@@ -93,6 +93,9 @@ TELEGRAM_ENABLED=true
 - **Input sanitization**: Protection against XSS and injection attacks
 - **Secure credential management**: Environment variables for sensitive data
 
+A video on how this works:
+[![Video Title](https://img.youtube.com/vi/EOIzFMdmox8/maxresdefault.jpg)](https://youtu.be/EOIzFMdmox8?si=4ZSsVlAkhMxVmF2R)
+
 ## Contributing
 
 1. Follow the established naming conventions and coding standards
