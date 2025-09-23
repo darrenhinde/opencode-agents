@@ -1,0 +1,6 @@
+# Ignore generated images but keep directory structure
+images/*/
+!images/.gitkeep
+
+# Allow specific important images if needed
+# !images/examples/

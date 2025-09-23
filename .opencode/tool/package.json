@@ -3,10 +3,12 @@
   "name": "opencode-gemini-tool",
   "version": "1.0.0",
   "description": "Gemini image editing tool for OpenCode",
-  "main": "gemini.ts",
+  "main": "index.ts",
   "scripts": {
-    "build": "bun build gemini.ts --outdir dist",
-    "type-check": "tsc --noEmit"
+    "build": "bun build index.ts --outdir dist",
+    "type-check": "tsc --noEmit",
+    "test": "bun test.ts",
+    "test:real": "bun test.ts"
   },
   "dependencies": {
     "@opencode-ai/sdk": "^0.10.0",
