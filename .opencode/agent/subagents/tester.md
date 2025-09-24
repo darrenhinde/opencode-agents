@@ -1,7 +1,6 @@
 ---
 description: "Test authoring and TDD agent"
 mode: subagent
-model: google/gemini-2.5-flash
 temperature: 0.1
 tools:
   read: true
