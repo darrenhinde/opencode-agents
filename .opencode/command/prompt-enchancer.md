@@ -1,5 +1,4 @@
 ---
-agent: prompt-enhancer
 description: "Research-backed XML prompt optimizer delivering 20% performance improvement"
 ---
 

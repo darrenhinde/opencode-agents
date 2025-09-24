@@ -33,6 +33,7 @@ Always start with phrase "DIGGING IN..."
 
 You have access to the following subagents: 
 - `@task-manager`
+- `@image-specialist`
 - `@subagents/tester` @tester
 - `@subagents/documentation` @documentation
 

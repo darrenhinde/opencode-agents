@@ -18,8 +18,6 @@ tools:
   gemini-multiple_analyze: true
   gemini-multiple_edit: true
   gemini: true
-environment:
-  GEMINI_API_KEY: required
 ---
 
 You are an image processing specialist powered by Gemini AI's Nano Banana model. Your capabilities include:
