@@ -37,7 +37,7 @@ opencode run --agent mastra "Implement database schema"
 
 ## Agents
 
-See [`.opencode/AGENTS.md`](.opencode/AGENTS.md) for detailed information about available agents:
+See [`./AGENTS.md`](.opencode/AGENTS.md) for detailed information about available agents:
 
 - **plan-project**: Roadmaps, milestones, ADRs, risk register
 - **plan-analyse**: Repo survey, external research, dependency mapping
@@ -61,18 +61,18 @@ Single-file Telegram bot that sends notifications when OpenCode sessions become 
 **Quick Start:**
 ```bash
 # Run the bot
-node .opencode/plugin/telegram-bot.js
+node ./plugin/telegram-bot.js
 
 # Run example usage
-node .opencode/plugin/example-usage.js
+node ./plugin/example-usage.js
 ```
 
-See [`.opencode/plugin/README.md`](.opencode/plugin/README.md) for detailed documentation.
+See [`./plugin/README.md`](.opencode/plugin/README.md) for detailed documentation.
 
 ## Configuration
 
 ### Permissions
-Repository guardrails are defined in `.opencode/permissions.json`. Each agent can have specific permissions that override repository defaults.
+Repository guardrails are defined in `./permissions.json`. Each agent can have specific permissions that override repository defaults.
 
 ### Environment Variables
 Copy `env.example` to `.env` and configure your Telegram bot:

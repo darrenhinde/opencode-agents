@@ -3,11 +3,11 @@
 ## Technology Stack
 
 **Primary Language:** TypeScript
-**Runtime:** Node.js/Bun
-**Package Manager:** npm/pnpm/yarn
+**Runtime:** Node.js
+**Package Manager:** pnpm
 **Build Tools:** TypeScript Compiler (tsc)
-**Testing:** Jest/Vitest (if configured)
-**Linting:** ESLint (if configured)
+**Testing:** Jest
+**Linting:** ESLint
 
 ## Project Structure
 

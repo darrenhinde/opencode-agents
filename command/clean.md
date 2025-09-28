@@ -1,5 +1,5 @@
 ---
-description: Clean the codebase or current working task in focus via Prettier, Import Sorter, ESLint, and TypeScript Compiler
+description: Clean the codebase or current working task in focus via Prettier, ESLint, and TypeScript Compiler
 ---
 
 # Code Quality Cleanup
@@ -26,23 +26,17 @@ Perform these actions in order:
    - Ensure proper indentation and spacing
    - Standardize quote usage and trailing commas
 
-3. **Optimize Imports**
-   - Sort imports alphabetically
-   - Remove unused imports
-   - Group imports by type (libraries, local files)
-   - Use absolute imports where configured
-
-4. **Fix Linting Issues**
+3. **Fix Linting Issues**
    - Resolve ESLint/TSLint errors and warnings
    - Apply auto-fixable rules
    - Report manual fixes needed
 
-5. **Type Safety Validation**
+4. **Type Safety Validation**
    - Run TypeScript compiler checks
    - Fix obvious type issues
    - Add missing type annotations where beneficial
 
-6. **Comment Optimization**
+5. **Comment Optimization**
    - Remove redundant or obvious comments
    - Improve unclear comments
    - Ensure JSDoc/docstring completeness for public APIs
