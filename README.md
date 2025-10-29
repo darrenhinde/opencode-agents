@@ -71,9 +71,6 @@ See [`.opencode/plugin/README.md`](.opencode/plugin/README.md) for detailed docu
 
 ## Configuration
 
-### Permissions
-Repository guardrails are defined in `.opencode/permissions.json`. Each agent can have specific permissions that override repository defaults.
-
 ### Environment Variables
 Copy `env.example` to `.env` and configure your Telegram bot:
 
