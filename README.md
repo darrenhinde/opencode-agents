@@ -12,7 +12,7 @@ A set of OpenCode configurations, prompts, agents, and plugins for enhanced deve
 ## Quick Start
 
 ### 1. Install OpenCode CLI
-Follow the [official OpenCode documentation](https://opencode.ai) to install the CLI.
+Follow the [official OpenCode documentation](https://opencode.ai/docs) to install the CLI.
 
 ### 2. Setup Telegram Notifications (Optional)
 Get notified when your OpenCode sessions become idle:
