@@ -561,7 +561,7 @@ tasks/single/[name].md # Simple tasks
 ```mermaid
 graph TB
     subgraph "User Interface"
-        CMD["/workflow<br/>/plan-task<br/>/execute-task"]
+        CMD[workflow plantask execute-task]
     end
 
     subgraph ".opencode/command/"
@@ -589,9 +589,9 @@ graph TB
     end
 
     subgraph "tasks/"
-        T1[features/[name]/task-plan.md]
-        T2[fixes/[name]/task-plan.md]
-        T3[single/[name].md]
+        T1[features/name/task-plan.md]
+        T2[fixes/name/task-plan.md]
+        T3[single/name.md]
     end
 
     CMD --> C1
