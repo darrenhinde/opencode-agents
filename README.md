@@ -37,7 +37,7 @@ opencode run --agent mastra "Implement database schema"
 
 ## Agents
 
-See [`.opencode/AGENTS.md`](.opencode/AGENTS.md) for detailed information about available agents:
+See [`.opencode/AGENT-SYSTEM-BLUEPRINT.md`](.opencode/AGENT-SYSTEM-BLUEPRINT.md) for detailed information about available agents:
 
 - **plan-project**: Roadmaps, milestones, ADRs, risk register
 - **plan-analyse**: Repo survey, external research, dependency mapping
