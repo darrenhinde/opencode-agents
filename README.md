@@ -38,14 +38,26 @@ This isn't a gimmick project. I use this every day to ship real production code.
 
 ## What Is AOC?
 
-AOC is a **framework for AI-assisted development** that combines:
-- **Plan-first workflows** - Agents propose plans before implementing
-- **Context-aware execution** - Agents follow YOUR coding standards
-- **Incremental validation** - Step-by-step implementation with quality checks
+AOC is a **framework for AI-assisted development** that puts you in control through editable agent behavior and approval-based workflows.
 
-Think of it as having a senior developer who understands your project's patterns and asks for approval before making changes.
+**Core Philosophy:**
+- **Editable Agents** - Full control over agent behavior (edit markdown files directly)
+- **Approval Gates** - Agents propose plans, you approve before execution
+- **Context-Aware** - Agents automatically follow YOUR coding standards
+- **Team-Ready** - Repeatable patterns that work across your team
 
-**Key insight**: The context system (your coding standards) is the secret weapon. Agents automatically load and follow your patterns, so code is consistent without manual configuration.
+**The Key Difference:** Unlike plugin-based systems where agent behavior is baked into code, AOC agents are transparent markdown files you can edit. Change how they think, add project rules, customize for your workflow.
+
+> **Comparing with Oh My OpenCode?** [Read the detailed comparison →](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
+
+**How it works:** Agents load your patterns from `.opencode/context/`, propose plans, wait for approval, then execute incrementally with validation at each step.
+
+### Quick Concepts for First-Time Users
+
+1. **Editable Agents** - Edit markdown files to change behavior (`~/.opencode/agent/`)
+2. **Context System** - Your standards auto-loaded from `~/.opencode/context/`
+3. **Approval Workflow** - Propose → Approve → Execute (you stay in control)
+4. **Model Agnostic** - Use any AI model (Claude, GPT, Gemini, local)
 
 ---
 
@@ -134,7 +146,7 @@ OpenCoder is the full-featured development agent with rigorous workflows: Discov
 
 ---
 
-## Installation
+## 📦 Installation
 
 ### Prerequisites
 - **OpenCode CLI** - [Install here](https://opencode.ai/docs)
@@ -213,7 +225,220 @@ A: The agents work with any language (TypeScript, Python, Go, Rust, etc.) and ad
 
 ---
 
-## How It Works
+## 🎛️ Model Configuration
+
+OpenAgentsControl is **model-agnostic** - you can use any AI model from any provider. Configure models using the `model:` tag in agent files.
+
+### Model Format
+
+Use the format: `provider/model-id`
+
+```yaml
+---
+model: anthropic/claude-sonnet-4-5
+---
+```
+
+### Finding Available Models
+
+Browse all available models at **[models.dev](https://models.dev/?search=open)** - search for "open" to see OpenCode-compatible models.
+
+### Supported Providers
+
+| Provider | Example Model ID | Format |
+|----------|------------------|--------|
+| **Anthropic** | `claude-sonnet-4-5` | `anthropic/claude-sonnet-4-5` |
+| **OpenAI** | `gpt-5.2` | `openai/gpt-5.2` |
+| **Google** | `gemini-2.0-flash` | `google/gemini-2.0-flash` |
+| **OpenRouter** | `claude-opus-4` | `openrouter/anthropic/claude-opus-4` |
+| **OpenCode** | `gpt-5-nano` | `opencode/gpt-5-nano` |
+| **Ollama** | `qwen3` | `ollama/qwen3` |
+
+### How to Configure
+
+**Option 1: Edit Agent Files Directly**
+
+```bash
+# Edit the main agent
+nano ~/.opencode/agent/core/opencoder.md
+```
+
+Change the model in the frontmatter:
+```yaml
+---
+description: "Development specialist"
+model: anthropic/claude-sonnet-4-5  # Change this line
+---
+```
+
+**Option 2: Per-Project Configuration**
+
+Create a project-specific agent override:
+```bash
+# Create project .opencode directory
+mkdir -p .opencode/agent/core
+
+# Copy and modify agent
+cp ~/.opencode/agent/core/opencoder.md .opencode/agent/core/opencoder.md
+nano .opencode/agent/core/opencoder.md
+```
+
+**Option 3: Global Default (OpenCode Config)**
+
+Set your default model in OpenCode's config:
+```bash
+nano ~/.config/opencode/opencode.json
+```
+
+```json
+{
+  "model": "anthropic/claude-sonnet-4-5"
+}
+```
+
+### Example Configurations
+
+**Use Claude Sonnet for main agent:**
+```yaml
+---
+model: anthropic/claude-sonnet-4-5
+---
+```
+
+**Use OpenAI GPT for main agent:**
+```yaml
+---
+model: openai/gpt-5.2
+---
+```
+
+**Use Gemini Flash for fast tasks:**
+```yaml
+---
+model: google/gemini-2.0-flash
+---
+```
+
+**Use OpenRouter for Claude Opus:**
+```yaml
+---
+model: openrouter/anthropic/claude-opus-4
+---
+```
+
+**Use local Ollama model:**
+```yaml
+---
+model: ollama/qwen3
+---
+```
+
+### Model Selection Strategy
+
+**Quick Recommendations:**
+- **Getting started?** Use Claude Sonnet 4.5 (best balance)
+- **Complex features?** Use Claude Opus 4.5 (highest quality)
+- **Fast prototyping?** Use Gemini 2.0 Flash (speed)
+- **Free tier?** Use OpenCode GPT-5
+
+**Advanced**: Subagents can use lighter models (Haiku/Flash) for speed, except TestEngineer and CodeReviewer which need reasoning models.
+
+### Check Available Models
+
+Run this command to see all models available in your environment:
+```bash
+opencode models
+```
+
+### Model-Specific Prompt Variants
+
+OpenAgentsControl supports model-specific prompt variants for optimal performance:
+
+```
+.opencode/agent/core/
+├── opencoder.md          # Default prompt
+├── opencoder.gemini.md   # Gemini-optimized
+├── opencoder.grok.md     # Grok-optimized
+└── opencoder.llama.md    # Llama-optimized
+```
+
+Create a variant by copying the base agent and adding `.{model}.md`:
+```bash
+cp ~/.opencode/agent/core/opencoder.md ~/.opencode/agent/core/opencoder.gemini.md
+nano ~/.opencode/agent/core/opencoder.gemini.md
+# Optimize prompt for Gemini's strengths
+```
+
+### Troubleshooting
+
+**Q: Model not found error?**  
+A: Run `opencode models` to see all 226+ available models. Make sure you're using the correct `provider/model-id` format.
+
+**Q: How do I use OpenRouter models?**  
+A: Use format `openrouter/provider/model-id`, e.g., `openrouter/anthropic/claude-opus-4`
+
+**Q: Can I use different models for different agents?**  
+A: Yes! Each agent file can specify its own model. Edit the `model:` tag in each agent's frontmatter.
+
+**Q: What if I don't specify a model?**  
+A: OpenCode uses your default model from `~/.config/opencode/opencode.json`
+
+**Q: Where can I see all available models?**  
+A: Visit [models.dev](https://models.dev/?search=open) or run `opencode models` in your terminal
+
+---
+
+## 🎨 Customizing Agents
+
+Agents are markdown files with YAML frontmatter. Edit them to change behavior, add project rules, or customize for your workflow.
+
+### Quick Customization
+
+**Edit an agent:**
+```bash
+nano ~/.opencode/agent/core/opencoder.md
+```
+
+**Add project-specific rules:**
+```markdown
+## Project Rules
+- Always use TypeScript strict mode
+- Prefer functional components in React
+- Use Tailwind for styling (no CSS modules)
+```
+
+**Customize tech stack:**
+```markdown
+## Tech Stack
+- Framework: Next.js 14 (App Router)
+- Database: PostgreSQL with Drizzle ORM
+- Auth: Better Auth
+- Styling: Tailwind + shadcn/ui
+```
+
+**Change communication style:**
+```markdown
+## Communication Style
+- Be concise and direct
+- Focus on practical solutions
+- Always explain trade-offs
+```
+
+### Per-Project Agents
+
+Override agents for specific projects:
+```bash
+# Create project-specific agent
+mkdir -p .opencode/agent/core
+cp ~/.opencode/agent/core/opencoder.md .opencode/agent/core/opencoder.md
+nano .opencode/agent/core/opencoder.md
+```
+
+Project agents override global agents automatically.
+
+---
+
+## ⚙️ How It Works
 
 ```
 User Request
@@ -492,6 +717,15 @@ Purpose: Automate order processing and customer support
 
 **Q: What's the main way to use this?**  
 A: Use `opencode --agent OpenCoder` for building features and production code. For general questions, documentation, or simple tasks, use `opencode --agent OpenAgent`. Both coordinate with specialists as needed.
+
+**Q: How does OpenAgentsControl compare to Oh My OpenCode?**  
+A: **[Read the detailed comparison →](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)**
+
+Key differences:
+- **AOC**: Editable agent behavior, approval gates, token efficiency, team-ready patterns
+- **Oh My OpenCode**: Extensive settings, multi-agent orchestration, autonomous "loop until done" mode
+
+Choose based on your workflow: control & repeatability (AOC) vs. autonomy & parallelization (Oh My OpenCode).
 
 **Q: What's the Agent System Blueprint for?**  
 A: It's a teaching document explaining architecture patterns and how to extend the system. See [docs/features/agent-system-blueprint.md](docs/features/agent-system-blueprint.md)
