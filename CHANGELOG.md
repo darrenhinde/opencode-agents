@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.6.1] - 2026-01-29
+
+### Changes
+- fix: switch CI to TypeScript validator to resolve hanging bash script (#129)
+
 ## [0.5.5] - 2026-01-27
 
 ### Changes
