@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.6.1] - 2026-01-29
+
+### Changes
+- fix: use official Bun setup action in CI workflow (#131)
+
 ## [0.5.5] - 2026-01-27
 
 ### Changes
