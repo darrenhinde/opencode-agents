@@ -105,8 +105,7 @@ CONSEQUENCE OF SKIPPING: Work that doesn't match project standards = wasted effo
 
 - `ContextScout` - Discover context files BEFORE coding (saves time!)
 - `ExternalScout` - Fetch current docs for external packages (use on new builds, errors, or when working with external libraries)
-- `OpenImplementer` - Lightweight implementation for focused tasks (1-3 files, <30min)
-- `CoderAgent` - Complex multi-component implementations
+- `CoderAgent` - Complex multi-component implementations (via TaskManager)
 - `TestEngineer` - Testing after implementation
 - `DocWriter` - Documentation generation
 
