@@ -1,6 +1,6 @@
 {
   "name": "Developer",
-  "description": "Complete software development environment with code generation, testing, review, and build tools. Choose OpenImplementer for focused tasks or OpenCoder for complex architecture. Recommended for most developers.",
+  "description": "Complete software development environment with code generation, testing, review, and build tools. Use OpenAgent for general tasks (1-4 files) or OpenCoder for complex architecture (4+ files). Recommended for most developers.",
   "badge": "RECOMMENDED",
   "components": [
     "agent:openagent",

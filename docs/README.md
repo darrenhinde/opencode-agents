@@ -99,9 +99,9 @@ docs/
 
 Latest updates:
 - ExternalScout subagent for fetching live library documentation (18+ libraries)
-- OpenImplementer agent for lightweight implementation tasks
 - Enhanced ContextScout with multi-model optimization
 - Complete command and agent documentation
+- Simplified agent architecture (OpenAgent + OpenCoder)
 
 ## 🤝 Community
 
