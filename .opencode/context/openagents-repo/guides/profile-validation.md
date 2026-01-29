@@ -115,7 +115,7 @@ cat registry.json | jq '.profiles.full.components[] | select(. == "agent:your-ag
 - Content specialists (copywriter, technical-writer)
 - Data specialists (data-analyst)
 - Image tools (gemini, image-specialist)
-- Notification tools (telegram, notify)
+- Notification tools (notify)
 
 **Exclude**:
 - Development specialists
