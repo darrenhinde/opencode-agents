@@ -4,7 +4,6 @@
   "components": [
     "agent:openagent",
     "agent:opencoder",
-    "agent:openimplementer",
     "agent:system-builder",
     "agent:repo-manager",
     "agent:eval-runner",

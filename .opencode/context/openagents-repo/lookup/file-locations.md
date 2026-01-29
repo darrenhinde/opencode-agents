@@ -120,11 +120,6 @@ README.md                            # Main documentation
 ```
 .opencode/agent/core/openagent.md
 .opencode/agent/core/opencoder.md
-```
-
-### Meta Agents
-
-```
 .opencode/agent/meta/system-builder.md
 ```
 
@@ -133,7 +128,9 @@ README.md                            # Main documentation
 ```
 .opencode/agent/development/frontend-specialist.md
 .opencode/agent/development/devops-specialist.md
-.opencode/agent/core/openimplementer.md
+```
+.opencode/agent/development/frontend-specialist.md
+.opencode/agent/development/devops-specialist.md
 ```
 
 ### Content Agents

@@ -163,7 +163,7 @@ ERROR: Missing dependency: subagent:nonexistent
 **Specialist Subagents** (8 in Developer profile):
 - frontend-specialist: React, Vue, CSS architecture
 - devops-specialist: CI/CD, infrastructure, deployment
-- openimplementer: Lightweight implementation (1-4 files, <60 min)
+
 - task-manager: Feature breakdown and planning
 - documentation: Create and update docs
 - coder-agent: Execute coding subtasks

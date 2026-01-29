@@ -72,7 +72,6 @@ Agents:
 Agents:
 - `frontend-specialist.md` - React, Vue, modern CSS
 - `devops-specialist.md` - CI/CD, deployment, infrastructure
-- `openimplementer.md` - Lightweight implementation (1-4 files, <60 min)
 
 **When to use**: Building applications, dev tasks
 

@@ -97,7 +97,6 @@ cat registry.json | jq '.profiles.full.components[] | select(. == "agent:your-ag
 **Include**:
 - Core agents (openagent, opencoder)
 - Development specialist subagents (frontend, devops)
-- OpenImplementer (openimplementer - lightweight implementation agent)
 - All code subagents (tester, reviewer, coder-agent, build-agent)
 - Dev commands (commit, test, validate-repo, analyze-patterns)
 - Dev context (standards/code, standards/tests, workflows/*)
@@ -330,7 +329,7 @@ Add profile validation to CI:
 | data          | ❌        | ❌        | ✅       | ✅   | ✅       |
 | meta          | ❌        | ❌        | ❌       | ❌   | ✅       |
 
-*Note: Development category includes both agents (opencoder, openimplementer) and specialist subagents (frontend, devops)
+*Note: Development category includes agents (opencoder) and specialist subagents (frontend, devops)
 
 ---
 

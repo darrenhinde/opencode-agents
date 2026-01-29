@@ -115,6 +115,18 @@ opencode --agent OpenAgent
 
 ---
 
+## 💡 Default Behavior
+
+**Out of the box, OpenAgentsControl uses your OpenCode default model for all agents.**
+
+- ✅ No model configuration required
+- ✅ Works immediately after installation
+- ✅ Uses whatever model you configured in OpenCode CLI
+
+**Want to customize?** You can configure different models per agent. See [Model Configuration](#-model-configuration) below.
+
+---
+
 ## Recommended for New Users
 
 **Start with `OpenAgent`** - a lightweight, versatile agent perfect for getting started. It handles multiple task types and is ideal for learning the system.
@@ -225,9 +237,22 @@ A: The agents work with any language (TypeScript, Python, Go, Rust, etc.) and ad
 
 ---
 
-## 🎛️ Model Configuration
+## 🎛️ Model Configuration (Optional)
+
+**By default, all agents use your OpenCode default model.** Configure models per agent only if you want different agents to use different models.
 
 OpenAgentsControl is **model-agnostic** - you can use any AI model from any provider. Configure models using the `model:` tag in agent files.
+
+### When to Configure Models
+
+**You DON'T need to configure if:**
+- ✅ You're happy with all agents using your default model
+- ✅ You just want to get started quickly
+
+**Configure models when:**
+- 🎯 You want faster agents to use cheaper models (e.g., Haiku/Flash)
+- 🎯 You want complex agents to use smarter models (e.g., Opus/GPT-5)
+- 🎯 You want to test different models for different tasks
 
 ### Model Format
 

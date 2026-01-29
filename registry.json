@@ -41,24 +41,6 @@
         "category": "core"
       },
       {
-        "id": "openimplementer",
-        "name": "OpenImplementer",
-        "type": "agent",
-        "path": ".opencode/agent/core/openimplementer.md",
-        "description": "Lightweight implementation agent for focused coding tasks with direct execution, self-testing, and specialist review",
-        "tags": [
-          "implementation",
-          "focused-tasks",
-          "direct-execution",
-          "lightweight"
-        ],
-        "dependencies": [
-          "subagent:contextscout",
-          "subagent:reviewer"
-        ],
-        "category": "core"
-      },
-      {
         "id": "openagent",
         "name": "OpenAgent",
         "type": "agent",
@@ -2795,7 +2777,6 @@
       "badge": "RECOMMENDED",
       "components": [
         "agent:openagent",
-        "agent:openimplementer",
         "agent:opencoder",
         "subagent:task-manager",
         "subagent:frontend-specialist",
@@ -2861,7 +2842,6 @@
       "description": "Everything included - all agents, subagents, tools, and plugins for maximum functionality.",
       "components": [
         "agent:openagent",
-        "agent:openimplementer",
         "agent:opencoder",
         "agent:eval-runner",
         "agent:copywriter",
@@ -2906,7 +2886,6 @@
       "description": "Full installation plus System Builder for creating custom AI architectures. For power users and contributors.",
       "components": [
         "agent:openagent",
-        "agent:openimplementer",
         "agent:opencoder",
         "agent:system-builder",
         "agent:repo-manager",

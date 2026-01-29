@@ -146,16 +146,13 @@ Code Standards
 
 <delegation_rules>
   <delegate_when>
-    <condition id="simple_task" trigger="focused_implementation" action="delegate_to_openimplementer">
-      For simple, focused implementations (1-3 files, <30min) delegate to OpenImplementer
-    </condition>
     <condition id="complex_task" trigger="multi_component_implementation" action="delegate_to_coder_agent">
       For complex, multi-component implementations delegate to CoderAgent
     </condition>
   </delegate_when>
   
   <execute_directly_when>
-    <condition trigger="single_file_simple_change">1-3 files, straightforward implementation</condition>
+    <condition trigger="simple_implementation">1-4 files, straightforward implementation</condition>
   </execute_directly_when>
 </delegation_rules>
 

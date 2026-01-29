@@ -4,7 +4,6 @@
   "badge": "RECOMMENDED",
   "components": [
     "agent:openagent",
-    "agent:openimplementer",
     "agent:opencoder",
     "subagent:task-manager",
     "subagent:frontend-specialist",

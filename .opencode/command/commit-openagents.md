@@ -139,7 +139,7 @@ cd evals/framework && npm run eval:sdk -- --agent=core/opencoder --pattern="**/s
 
 **Scopes for this repo:**
 - `evals` - Evaluation framework changes
-- `agents/core` - Core agents (openagent, opencoder, openimplementer)
+- `agents/core` - Core agents (openagent, opencoder)
 - `agents/meta` - Meta agents (system-builder, repo-manager)
 - `agents/content` - Content category agents (copywriter, technical-writer)
 - `agents/data` - Data category agents (data-analyst)

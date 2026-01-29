@@ -23,7 +23,6 @@ Categories are domain-based groupings that organize agents, context files, and t
 **Purpose**: Essential system agents (always available)
 
 **Agents**:
-- openagent, opencoder, openimplementer, system-builder
 
 **When to use**: System-level tasks, orchestration, coding (simple or complex)
 
@@ -100,7 +99,6 @@ evals/agents/{category}/        # Tests by category
 ├── 0-category.json             # Category metadata
 ├── openagent.md
 ├── opencoder.md
-└── openimplementer.md
 
 .opencode/agent/subagents/development/
 ├── 0-category.json             # Subagent category metadata
@@ -351,7 +349,6 @@ Loads: `.opencode/context/development/react-patterns.md`
 ├── core/
 │   ├── openagent.md
 │   ├── opencoder.md
-│   └── openimplementer.md
 ├── subagents/
 │   ├── development/
 │   │   ├── frontend-specialist.md
@@ -384,7 +381,6 @@ core/
 ├── 0-category.json
 ├── openagent.md
 ├── opencoder.md
-└── openimplementer.md
 ```
 
 ### Development Subagents
@@ -414,7 +410,6 @@ evals/agents/core/
 │   ├── config/config.yaml
 │   └── tests/smoke-test.yaml
 ├── opencoder/
-└── openimplementer/
 ```
 
 ---
