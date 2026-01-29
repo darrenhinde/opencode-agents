@@ -1,0 +1,86 @@
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+env.example
+
+# Dependencies
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun.lock
+package-lock.json
+
+# Exclude tool directory (large binaries)
+.opencode/tool/
+**/.opencode/tool/
+
+# Build and test artifacts
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Temporary files
+.tmp/
+tmp/
+temp/
+*.log
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Development and testing
+evals/
+dev/
+tasks/
+integrations/
+packages/
+
+# Test and development scripts
+Makefile
+.gitignore
+.gitattributes
+
+# Documentation that's not needed in package
+docs/
+ROADMAP.md
+COMPATIBILITY.md
+
+# Backup files
+*.backup-*/
+.opencode.backup-*
+.opencode-test/
+.opencode-agents-version
+
+# Keep these (explicitly included in package.json files field)
+!.opencode/
+!scripts/
+!bin/
+!registry.json
+!install.sh
+!VERSION
+!LICENSE
+!README.md
+!CHANGELOG.md
+!CONTEXT_SYSTEM_GUIDE.md

@@ -1,11 +1,42 @@
 {
-  "name": "opencode-agents",
+  "name": "@openagents/control",
   "version": "0.7.0",
-  "description": "OpenCode agent evaluation framework and test suites",
-  "private": true,
+  "description": "AI agent framework for plan-first development workflows with approval-based execution. Multi-language support for TypeScript, Python, Go, Rust and more.",
   "workspaces": [
     "evals/framework"
   ],
+  "bin": {
+    "oac": "./bin/oac.js"
+  },
+  "files": [
+    ".opencode/agent/",
+    ".opencode/command/",
+    ".opencode/context/",
+    ".opencode/plugin/",
+    ".opencode/profiles/",
+    ".opencode/prompts/",
+    ".opencode/scripts/",
+    ".opencode/skill/",
+    ".opencode/tool/",
+    ".opencode/_lib/",
+    ".opencode/config.json",
+    ".opencode/opencode.json",
+    "!.opencode/tool/node_modules/",
+    "!.opencode/node_modules/",
+    "!**/node_modules/",
+    "scripts/",
+    "bin/",
+    "registry.json",
+    "install.sh",
+    "VERSION",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTEXT_SYSTEM_GUIDE.md"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "scripts": {
     "test": "npm run test:all",
     "test:all": "cd evals/framework && npm run eval:sdk",
@@ -55,10 +86,18 @@
   },
   "keywords": [
     "opencode",
-    "agents",
-    "evaluation",
-    "testing",
-    "ai"
+    "openagents",
+    "ai-agents",
+    "code-generation",
+    "development-workflow",
+    "plan-first",
+    "context-aware",
+    "typescript",
+    "python",
+    "go",
+    "rust",
+    "cli",
+    "automation"
   ],
   "author": "Darren Hinde",
   "license": "MIT",
@@ -66,6 +105,10 @@
     "type": "git",
     "url": "https://github.com/darrenhinde/OpenAgentsControl.git"
   },
+  "bugs": {
+    "url": "https://github.com/darrenhinde/OpenAgentsControl/issues"
+  },
+  "homepage": "https://github.com/darrenhinde/OpenAgentsControl#readme",
   "devDependencies": {
     "glob": "^13.0.0"
   }
