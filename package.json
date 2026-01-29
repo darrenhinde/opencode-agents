@@ -18,7 +18,6 @@
     ".opencode/scripts/",
     ".opencode/skill/",
     ".opencode/tool/",
-    ".opencode/_lib/",
     ".opencode/config.json",
     ".opencode/opencode.json",
     "!.opencode/tool/node_modules/",
