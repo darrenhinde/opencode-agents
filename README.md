@@ -18,15 +18,15 @@
 
 </div>
 
-## Why I Built This
+## Why We Built This
 
-I've spent 14+ years shipping production software. I've watched AI agents burn through thousands of tokens generating code that doesn't match your project, doesn't follow your patterns, and doesn't actually work without heavy refactoring.
+We've spent 14+ years shipping production software. We've watched AI agents burn through thousands of tokens generating code that doesn't match your project, doesn't follow your patterns, and doesn't actually work without heavy refactoring.
 
 **The problem**: Most AI agents are like hiring a developer who doesn't know your codebase. They write generic code. You spend hours rewriting, refactoring, and fixing inconsistencies. Tokens burned. Time wasted. No actual work done.
 
 **This system solves that**: AOC teaches agents your patterns upfront. They understand your coding standards, your architecture, your security requirements. They propose plans before implementing. They execute incrementally with validation. The result: **code that actually ships to production without heavy rework**.
 
-This isn't a gimmick project. I use this every day to ship real production code. It works because it respects two things:
+This isn't a gimmick project. We use this every day to ship real production code. It works because it respects two things:
 1. **Your time** - Agents propose plans, you approve before execution
 2. **Your patterns** - Agents follow your standards automatically
 
