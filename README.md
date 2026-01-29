@@ -55,7 +55,7 @@ AOC is a **framework for AI-assisted development** that puts you in control thro
 ### Quick Concepts for First-Time Users
 
 1. **Editable Agents** - Edit markdown files to change behavior (`~/.opencode/agent/`)
-2. **Context System** - Your standards auto-loaded from `~/.opencode/context/`
+2. **Context System** - Your standards auto-loaded from `~/.opencode/context/` (your secret weapon!)
 3. **Approval Workflow** - Propose → Approve → Execute (you stay in control)
 4. **Model Agnostic** - Use any AI model (Claude, GPT, Gemini, local)
 
@@ -153,8 +153,22 @@ opencode --agent OpenCoder
 OpenCoder is the full-featured development agent with rigorous workflows: Discover context → Propose plan → Get approval → Execute incrementally → Validate → Ship. It provides deeper context management, session tracking, and more sophisticated delegation to specialists (TaskManager, TestEngineer, CodeReviewer).
 
 **Learn more:** 
-- [OpenAgent Guide](docs/agents/openagent.md) - Lightweight, versatile agent for getting started
-- [OpenCoder Guide](docs/agents/opencoder.md) - Advanced development workflows
+- [OpenAgent Guide](docs/agents/openagent.md) - Detailed documentation
+- [OpenCoder Guide](docs/agents/opencoder.md) - Advanced workflows
+
+---
+
+## ✅ First-Time User Checklist
+
+After installation, follow these steps to get the most out of AOC:
+
+1. ✅ **Start with OpenAgent** - Run `opencode --agent OpenAgent` and try a simple task
+2. ✅ **Add your patterns** - Edit `~/.opencode/context/project/project-context.md` with your coding standards
+3. ✅ **Try a feature** - Use OpenCoder to build something: `opencode --agent OpenCoder`
+4. ✅ **Customize an agent** (optional) - Edit `~/.opencode/agent/core/opencoder.md` to add project rules
+5. ✅ **Configure models** (optional) - Only if you want different agents using different models
+
+**Most users only need steps 1-3 to be productive.**
 
 ---
 
@@ -746,9 +760,12 @@ A: Use `opencode --agent OpenCoder` for building features and production code. F
 **Q: How does OpenAgentsControl compare to Oh My OpenCode?**  
 A: **[Read the detailed comparison →](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)**
 
-Key differences:
-- **AOC**: Editable agent behavior, approval gates, token efficiency, team-ready patterns
-- **Oh My OpenCode**: Extensive settings, multi-agent orchestration, autonomous "loop until done" mode
+| Feature | AOC | Oh My OpenCode |
+|---------|-----|----------------|
+| **Agent Behavior** | Editable markdown files | Baked into code |
+| **Execution** | Approval gates | Autonomous loops |
+| **Token Efficiency** | High (context-aware) | Lower (more exploration) |
+| **Best For** | Control & repeatability | Autonomy & parallelization |
 
 Choose based on your workflow: control & repeatability (AOC) vs. autonomy & parallelization (Oh My OpenCode).
 
