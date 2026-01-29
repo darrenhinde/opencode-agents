@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.0] - 2026-01-29
+
+### Changes
+- feat: add ExternalScout and optimize ContextScout with research-backed patterns (#128)
+
 
 ### Documentation
 - Updated README.md and QUICK_START.md for v0.6.0 accuracy
