@@ -163,7 +163,7 @@ OpenCoder is the full-featured development agent with rigorous workflows: Discov
 After installation, follow these steps to get the most out of AOC:
 
 1. ✅ **Start with OpenAgent** - Run `opencode --agent OpenAgent` and try a simple task
-2. ✅ **Add your patterns** - Edit `~/.opencode/context/project/project-context.md` with your coding standards
+2. ✅ **Add your patterns** - Edit `~/.opencode/context/project/project-context.md` (created during installation) with your coding standards
 3. ✅ **Try a feature** - Use OpenCoder to build something: `opencode --agent OpenCoder`
 4. ✅ **Customize an agent** (optional) - Edit `~/.opencode/agent/core/opencoder.md` to add project rules
 5. ✅ **Configure models** (optional) - Only if you want different agents using different models
