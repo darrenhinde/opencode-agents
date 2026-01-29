@@ -1104,51 +1104,98 @@ perform_installation() {
             continue
         fi
         
-        # Convert registry path to installation path
-        local dest
-        dest=$(get_install_path "$path")
+        # Check if component has additional files (for skills)
+        local files_array
+        files_array=$(jq_exec ".components.${registry_key}[]? | select(.id == \"${id}\") | .files[]?" "$TEMP_DIR/registry.json")
         
-        # Check if file exists before we install (for proper messaging)
-        local file_existed=false
-        if [ -f "$dest" ]; then
-            file_existed=true
-        fi
-        
-        # Check if file exists and we're in skip mode
-        if [ "$file_existed" = true ] && [ "$install_strategy" = "skip" ]; then
-            print_info "Skipped existing: ${type}:${id}"
-            skipped=$((skipped + 1))
-            continue
-        fi
-        
-        # Download component
-        local url="${RAW_URL}/${path}"
-        
-        # Create parent directory if needed
-        mkdir -p "$(dirname "$dest")"
-        
-        if curl -fsSL "$url" -o "$dest"; then
-            # Transform paths for global installation (any non-local path)
-            # Local paths: .opencode or */.opencode
-            if [[ "$INSTALL_DIR" != ".opencode" ]] && [[ "$INSTALL_DIR" != *"/.opencode" ]]; then
-                # Expand tilde and get absolute path for transformation
-                local expanded_path="${INSTALL_DIR/#\~/$HOME}"
-                # Transform @.opencode/context/ references to actual install path
-                sed -i.bak -e "s|@\.opencode/context/|@${expanded_path}/context/|g" \
-                           -e "s|\.opencode/context|${expanded_path}/context|g" "$dest" 2>/dev/null || true
-                rm -f "${dest}.bak" 2>/dev/null || true
+        if [ -n "$files_array" ]; then
+            # Component has multiple files - download all of them
+            local component_installed=0
+            local component_failed=0
+            
+            while IFS= read -r file_path; do
+                [ -z "$file_path" ] && continue
+                
+                local dest
+                dest=$(get_install_path "$file_path")
+                
+                # Check if file exists and we're in skip mode
+                if [ -f "$dest" ] && [ "$install_strategy" = "skip" ]; then
+                    continue
+                fi
+                
+                # Download file
+                local url="${RAW_URL}/${file_path}"
+                mkdir -p "$(dirname "$dest")"
+                
+                if curl -fsSL "$url" -o "$dest"; then
+                    # Transform paths for global installation
+                    if [[ "$INSTALL_DIR" != ".opencode" ]] && [[ "$INSTALL_DIR" != *"/.opencode" ]]; then
+                        local expanded_path="${INSTALL_DIR/#\~/$HOME}"
+                        sed -i.bak -e "s|@\.opencode/context/|@${expanded_path}/context/|g" \
+                                   -e "s|\.opencode/context|${expanded_path}/context|g" "$dest" 2>/dev/null || true
+                        rm -f "${dest}.bak" 2>/dev/null || true
+                    fi
+                    component_installed=$((component_installed + 1))
+                else
+                    component_failed=$((component_failed + 1))
+                fi
+            done <<< "$files_array"
+            
+            if [ $component_failed -eq 0 ]; then
+                print_success "Installed ${type}: ${id} (${component_installed} files)"
+                installed=$((installed + 1))
+            else
+                print_error "Failed to install ${type}: ${id} (${component_failed} files failed)"
+                failed=$((failed + 1))
+            fi
+        else
+            # Single file component - original logic
+            local dest
+            dest=$(get_install_path "$path")
+            
+            # Check if file exists before we install (for proper messaging)
+            local file_existed=false
+            if [ -f "$dest" ]; then
+                file_existed=true
             fi
             
-            # Show appropriate message based on whether file existed before
-            if [ "$file_existed" = true ]; then
-                print_success "Updated ${type}: ${id}"
-            else
-                print_success "Installed ${type}: ${id}"
+            # Check if file exists and we're in skip mode
+            if [ "$file_existed" = true ] && [ "$install_strategy" = "skip" ]; then
+                print_info "Skipped existing: ${type}:${id}"
+                skipped=$((skipped + 1))
+                continue
             fi
-            installed=$((installed + 1))
-        else
-            print_error "Failed to install ${type}: ${id}"
-            failed=$((failed + 1))
+            
+            # Download component
+            local url="${RAW_URL}/${path}"
+            
+            # Create parent directory if needed
+            mkdir -p "$(dirname "$dest")"
+            
+            if curl -fsSL "$url" -o "$dest"; then
+                # Transform paths for global installation (any non-local path)
+                # Local paths: .opencode or */.opencode
+                if [[ "$INSTALL_DIR" != ".opencode" ]] && [[ "$INSTALL_DIR" != *"/.opencode" ]]; then
+                    # Expand tilde and get absolute path for transformation
+                    local expanded_path="${INSTALL_DIR/#\~/$HOME}"
+                    # Transform @.opencode/context/ references to actual install path
+                    sed -i.bak -e "s|@\.opencode/context/|@${expanded_path}/context/|g" \
+                               -e "s|\.opencode/context|${expanded_path}/context|g" "$dest" 2>/dev/null || true
+                    rm -f "${dest}.bak" 2>/dev/null || true
+                fi
+                
+                # Show appropriate message based on whether file existed before
+                if [ "$file_existed" = true ]; then
+                    print_success "Updated ${type}: ${id}"
+                else
+                    print_success "Installed ${type}: ${id}"
+                fi
+                installed=$((installed + 1))
+            else
+                print_error "Failed to install ${type}: ${id}"
+                failed=$((failed + 1))
+            fi
         fi
     done
     

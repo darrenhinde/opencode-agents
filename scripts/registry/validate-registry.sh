@@ -127,14 +127,14 @@ validate_component_paths() {
     local category=$1
     local category_display=$2
     
-    [ "$VERBOSE" = true ] && echo -e "\n${BOLD}Checking ${category_display}...${NC}"
+    echo "Checking ${category_display}..." >&2
     
     # Get all components in this category
     local components
     components=$(jq -r ".components.${category}[]? | @json" "$REGISTRY_FILE" 2>/dev/null)
     
     if [ -z "$components" ]; then
-        [ "$VERBOSE" = true ] && print_info "No ${category_display} found in registry"
+        echo "No ${category_display} found" >&2
         return
     fi
     
