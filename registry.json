@@ -395,7 +395,6 @@
         ],
         "dependencies": [
           "skill:context7",
-          "context:prompt-engineering",
           "context:context-system"
         ],
         "category": "core"
