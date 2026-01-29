@@ -1,6 +1,6 @@
 {
   "name": "opencode-agents",
-  "version": "0.5.5",
+  "version": "0.6.0",
   "description": "OpenCode agent evaluation framework and test suites",
   "private": true,
   "workspaces": [
@@ -48,7 +48,10 @@
     "dev:setup": "cd evals/framework && npm install",
     "dev:build": "cd evals/framework && npm run build",
     "dev:test": "cd evals/framework && npm test",
-    "dev:clean": "cd evals/framework && rm -rf dist node_modules && npm install"
+    "dev:clean": "cd evals/framework && rm -rf dist node_modules && npm install",
+    "validate:registry": "bun run scripts/registry/validate-registry.ts",
+    "validate:registry:verbose": "bun run scripts/registry/validate-registry.ts -v",
+    "validate:registry:fix": "bun run scripts/registry/validate-registry.ts -f"
   },
   "keywords": [
     "opencode",
@@ -62,5 +65,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/darrenhinde/OpenAgentsControl.git"
+  },
+  "devDependencies": {
+    "glob": "^13.0.0"
   }
 }

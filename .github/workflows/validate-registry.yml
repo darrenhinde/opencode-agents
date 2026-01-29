@@ -113,6 +113,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
+          
+          # Install Bun for TypeScript validator
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
       
       - name: Make scripts executable
         if: github.event.inputs.skip_validation != 'true'
@@ -194,12 +198,13 @@ jobs:
           echo "## ✅ Registry Validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if ./scripts/registry/validate-registry.sh -v > /tmp/validation-output.txt 2>&1; then
+          # Use TypeScript validator (fast and reliable)
+          if bun run scripts/registry/validate-registry.ts > /tmp/validation-output.txt 2>&1; then
             echo "validation=passed" >> $GITHUB_OUTPUT
             echo "✅ All registry paths are valid!" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            tail -20 /tmp/validation-output.txt >> $GITHUB_STEP_SUMMARY
+            cat /tmp/validation-output.txt >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           else
             echo "validation=failed" >> $GITHUB_OUTPUT
