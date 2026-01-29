@@ -1,5 +1,5 @@
 {
-  "name": "@openagents/control",
+  "name": "@nextsystems/oac",
   "version": "0.7.0",
   "description": "AI agent framework for plan-first development workflows with approval-based execution. Multi-language support for TypeScript, Python, Go, Rust and more.",
   "workspaces": [
