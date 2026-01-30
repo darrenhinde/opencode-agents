@@ -2,7 +2,7 @@
 
 **Purpose**: Context files specific to the OpenAgents Control repository
 
-**Last Updated**: 2026-01-13
+**Last Updated**: 2026-01-30
 
 ---
 
@@ -12,7 +12,7 @@
 |----------|-------|---------|
 | **Concepts** | 2 files | Core ideas and principles |
 | **Examples** | 1 file | Working code samples |
-| **Guides** | 8 files | Step-by-step workflows |
+| **Guides** | 10 files | Step-by-step workflows |
 | **Lookup** | 4 files | Quick reference tables |
 | **Errors** | 1 file | Common issues + solutions |
 
@@ -46,6 +46,8 @@
 | `guides/adding-agent.md` | How to add new agents | ⭐⭐⭐⭐ |
 | `guides/testing-agent.md` | How to test agents | ⭐⭐⭐⭐ |
 | `guides/external-libraries-workflow.md` | How to handle external library dependencies | ⭐⭐⭐⭐ |
+| `guides/github-issues-workflow.md` | How to work with GitHub issues and project board | ⭐⭐⭐⭐ |
+| `guides/npm-publishing.md` | How to publish package to npm | ⭐⭐⭐ |
 | `guides/updating-registry.md` | How to update registry | ⭐⭐⭐ |
 | `guides/debugging.md` | How to debug issues | ⭐⭐⭐ |
 | `guides/resolving-installer-wildcard-failures.md` | Fix wildcard context install failures | ⭐⭐⭐ |
@@ -104,6 +106,12 @@
 3. **If using external libraries**: Load `guides/external-libraries-workflow.md` (fetch docs)
 4. Load `examples/subagent-prompt-structure.md` (if subagent)
 5. Load `guides/testing-agent.md` (validate)
+
+### For Issue Management:
+1. Load `guides/github-issues-workflow.md` (understand workflow)
+2. Create issues with proper labels and templates
+3. Add to project board for tracking
+4. Process requests systematically
 
 ### For Debugging:
 1. Load `guides/debugging.md` (general approach)

@@ -2,183 +2,142 @@
 
 ![OpenAgents Control Hero](docs/images/hero-image.png)
 
-# OpenAgents Control (AOC)
+# OpenAgents Control (OAC)
+
+### Control your AI patterns. Get repeatable results. Zero refactoring.
+
+**AI agents that learn YOUR coding patterns and generate matching code every time.**
+
+🎯 **Pattern Control** - Define your patterns once, AI uses them forever  
+✋ **Approval Gates** - Review and approve before execution  
+🔁 **Repeatable Results** - Same patterns = Same quality code  
+📝 **Editable Agents** - Full control over AI behavior  
+👥 **Team-Ready** - Everyone uses the same patterns
+
+**Multi-language:** TypeScript • Python • Go • Rust • Any language*  
+**Model Agnostic:** Claude • GPT • Gemini • Local models
+
 
 [![GitHub stars](https://img.shields.io/github/stars/darrenhinde/OpenAgentsControl?style=flat-square&logo=github&labelColor=black&color=ffcb47)](https://github.com/darrenhinde/OpenAgentsControl/stargazers)
 [![X Follow](https://img.shields.io/twitter/follow/DarrenBuildsAI?style=flat-square&logo=x&labelColor=black&color=1DA1F2)](https://x.com/DarrenBuildsAI)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fb950?style=flat-square&labelColor=black)](https://opensource.org/licenses/MIT)
 [![Last Commit](https://img.shields.io/github/last-commit/darrenhinde/OpenAgentsControl?style=flat-square&labelColor=black&color=8957e5)](https://github.com/darrenhinde/OpenAgentsControl/commits/main)
 
-[🚀 Quick Start](#-get-started-in-5-minutes) • [📖 Docs](docs/) • [🎥 Demo](https://youtu.be/EOIzFMdmox8) • [💬 Community](https://nextsystems.ai)
+[🚀 Quick Start](#-quick-start) • [💻 Show Me Code](#-example-workflow) • [🗺️ Roadmap](https://github.com/darrenhinde/OpenAgentsControl/projects) • [💬 Community](https://nextsystems.ai)
 
 </div>
 
 ---
 
-## AI agents use 10,000 tokens to generate code you'll spend 2 hours refactoring
-
-**The paradox:** The more code they generate, the more time you waste.
-
-**Why?** They don't know YOUR codebase. They write generic code. You rewrite it to match your patterns.
-
-**OpenAgents Control flips this:** Agents learn your patterns first. They propose plans. You approve. They execute.
-
-**Result:** Code that ships to production without refactoring. From 3 iterations to 1. From 15 minutes to 2.
+> **Built on [OpenCode](https://opencode.ai)** - An open-source AI coding framework. OAC extends OpenCode with specialized agents, context management, and team workflows.
 
 ---
 
-## What Is AOC? (Read This First!)
+## The Problem
 
-**AOC is a scaffold system, not a plugin.** Think of it as a fully exposed, configurable AI agent framework where YOU control everything.
+Most AI agents are like hiring a developer who doesn't know your codebase. They write generic code. You spend hours rewriting, refactoring, and fixing inconsistencies. Tokens burned. Time wasted. No actual work done.
 
-### The Key Difference
+**Example:**
+```typescript
+// What AI gives you (generic)
+export async function POST(request: Request) {
+  const data = await request.json();
+  return Response.json({ success: true });
+}
 
-| Oh My OpenCode | OpenAgents Control |
-|----------------|-------------------|
-| Plugin approach | Scaffold approach |
-| Hidden configuration | Fully exposed |
-| "Just works" out of box | Requires setup & customization |
-| Autonomous loops | Approval-based workflow |
-| Best for: Quick automation | Best for: Production code with your standards |
+// What you actually need (your patterns)
+export async function POST(request: Request) {
+  const body = await request.json();
+  const validated = UserSchema.parse(body);  // Your Zod validation
+  const result = await db.users.create(validated);  // Your Drizzle ORM
+  return Response.json(result, { status: 201 });  // Your response format
+}
+```
 
-### What This Means for You
+## The Solution
 
-✅ **You get full control** - Edit agent behavior, add your patterns, customize everything  
-✅ **Agents follow YOUR rules** - Your coding standards, your architecture, your way  
-✅ **Transparent system** - See exactly how agents think and make decisions  
+**OpenAgentsControl teaches agents your patterns upfront.** They understand your coding standards, your architecture, your security requirements. They propose plans before implementing. They execute incrementally with validation.
 
-⚠️ **You need to configure it** - Add your patterns, customize agents for your needs  
-⚠️ **Not plug-and-play** - Requires understanding and adjustment  
+**The result:** Production-ready code that ships without heavy rework.
 
-**If you want "just works" autonomous AI:** Try [Oh My OpenCode](https://github.com/darrenhinde/OpenAgentsControl/discussions/116) instead.
+### What Makes AOC Different
 
-**If you want full control over AI behavior:** You're in the right place. Keep reading.
+**🎯 Context-Aware (Your Secret Weapon)**  
+Agents load YOUR patterns before generating code. Code matches your project from the start. No refactoring needed.
+
+**📝 Editable Agents (Not Baked-In Plugins)**  
+Full control over agent behavior. Edit markdown files directly—no compilation, no vendor lock-in. Change workflows, add constraints, customize for your team.
+
+**✋ Approval Gates (Human-Guided AI)**  
+Agents ALWAYS request approval before execution. Propose → Approve → Execute. You stay in control. No "oh no, what did the AI just do?" moments.
+
+**⚡ Token Efficient (MVI Principle)**  
+Minimal Viable Information design. Only load what's needed, when it's needed. Context files <200 lines, lazy loading, faster responses.
+
+**👥 Team-Ready (Repeatable Patterns)**  
+Store YOUR coding patterns once. Entire team uses same standards. Commit context to repo. New developers inherit team patterns automatically.
+
+**🔄 Model Agnostic**  
+Use any AI model (Claude, GPT, Gemini, local). No vendor lock-in.
+
+**Full-stack development:** AOC handles both frontend and backend work. The agents coordinate to build complete features from UI to database.
 
 ---
 
-## 🎯 The Secret Weapon: Context System
+## 🆚 Quick Comparison
 
-**This is what makes AOC different.** Context files = your project's DNA. They tell agents how YOU write code.
+| Feature | OpenAgentsControl | Cursor/Copilot | Aider |
+|---------|-------------------|----------------|-------|
+| **Learn Your Patterns** | ✅ Built-in | ❌ No | ❌ No |
+| **Approval Gates** | ✅ Always | ❌ Auto-executes | ⚠️ Optional |
+| **Token Efficiency** | ✅ MVI principle | ❌ Standard | ❌ Standard |
+| **Team Standards** | ✅ Built-in | ❌ Per-user | ❌ No |
+| **Edit Agent Behavior** | ✅ Markdown files | ❌ Baked-in | ⚠️ Limited |
+| **Model Choice** | ✅ Any model | ❌ Vendor locked | ⚠️ OpenAI only |
 
-### How It Works
+**Use AOC when:**
+- ✅ You have established coding patterns
+- ✅ You want code that ships without refactoring
+- ✅ You need approval gates for quality control
+- ✅ You care about token efficiency and costs
 
-```
-Your Request → Agent loads YOUR patterns → Code matches YOUR style automatically
-```
+**Use others when:**
+- **Cursor/Copilot:** Quick prototypes, don't care about patterns
+- **Aider:** Simple file edits, no team coordination
+- **Oh My OpenCode:** Need autonomous execution with parallel agents (speed over control)
 
-**Example:** `~/.opencode/context/project/project-context.md`
-```markdown
-## React Patterns
-- Use functional components (not classes)
-- Use Tailwind CSS (not CSS modules)
-- Use shadcn/ui components
-
-## API Patterns
-- Use tRPC (not REST)
-- Use Drizzle ORM (not Prisma)
-```
-
-**Without context:** Agent creates generic code → Doesn't match your project ❌  
-**With context:** Agent loads your patterns → Code matches your style ✅
-
-**Get started:** Edit `~/.opencode/context/project/project-context.md` and add your patterns.
-
-[Complete Context System Guide →](CONTEXT_SYSTEM_GUIDE.md)
+> **Full comparison:** [Read detailed analysis →](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
 
 ---
 
-## 🎛️ Configure Models Per Agent (Common Question!)
+## 🚀 Quick Start
 
-**By default, all agents use your OpenCode default model.** Want different agents to use different models? Here's how:
+**Prerequisites:** [OpenCode CLI](https://opencode.ai/docs) (free, open-source) • Bash 3.2+ • Git
 
-### Quick Setup
+### Step 1: Install
 
-**1. Find your model ID:** Visit [models.dev](https://models.dev/?search=open)
-
-**2. Edit the agent file:**
-```bash
-nano ~/.opencode/agent/core/opencoder.md
-```
-
-**3. Change the frontmatter:**
-```yaml
----
-description: "Development specialist"
-model: anthropic/claude-sonnet-4-20250514  # ← Change this
-temperature: 0.1
----
-```
-
-**Format:** `provider/model-id`
-
-### Examples
-
-**Use Sonnet for main coding:**
-```yaml
-model: anthropic/claude-sonnet-4-20250514
-```
-
-**Use Opus for complex features:**
-```yaml
-model: anthropic/claude-opus-4-20250514
-```
-
-**Use GPT for testing:**
-```yaml
-model: openai/gpt-5.2
-```
-
-**Use Gemini Flash for speed:**
-```yaml
-model: google/gemini-2.0-flash
-```
-
-### Common Configurations
-
-**OpenCoder (main development):**
-```yaml
-model: anthropic/claude-sonnet-4-20250514
-temperature: 0.1
-```
-
-**TestEngineer (testing):**
-```yaml
-model: openai/gpt-5.2
-temperature: 0.2
-```
-
-**CodeReviewer (review):**
-```yaml
-model: anthropic/claude-opus-4-20250514
-temperature: 0.1
-```
-
-**DocWriter (documentation):**
-```yaml
-model: google/gemini-2.0-flash
-temperature: 0.3
-```
-
-**That's it!** Agents will use the configured model automatically.
-
-[See all available models →](https://models.dev/?search=open)
-
----
-
-## 🚀 Get Started in 5 Minutes
-
-**One command. That's it.**
+**One command:**
 
 ```bash
-# Quick install (developer profile)
 curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
 ```
 
-**Then start building:**
+<sub>The installer will set up OpenCode CLI if you don't have it yet.</sub>
+
+**Or interactive:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh -o install.sh
+bash install.sh
+```
+
+### Step 2: Start Building
+
 ```bash
 opencode --agent OpenAgent
 > "Create a user authentication system"
 ```
+
+### Step 3: Approve & Ship
 
 **What happens:**
 1. Agent analyzes your request
@@ -187,235 +146,199 @@ opencode --agent OpenAgent
 4. Delegates to specialists when needed
 5. Ships production-ready code
 
-**That's the entire workflow.** No complex setup required to start.
+**That's it.** Works immediately with your default model. No configuration required.
 
 ---
 
-## ✅ First-Time User Checklist
+## 💡 The Context System: Your Secret Weapon
 
-After installation, follow these steps:
+**The problem with AI code:** It doesn't match your patterns. You spend hours refactoring.
 
-1. ✅ **Try it out** - Run `opencode --agent OpenAgent` and build something simple
-2. ✅ **Add your patterns** - Edit `~/.opencode/context/project/project-context.md` with your coding standards
-3. ✅ **Customize agents** (optional) - Edit `~/.opencode/agent/core/opencoder.md` to add project-specific rules
-4. ✅ **Configure models** (optional) - Change `model:` in agent frontmatter to use different models per agent
-5. ✅ **Build a real feature** - Use `opencode --agent OpenCoder` for production code
+**The AOC solution:** Teach your patterns once. Agents load them automatically. Code matches from the start.
 
-**Most users only need steps 1-2 to be productive.**
-
----
-
-## 📦 Installation
-
-### Prerequisites
-- **OpenCode CLI** - [Install here](https://opencode.ai/docs)
-- **Bash 3.2+** (macOS default works)
-- **Git** (for cloning)
-
-### Install AOC
-
-**Recommended: One-line install**
-```bash
-curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
-```
-
-**Alternative: Interactive installer**
-```bash
-curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh -o install.sh
-bash install.sh
-```
-
-**Manual install**
-```bash
-git clone https://github.com/darrenhinde/OpenAgentsControl.git
-cd OpenAgentsControl
-mkdir -p ~/.opencode
-cp -r .opencode/agent ~/.opencode/
-cp -r .opencode/command ~/.opencode/
-cp -r .opencode/context ~/.opencode/
-```
-
-### Start Using It
-```bash
-opencode --agent OpenAgent
-> "Create a user authentication system"
-```
-
----
-
-## ⚙️ How It Works
+### How It Works
 
 ```
-User Request
+Your Request
     ↓
-┌───────────────────────────────────────┐
-│  Main Agents (User-Facing)           │
-├───────────────────────────────────────┤
-│  openagent     │ General tasks        │
-│  opencoder     │ Complex coding       │
-│  system-builder│ AI system generation │
-└───────────────────────────────────────┘
+ContextScout discovers relevant patterns
     ↓
-┌───────────────────────────────────────┐
-│  Specialized Subagents                │
-├───────────────────────────────────────┤
-│  Core:         task-manager, docs     │
-│  Code:         coder, tester, reviewer│
-│  Utils:        image-specialist       │
-│  Meta:         domain-analyzer, etc.  │
-└───────────────────────────────────────┘
+Agent loads YOUR standards
+    ↓
+Code generated using YOUR patterns
+    ↓
+Ships without refactoring ✅
 ```
 
-**The workflow:**
-1. **You describe** what you want to build
-2. **Agent plans** the implementation steps
-3. **You approve** the plan
-4. **Agent implements** incrementally with validation
-5. **Quality checks** run automatically (tests, types, linting)
-6. **Subagents handle** specialized tasks (testing, review, docs)
+### Add Your Patterns (10-15 Minutes)
 
-**Context-aware:** Agents automatically load patterns from `.opencode/context/` to follow your coding standards.
+```bash
+/add-context
+```
+
+**Answer 6 simple questions:**
+1. What's your tech stack? (Next.js + TypeScript + PostgreSQL + Tailwind)
+2. Show an API endpoint example (paste your code)
+3. Show a component example (paste your code)
+4. What naming conventions? (kebab-case, PascalCase, camelCase)
+5. Any code standards? (TypeScript strict, Zod validation, etc.)
+6. Any security requirements? (validate input, parameterized queries, etc.)
+
+**Result:** Agents now generate code matching your exact patterns. No refactoring needed.
+
+### The MVI Advantage: Token Efficiency
+
+**MVI (Minimal Viable Information)** = Only load what's needed, when it's needed.
+
+**Traditional approach:**
+- Loads entire codebase context
+- Large token overhead per request
+- Slow responses, high costs
+
+**AOC approach:**
+- Loads only relevant patterns
+- Context files <200 lines (quick to load)
+- Lazy loading (agents load what they need)
+- 80% of tasks use isolation context (minimal overhead)
+
+**Real benefits:**
+- **Efficiency:** Lower token usage vs loading entire codebase
+- **Speed:** Faster responses with smaller context
+- **Quality:** Code matches your patterns (no refactoring)
+
+### For Teams: Repeatable Patterns
+
+**The team problem:** Every developer writes code differently. Inconsistent patterns. Hard to maintain.
+
+**The AOC solution:** Store team patterns in `.opencode/context/project/`. Commit to repo. Everyone uses same standards.
+
+**Example workflow:**
+```bash
+# Team lead adds patterns once
+/add-context
+# Answers questions with team standards
+
+# Commit to repo
+git add .opencode/context/
+git commit -m "Add team coding standards"
+git push
+
+# All team members now use same patterns automatically
+# New developers inherit standards on day 1
+```
+
+**Result:** Consistent code across entire team. No style debates. No refactoring PRs.
 
 ---
 
-## 🎨 Customizing Agents (Beyond Model Configuration)
+## 📖 How It Works
 
-Agents are markdown files. Edit them to change behavior, add project rules, or customize communication style.
+### The Core Idea
 
-### Quick Customization
+**Most AI tools:** Generic code → You refactor  
+**OpenAgentsControl:** Your patterns → AI generates matching code  
 
-**Edit an agent:**
+### The Workflow
+
+```
+1. Add Your Context (one time)
+   ↓
+2. ContextScout discovers relevant patterns
+   ↓
+3. Agent loads YOUR standards
+   ↓
+4. Agent proposes plan (using your patterns)
+   ↓
+5. You approve
+   ↓
+6. Agent implements (matches your project)
+   ↓
+7. Code ships (no refactoring needed)
+```
+
+### Key Benefits
+
+**🎯 Context-Aware**  
+ContextScout discovers relevant patterns. Agents load YOUR standards before generating code. Code matches your project from the start.
+
+**🔁 Repeatable**  
+Same patterns → Same results. Configure once, use forever. Perfect for teams.
+
+**⚡ Token Efficient (80% Reduction)**  
+MVI principle: Only load what's needed. 8,000 tokens → 750 tokens. Massive cost savings.
+
+**✋ Human-Guided**  
+Agents propose plans, you approve before execution. Quality gates prevent mistakes. No auto-execution surprises.
+
+**📝 Transparent & Editable**  
+Agents are markdown files you can edit. Change workflows, add constraints, customize behavior. No vendor lock-in.
+
+### What Makes This Special
+
+**1. ContextScout - Smart Pattern Discovery**  
+Before generating code, ContextScout discovers relevant patterns from your context files. Ranks by priority (Critical → High → Medium). Prevents wasted work.
+
+**2. Editable Agents - Full Control**  
+Unlike Cursor/Copilot where behavior is baked into plugins, AOC agents are markdown files. Edit them directly:
 ```bash
 nano ~/.opencode/agent/core/opencoder.md
+# Add project rules, change workflows, customize behavior
 ```
 
-**Add project-specific rules:**
-```markdown
-## Project Rules
-- Always use TypeScript strict mode
-- Prefer functional components in React
-- Use Tailwind for styling (no CSS modules)
+**3. ExternalScout - Live Documentation** 🆕  
+Working with external libraries? ExternalScout fetches current documentation:
+- Gets live docs from official sources (npm, GitHub, docs sites)
+- No outdated training data - always current
+- Automatically triggered when agents detect external dependencies
+- Supports frameworks, APIs, libraries, and more
 
-## Tech Stack
-- Framework: Next.js 14 (App Router)
-- Database: PostgreSQL with Drizzle ORM
-- Auth: Better Auth
-- Styling: Tailwind + shadcn/ui
+**4. Approval Gates - No Surprises**  
+Agents ALWAYS request approval before:
+- Writing/editing files
+- Running bash commands
+- Delegating to subagents
+- Making any changes
 
-## Communication Style
-- Be concise and direct
-- Focus on practical solutions
-- Always explain trade-offs
-```
+You stay in control. Review plans before execution.
 
-**Per-project agents:** Create `.opencode/agent/` in your project to override global agents.
+**5. MVI Principle - Token Efficiency**  
+Files designed for quick loading:
+- Concepts: <100 lines
+- Guides: <150 lines
+- Examples: <80 lines
 
-```bash
-# Create project-specific agent
-mkdir -p .opencode/agent/core
-cp ~/.opencode/agent/core/opencoder.md .opencode/agent/core/opencoder.md
-nano .opencode/agent/core/opencoder.md
-```
+Result: Lower token usage vs loading entire codebase.
 
-Project agents override global agents automatically.
+**6. Team Patterns - Repeatable Results**  
+Store patterns in `.opencode/context/project/`. Commit to repo. Entire team uses same standards. New developers inherit patterns automatically.
 
 ---
 
-## What's Included
+## 🎯 Which Agent Should I Use?
 
-### 🤖 Main Agents (3 core agents)
-- **OpenCoder** - Development specialist for production code
-- **OpenAgent** - Universal coordinator for general tasks
-- **SystemBuilder** - Generate complete custom AI systems
+### OpenAgent (Start Here)
 
-### 🔧 Specialized Subagents (Auto-delegated)
-- **task-manager** - Breaks complex features into atomic subtasks
-- **coder-agent** - Focused code implementations
-- **tester** - Test authoring and TDD
-- **reviewer** - Code review and security analysis
-- **build-agent** - Type checking and build validation
-- **documentation** - Documentation generation
-- Plus category specialists: frontend, devops, copywriter, technical-writer, data-analyst
-
-### ⚡ Commands
-- `/commit` - Smart git commits
-- `/test` - Testing workflows
-- `/optimize` - Code optimization
-- `/context` - Context management
-- And 7+ more productivity commands
-
-### 📚 Context System
-Your coding standards automatically loaded by agents:
-- Code quality and security patterns
-- UI/design system standards
-- Task management workflows
-- External library integration guides
-- Your project-specific patterns
-
----
-
-## Example Workflows
-
-### Build a Full-Stack Feature
-```bash
-opencode --agent OpenCoder
-> "Create a user dashboard with authentication and profile settings"
-
-# OpenCoder will:
-# 1. Load your context (auth patterns, code standards)
-# 2. Propose detailed implementation plan
-# 3. Wait for your approval
-# 4. Execute incrementally with validation
-# 5. Delegate to specialists (tester, reviewer)
-# 6. Ship production-ready code
-```
-
-### Configure Different Models
-```bash
-# Edit OpenCoder to use Sonnet
-nano ~/.opencode/agent/core/opencoder.md
-# Change: model: anthropic/claude-sonnet-4-20250514
-
-# Edit TestEngineer to use GPT
-nano ~/.opencode/agent/subagents/code/tester.md
-# Change: model: openai/gpt-5.2
-
-# Edit DocWriter to use Gemini Flash
-nano ~/.opencode/agent/subagents/core/documentation.md
-# Change: model: google/gemini-2.0-flash
-```
-
-### Add Your Patterns
-```bash
-# Edit your project context
-nano ~/.opencode/context/project/project-context.md
-
-# Add your patterns:
-## API Endpoint Pattern
-```typescript
-export async function POST(request: Request) {
-  const body = await request.json();
-  // Your standard pattern
-}
-```
-
-# Agents will automatically use these patterns!
-```
-
----
-
-## Recommended for New Users
-
-**Start with `OpenAgent`** - lightweight and versatile, perfect for learning the system.
+**Best for:** Learning the system, general tasks, quick implementations
 
 ```bash
 opencode --agent OpenAgent
 > "Create a user authentication system"            # Building features
 > "How do I implement authentication in Next.js?"  # Questions
 > "Create a README for this project"               # Documentation
+> "Explain the architecture of this codebase"      # Analysis
 ```
 
-**Ready for production?** Upgrade to `OpenCoder`:
+**What it does:**
+- Loads your patterns via ContextScout
+- Proposes plan (you approve)
+- Executes with validation
+- Delegates to specialists when needed
+
+**Perfect for:** First-time users, simple features, learning the workflow
+
+### OpenCoder (Production Development)
+
+**Best for:** Complex features, multi-file refactoring, production systems
 
 ```bash
 opencode --agent OpenCoder
@@ -424,78 +347,393 @@ opencode --agent OpenCoder
 > "Add real-time notifications with WebSockets"         # Complex implementations
 ```
 
-**Learn more:** 
-- [OpenAgent Guide](docs/agents/openagent.md)
-- [OpenCoder Guide](docs/agents/opencoder.md)
+**What it does:**
+- **Discover:** ContextScout finds relevant patterns
+- **Propose:** Detailed implementation plan
+- **Approve:** You review and approve
+- **Execute:** Incremental implementation with validation
+- **Validate:** Tests, type checking, code review
+- **Ship:** Production-ready code
+
+**Perfect for:** Production code, complex features, team development
+
+### SystemBuilder (Custom AI Systems)
+
+**Best for:** Building complete custom AI systems tailored to your domain
+
+```bash
+opencode --agent SystemBuilder
+> "Create a customer support AI system"
+```
+
+Interactive wizard generates orchestrators, subagents, context files, workflows, and commands.
+
+**Perfect for:** Creating domain-specific AI systems
 
 ---
 
-## FAQ
+## 🛠️ What's Included
 
-### Setup & Configuration
+### 🤖 Main Agents
+- **OpenAgent** - General tasks, questions, learning (start here)
+- **OpenCoder** - Production development, complex features
+- **SystemBuilder** - Generate custom AI systems
 
-**Q: How do I configure models per agent?**  
-A: Edit the agent file (`~/.opencode/agent/core/opencoder.md`) and change the `model:` line in frontmatter. Format: `provider/model-id`. Find models at [models.dev](https://models.dev/?search=open).
+### 🔧 Specialized Subagents (Auto-delegated)
+- **ContextScout** - Smart pattern discovery (your secret weapon)
+- **TaskManager** - Breaks complex features into atomic subtasks
+- **CoderAgent** - Focused code implementations
+- **TestEngineer** - Test authoring and TDD
+- **CodeReviewer** - Code review and security analysis
+- **BuildAgent** - Type checking and build validation
+- **DocWriter** - Documentation generation
+- **ExternalScout** - Fetches live docs for external libraries (no outdated training data) **NEW!**
+- Plus category specialists: frontend, devops, copywriter, technical-writer, data-analyst
 
-**Q: Is this like Oh My OpenCode?**  
-A: No. AOC is a scaffold system (fully exposed, requires configuration). Oh My OpenCode is a plugin (hidden config, "just works"). See [detailed comparison](https://github.com/darrenhinde/OpenAgentsControl/discussions/116).
+### ⚡ Productivity Commands
+- `/add-context` - Interactive wizard to add your patterns
+- `/commit` - Smart git commits with conventional format
+- `/test` - Testing workflows
+- `/optimize` - Code optimization
+- `/context` - Context management
+- And 7+ more productivity commands
 
-**Q: Do I need to configure everything?**  
-A: No. It works out of the box with your OpenCode default model. Configure only if you want different models per agent or custom behavior.
+### 📚 Context System (MVI Principle)
+Your coding standards automatically loaded by agents:
+- **Code quality** - Your patterns, security, standards
+- **UI/design** - Design system, component patterns
+- **Task management** - Workflow definitions
+- **External libraries** - Integration guides (18+ libraries supported)
+- **Project-specific** - Your team's patterns
 
-**Q: Where do I add my coding patterns?**  
-A: Edit `~/.opencode/context/project/project-context.md` - agents automatically load this file.
+**Key features:**
+- 80% token reduction via MVI
+- Smart discovery via ContextScout
+- Lazy loading (only what's needed)
+- Team-ready (commit to repo)
+- Version controlled (track changes)
 
-**Q: Can I customize agent behavior?**  
-A: Yes! Agents are markdown files. Edit them to add project rules, change communication style, or adjust workflows.
+---
 
-### Comparison
 
-**Q: How does OpenAgentsControl compare to Oh My OpenCode?**  
-A: **[Read the detailed comparison →](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)**
 
-| Feature | AOC | Oh My OpenCode |
-|---------|-----|----------------|
-| **Approach** | Scaffold (exposed) | Plugin (hidden) |
-| **Agent Behavior** | Editable markdown files | Baked into code |
-| **Execution** | Approval gates | Autonomous loops |
-| **Configuration** | Required | Optional |
-| **Best For** | Control & repeatability | Autonomy & speed |
+## 💻 Example Workflow
 
-Choose based on your workflow: control & customization (AOC) vs. autonomy & simplicity (Oh My OpenCode).
+```bash
+opencode --agent OpenCoder
+> "Create a user dashboard with authentication and profile settings"
+```
 
-### Technical
+**What happens:**
 
-**Q: What languages are supported?**  
-A: All languages (TypeScript, Python, Go, Rust, etc.). Agents adapt based on your project files.
+**1. Discover (~1-2 min)** - ContextScout finds relevant patterns
+- Your tech stack (Next.js + TypeScript + PostgreSQL)
+- Your API pattern (Zod validation, error handling)
+- Your component pattern (functional, TypeScript, Tailwind)
+- Your naming conventions (kebab-case files, PascalCase components)
+
+**2. Propose (~2-3 min)** - Agent creates detailed implementation plan
+```
+## Proposed Implementation
+
+**Components:**
+- user-dashboard.tsx (main page)
+- profile-settings.tsx (settings component)
+- auth-guard.tsx (authentication wrapper)
+
+**API Endpoints:**
+- /api/user/profile (GET, POST)
+- /api/auth/session (GET)
+
+**Database:**
+- users table (Drizzle schema)
+- sessions table (Drizzle schema)
+
+All code will follow YOUR patterns from context.
+
+Approve? [y/n]
+```
+
+**3. Approve** - You review and approve the plan (human-guided)
+
+**4. Execute (~10-15 min)** - Incremental implementation with validation
+- Implements one component at a time
+- Uses YOUR patterns for every file
+- Validates after each step (type check, lint)
+- *This is the longest step - generating quality code takes time*
+
+**5. Validate (~2-3 min)** - Tests, type checking, code review
+- Delegates to TestEngineer for tests
+- Delegates to CodeReviewer for security check
+- Ensures production quality
+
+**6. Ship** - Production-ready code
+- Code matches your project exactly
+- No refactoring needed
+- Ready to commit and deploy
+
+**Total time: ~15-25 minutes** for a complete feature (guided, with approval gates)
+
+### 💡 Pro Tips
+
+**After finishing a feature:**
+- Run `/add-context --update` to add new patterns you discovered
+- Update your context with new libraries, conventions, or standards
+- Keep your patterns fresh as your project evolves
+
+**Working with external libraries?**
+- **ExternalScout** automatically fetches current documentation
+- No more outdated training data - gets live docs from official sources
+- Works with npm packages, APIs, frameworks, and more
+
+---
+
+## ⚙️ Advanced Configuration
+
+### Model Configuration (Optional)
+
+**By default, all agents use your OpenCode default model.** Configure models per agent only if you want different agents to use different models.
+
+**When to configure:**
+- You want faster agents to use cheaper models (e.g., Haiku/Flash)
+- You want complex agents to use smarter models (e.g., Opus/GPT-5)
+- You want to test different models for different tasks
+
+**How to configure:**
+
+Edit agent files directly:
+```bash
+nano ~/.opencode/agent/core/opencoder.md
+```
+
+Change the model in the frontmatter:
+```yaml
+---
+description: "Development specialist"
+model: anthropic/claude-sonnet-4-5  # Change this line
+---
+```
+
+Browse available models at [models.dev](https://models.dev/?search=open) or run `opencode models`.
+
+### Update Context as You Go
+
+Your project evolves. Your context should too.
+
+```bash
+/add-context --update
+```
+
+**What gets updated:**
+- Tech stack, patterns, standards
+- Version incremented (1.0 → 1.1)
+- Updated date refreshed
+
+**Example updates:**
+- Add new library (Stripe, Twilio, etc.)
+- Change patterns (new API format, component structure)
+- Migrate tech stack (Prisma → Drizzle)
+- Update security requirements
+
+Agents automatically use updated patterns.
+
+---
+
+
+
+## 🎯 Is This For You?
+
+### ✅ Use AOC if you:
+- Build production code that ships without heavy rework
+- Work in a team with established coding standards
+- Want control over agent behavior (not black-box plugins)
+- Care about token efficiency and cost savings
+- Need approval gates for quality assurance
+- Want repeatable, consistent results
+- Use multiple AI models (no vendor lock-in)
+
+### ⚠️ Skip AOC if you:
+- Want fully autonomous execution without approval gates
+- Prefer "just do it" mode over human-guided workflows
+- Don't have established coding patterns yet
+- Need multi-agent parallelization (use Oh My OpenCode instead)
+- Want plug-and-play with zero configuration
+
+### 🤔 Not Sure?
+
+**Try this test:**
+1. Ask your current AI tool to generate an API endpoint
+2. Count how many minutes you spend refactoring it to match your patterns
+3. If you're spending time on refactoring, AOC will save you that time
+
+**Or ask yourself:**
+- Do you have coding standards your team follows?
+- Do you spend time refactoring AI-generated code?
+- Do you want AI to follow YOUR patterns, not generic ones?
+
+If you answered "yes" to any of these, AOC is for you.
+
+---
+
+## 🚀 Advanced Features
+
+### Frontend Design Workflow
+The **OpenFrontendSpecialist** follows a structured 4-stage design workflow:
+1. **Layout** - ASCII wireframe, responsive structure planning
+2. **Theme** - Design system selection, OKLCH colors, typography
+3. **Animation** - Micro-interactions, timing, accessibility
+4. **Implementation** - Single HTML file, semantic markup
+
+### Task Management & Breakdown
+The **TaskManager** breaks complex features into atomic, verifiable subtasks with smart agent suggestions and parallel execution support.
+
+### System Builder
+Build complete custom AI systems tailored to your domain in minutes. Interactive wizard generates orchestrators, subagents, context files, workflows, and commands.
+
+---
+
+## ❓ FAQ
+
+### Getting Started
 
 **Q: Does this work on Windows?**  
 A: Yes! Use Git Bash (recommended) or WSL.
 
+**Q: What languages are supported?**  
+A: Agents are language-agnostic and adapt based on your project files. Primarily tested with TypeScript/Node.js. Python, Go, Rust, and other languages are supported but less battle-tested. The context system works with any language.
+
+**Q: Do I need to add context?**  
+A: No, but it's highly recommended. Without context, agents write generic code. With context, they write YOUR code.
+
+**Q: Can I use this without customization?**  
+A: Yes, it works out of the box. But you'll get the most value after adding your patterns (10-15 minutes with `/add-context`).
+
+**Q: What models are supported?**  
+A: Any model from any provider (Claude, GPT, Gemini, local models). No vendor lock-in.
+
+### For Teams
+
+**Q: How do I share context with my team?**  
+A: Commit `.opencode/context/project/` to your repo. Team members automatically use same patterns.
+
+**Q: How do we ensure everyone follows the same standards?**  
+A: Add team patterns to context once. All agents load them automatically. Consistent code across entire team.
+
+**Q: Can different projects have different patterns?**  
+A: Yes! Use project-specific context (`.opencode/` in project root) to override global patterns.
+
+### Technical
+
+**Q: How does token efficiency work?**  
+A: MVI principle: Only load what's needed, when it's needed. Context files <200 lines (scannable in 30s). ContextScout discovers relevant patterns. Lazy loading prevents context bloat. 80% of tasks use isolation context (minimal overhead).
+
+**Q: What's ContextScout?**  
+A: Smart pattern discovery agent. Finds relevant context files before code generation. Ranks by priority. Prevents wasted work.
+
+**Q: Can I edit agent behavior?**  
+A: Yes! Agents are markdown files. Edit them directly: `nano ~/.opencode/agent/core/opencoder.md`
+
+**Q: How do approval gates work?**  
+A: Agents ALWAYS request approval before execution (write/edit/bash). You review plans before implementation. No surprises.
+
+**Q: How do I update my context?**  
+A: Run `/add-context --update` anytime your patterns change. Agents automatically use updated patterns.
+
+### Comparison
+
+**Q: How is this different from Cursor/Copilot?**  
+A: AOC has editable agents (not baked-in), approval gates (not auto-execute), context system (YOUR patterns), and MVI token efficiency.
+
+**Q: How is this different from Aider?**  
+A: AOC has team patterns, context system, approval workflow, and smart pattern discovery. Aider is file-based only.
+
+**Q: How does this compare to Oh My OpenCode?**  
+A: Both are built on OpenCode. AOC focuses on **control & repeatability** (approval gates, pattern control, team standards). Oh My OpenCode focuses on **autonomy & speed** (parallel agents, auto-execution). [Read detailed comparison →](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
+
+**Q: When should I NOT use AOC?**  
+A: If you want fully autonomous execution without approval gates, or if you don't have established coding patterns yet.
+
+### Setup
+
 **Q: What bash version do I need?**  
-A: Bash 3.2+ (macOS default works).
+A: Bash 3.2+ (macOS default works). Run `bash scripts/tests/test-compatibility.sh` to check.
+
+**Q: Do I need to install plugins/tools?**  
+A: No, they're optional. Only install if you want Telegram notifications or Gemini AI features.
+
+**Q: Where should I install - globally or per-project?**  
+A: Global (`~/.opencode/`) works for most. Project-specific (`.opencode/`) if you need different configs per project.
 
 ---
 
-## Contributing
+## 🗺️ Roadmap & What's Coming
 
-We welcome contributions! See [Contributing Guide](docs/contributing/CONTRIBUTING.md) for details.
+**This is only the beginning!** We're actively developing new features and improvements every day.
+
+### 🚀 See What's Coming Next
+
+Check out our [**Project Board**](https://github.com/darrenhinde/OpenAgentsControl/projects) to see:
+- 🔨 **In Progress** - Features being built right now
+- 📋 **Planned** - What's coming soon
+- 💡 **Ideas** - Future enhancements under consideration
+- ✅ **Recently Shipped** - Latest improvements
+
+### 🎯 Current Focus Areas
+
+- **Plugin System** - npm-based plugin architecture for easy distribution
+- **Performance Improvements** - Faster agent execution and context loading
+- **Enhanced Context Discovery** - Smarter pattern recognition
+- **Multi-language Support** - Better Python, Go, Rust support
+- **Team Collaboration** - Shared context and team workflows
+- **Documentation** - More examples, tutorials, and guides
+
+### 💬 Have Ideas?
+
+We'd love to hear from you! 
+- 💡 [**Submit Feature Requests**](https://github.com/darrenhinde/OpenAgentsControl/issues/new?labels=enhancement)
+- 🐛 [**Report Bugs**](https://github.com/darrenhinde/OpenAgentsControl/issues/new?labels=bug)
+- 💬 [**Join Discussions**](https://github.com/darrenhinde/OpenAgentsControl/discussions)
+
+**Star the repo** ⭐ to stay updated with new releases!
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions!
+
+1. Follow the established naming conventions and coding standards
+2. Write comprehensive tests for new features
+3. Update documentation for any changes
+4. Ensure security best practices are followed
+
+See: [Contributing Guide](docs/contributing/CONTRIBUTING.md) • [Code of Conduct](docs/contributing/CODE_OF_CONDUCT.md)
+
+---
+
+## 💬 Community & Support
+
+<div align="center">
+
+**Join the community and stay updated with the latest AI development workflows!**
+
+[![YouTube](https://img.shields.io/badge/YouTube-Darren_Builds_AI-red?style=for-the-badge&logo=youtube&logoColor=white)](https://youtube.com/@DarrenBuildsAI)
+[![Community](https://img.shields.io/badge/Community-NextSystems.ai-blue?style=for-the-badge&logo=discourse&logoColor=white)](https://nextsystems.ai)
+[![X/Twitter](https://img.shields.io/badge/Follow-@DarrenBuildsAI-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/DarrenBuildsAI)
+[![Buy Me A Coffee](https://img.shields.io/badge/Support-Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/darrenhinde)
+
+**📺 Tutorials & Demos** • **💬 Join Waitlist** • **🐦 Latest Updates** • **☕ Support Development**
+
+*Your support helps keep this project free and open-source!*
+
+</div>
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License.
 
 ---
 
-**Made with ❤️ by developers, for developers. Star the repo if this helped you ship better code!**
-
-<div align="center">
-
-[![GitHub stars](https://img.shields.io/github/stars/darrenhinde/OpenAgentsControl?style=social)](https://github.com/darrenhinde/OpenAgentsControl/stargazers)
-[![YouTube](https://img.shields.io/badge/YouTube-Darren_Builds_AI-red?style=flat-square&logo=youtube)](https://youtube.com/@DarrenBuildsAI)
-[![Community](https://img.shields.io/badge/Community-NextSystems.ai-blue?style=flat-square)](https://nextsystems.ai)
-[![X/Twitter](https://img.shields.io/badge/Follow-@DarrenBuildsAI-1DA1F2?style=flat-square&logo=x)](https://x.com/DarrenBuildsAI)
-
-</div>
+**Made with ❤️ by developers, for developers. Star the repo if this saves you refactoring time!**
