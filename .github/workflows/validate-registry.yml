@@ -19,17 +19,14 @@ name: Validate Registry on PR
 # 5. The check will pass immediately without running validation
 
 on:
-  pull_request:
+  # Use pull_request_target to allow running on bot-created PRs
+  # This also allows the workflow to write to the PR branch
+  pull_request_target:
     branches:
       - main
       - dev
     # Removed paths filter - this check is required by repository ruleset
     # so it must run on ALL PRs to prevent blocking merges
-  pull_request_target:
-    branches:
-      - main
-      - dev
-    # pull_request_target allows workflows to run on bot-created PRs
   workflow_dispatch:
     inputs:
       pr_number:
