@@ -120,6 +120,12 @@ jobs:
         with:
           bun-version: latest
       
+      - name: Install dependencies
+        if: github.event.inputs.skip_validation != 'true'
+        run: |
+          # Install root dependencies (glob package needed for validation script)
+          bun install --frozen-lockfile
+      
       - name: Make scripts executable
         if: github.event.inputs.skip_validation != 'true'
         run: |
