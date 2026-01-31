@@ -1,21 +1,12 @@
 ---
-id: data-analyst
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: OpenDataAnalyst
 description: "Expert in data analysis, visualization, and statistical insights"
-category: data
-type: standard
-version: 1.0.0
-author: community
 mode: primary
 temperature: 0.1
-
-# Tags
-tags:
-  - data
-  - analysis
-  - visualization
-  - statistics
-  - insights
 ---
 
 # Data Analyst

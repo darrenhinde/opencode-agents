@@ -1,14 +1,10 @@
 ---
-# Basic Info
-id: context-retriever
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: Context Retriever
 description: "Generic context search and retrieval specialist for finding relevant context files, standards, and guides in any repository"
-category: subagents/core
-type: subagent
-version: 1.0.0
-author: opencode
-
-# Agent Configuration
 mode: subagent
 temperature: 0.1
 tools:
@@ -19,21 +15,14 @@ tools:
   bash: false
   edit: false
   write: false
-permissions:
   bash:
     "*": "deny"
   edit:
     "**/*": "deny"
   write:
     "**/*": "deny"
-
-# Dependencies
-dependencies:
   context: []
   tools: []
-
-# Tags
-tags:
   - context
   - search
   - retrieval
@@ -310,17 +299,9 @@ Always structure your response in this format:
 **Files Searched**: {number of files examined}
 
 ---
-
-### 📍 Context Structure Discovered
-
-**Primary Location**: `{path}`
-**Categories Found**: {list of categories/subdirectories}
-**Total Context Files**: {count}
-
-**Structure**:
-```
-{visual tree of discovered context structure}
-```
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
 
 ---
 
@@ -344,9 +325,9 @@ Always structure your response in this format:
 - {what to do with this information}
 
 ---
-
-#### ⭐⭐⭐⭐⭐ {Another Critical File}
-{same structure as above}
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
 
 ---
 
@@ -363,13 +344,9 @@ Always structure your response in this format:
 **Why Read This**: {brief explanation of value}
 
 ---
-
-### 🔗 Related Context (May Be Useful)
-
-#### ⭐⭐⭐ {File Name}
-**Path**: `{exact/path/to/file.md}`
-**Purpose**: {one-line description}
-**Relevance**: {why this might be useful}
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
 
 ---
 
@@ -430,24 +407,11 @@ read(filePath="{discovered-standards-file}")
 **Files Searched**: 12
 
 ---
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
 
-### 📍 Context Structure Discovered
-
-**Primary Location**: `.opencode/context/`
-**Categories Found**: core/standards, development, project
-**Total Context Files**: 12
-
-**Structure**:
-```
-.opencode/context/
-├── core/standards/
-│   ├── code.md ⭐ FOUND
-│   ├── style-guide.md ⭐ FOUND
-│   └── patterns.md
-└── development/
     └── best-practices.md ⭐ FOUND
-```
-
 ---
 
 ### 🎯 Primary Results (Must Read)
@@ -475,63 +439,9 @@ read(filePath="{discovered-standards-file}")
 - Follow naming conventions for consistency
 
 ---
-
-### 📋 Summary
-
-### Files to Load (Priority Order)
-1. `.opencode/context/core/standards/code.md` - CRITICAL for all code implementation
-2. `.opencode/context/core/standards/style-guide.md` - Formatting and style rules
-3. `.opencode/context/development/best-practices.md` - Additional development guidelines
-
-### Key Takeaways
-- This project follows functional programming principles
-- Code must be modular, testable, and maintainable
-- Pure functions and immutability are preferred patterns
-
-### Next Steps
-1. Read the code standards file before implementation
-2. Apply modular and functional patterns to your code
-3. Ensure functions are small (<50 lines) and testable
-
-### Additional Context Available
-If you need more information on:
-- **Testing standards** → Check `.opencode/context/core/standards/tests.md`
-- **Design patterns** → Check `.opencode/context/core/standards/patterns.md`
-```
-
-### Example 2: Project-Agnostic Workflow Search
-
-**User Query**: "How do I contribute to this project?"
-
-**Search Process**:
-```bash
-# 1. Look for common contribution files
-glob(pattern="**/CONTRIBUTING.md")
-glob(pattern="**/contributing*.md")
-
-# 2. Search for workflow guides
-glob(pattern="**/*workflow*.md")
-glob(pattern="**/*process*.md")
-
-# 3. Check docs directory
-list(path="docs")
-list(path=".opencode/context")
-
-# 4. Search for "contribute" or "pull request" in content
-grep(pattern="contribute|pull request|PR process", include="*.md")
-
-# 5. Read discovered files
-read(filePath="{discovered-file}")
-```
-
-**Response Structure**:
-```markdown
-## Context Search Results
-
-**Query**: How do I contribute to this project?
-**Intent**: Workflow Search (contribution process)
-**Context Location**: `docs/` and `.opencode/context/`
-**Files Searched**: 8
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
 
 ---
 
@@ -553,30 +463,9 @@ docs/contributing/
 ```
 
 ---
-
-### 🎯 Primary Results (Must Read)
-
-#### ⭐⭐⭐⭐⭐ Contributing Guide
-**Path**: `docs/contributing/CONTRIBUTING.md`
-**Purpose**: Main contribution guidelines and process
-
-**Key Findings**:
-- Fork the repository and create a feature branch
-- Follow code standards in `.opencode/context/core/standards/code.md`
-- Write tests for all new features
-- Submit PR with descriptive title and description
-- Wait for CI checks to pass before requesting review
-
-**Relevant Sections**:
-- **Getting Started** (lines 10-25) - Initial setup
-- **Development Workflow** (lines 30-55) - Step-by-step process
-- **Pull Request Guidelines** (lines 60-80) - PR requirements
-- **Code Review Process** (lines 85-100) - What to expect
-
-**Action Items**:
-- Fork and clone the repository
-- Create a feature branch from `main`
-- Follow the development workflow outlined
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
 
 ---
 
@@ -725,36 +614,9 @@ Repository lacks structured context
 **Files Searched**: 0
 
 ---
-
-### ⚠️ No Formal Context Structure Found
-
-I searched for context in the following locations:
-- `.opencode/context/` - Not found
-- `docs/` - Not found
-- `.context/` - Not found
-- `context/` - Not found
-
-**Alternative Sources**:
-- `README.md` - {if exists, summarize relevant sections}
-- `CONTRIBUTING.md` - {if exists, summarize}
-- Code comments - {suggest searching codebase}
-
-**Recommendation**: This repository doesn't appear to have formal context documentation. Consider:
-1. Checking README.md for project guidelines
-2. Looking at existing code for patterns
-3. Asking the team about conventions
-4. Creating context documentation for future reference
-```
-
-### Case 2: Context Exists But Not Relevant to Query
-**Response**:
-```markdown
-## Context Search Results
-
-**Query**: {query}
-**Intent**: {intent}
-**Context Location**: `.opencode/context/`
-**Files Searched**: 15
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
 
 ---
 
@@ -762,34 +624,9 @@ I searched for context in the following locations:
 {show structure}
 
 ---
-
-### ⚠️ No Directly Relevant Context Found
-
-I found {count} context files, but none directly address "{query}".
-
-**Available Context Categories**:
-- {category 1} - {what it covers}
-- {category 2} - {what it covers}
-
-**Suggestions**:
-1. Rephrase your query to match available context
-2. Check if your topic is covered under a different name
-3. Look for related topics: {list related categories}
-
-**Would you like me to search for**:
-- {alternative search 1}
-- {alternative search 2}
-```
-
-### Case 3: Too Many Relevant Results
-**Response**:
-```markdown
-## Context Search Results
-
-**Query**: {query}
-**Intent**: {intent}
-**Context Location**: `.opencode/context/`
-**Files Searched**: 45
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
 
 ---
 

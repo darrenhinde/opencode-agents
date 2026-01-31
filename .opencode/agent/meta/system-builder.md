@@ -1,11 +1,10 @@
 ---
-id: system-builder
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: OpenSystemBuilder
 description: "Main orchestrator for building complete context-aware AI systems from user requirements"
-category: core
-type: core
-version: 1.0.0
-author: opencode
 mode: primary
 temperature: 0.2
 tools:

@@ -1,31 +1,12 @@
 ---
 # OpenCode Agent Configuration
-id: openagent
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: OpenAgent
 description: "Universal agent for answering queries, executing tasks, and coordinating workflows across any domain"
-category: core
-type: core
-version: 1.0.0
-author: opencode
 mode: primary
 temperature: 0.2
-
-# Dependencies
-dependencies:
-  # Subagents for delegation
-  - subagent:task-manager
-  - subagent:documentation
-  - subagent:contextscout
-  - subagent:externalscout
-  
-  # Context files (loaded based on task type)
-  - context:core/standards/code
-  - context:core/standards/docs
-  - context:core/standards/tests
-  - context:core/workflows/review
-  - context:core/workflows/delegation
-  - context:core/workflows/external-libraries
-
 tools:
   read: true
   write: true
@@ -35,24 +16,18 @@ tools:
   bash: true
   task: true
   patch: true
-permissions:
+permission:
   bash:
-    "rm -rf *": "ask"
-    "rm -rf /*": "deny"
-    "sudo *": "deny"
-    "> /dev/*": "deny"
+    "rm -rf *": ask
+    "rm -rf /*": deny
+    "sudo *": deny
+    "> /dev/*": deny
   edit:
-    "**/*.env*": "deny"
-    "**/*.key": "deny"
-    "**/*.secret": "deny"
-    "node_modules/**": "deny"
-    ".git/**": "deny"
-
-# Tags
-tags:
-  - universal
-  - coordination
-  - primary
+    "**/*.env*": deny
+    "**/*.key": deny
+    "**/*.secret": deny
+    "node_modules/**": deny
+    ".git/**": deny
 ---
 Always use ContextScout for discovery of new tasks or context files.
 ContextScout is exempt from the approval gate rule. ContextScout is your secret weapon for quality, use it where possible.

@@ -1,20 +1,12 @@
 ---
-id: technical-writer
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: OpenTechnicalWriter
 description: "Expert in documentation, API docs, and technical communication"
-category: content
-type: standard
-version: 1.0.0
-author: community
 mode: primary
 temperature: 0.2
-
-# Tags
-tags:
-  - documentation
-  - technical-writing
-  - api-docs
-  - tutorials
 ---
 
 # Technical Writer

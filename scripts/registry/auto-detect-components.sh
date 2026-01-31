@@ -366,6 +366,11 @@ extract_metadata_from_file() {
     local tags=""
     local dependencies=""
     
+    # Generate ID from filename first (needed for metadata lookup)
+    local filename
+    filename=$(basename "$file" .md)
+    id=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+    
     # Try to extract from frontmatter (YAML)
     if grep -q "^---$" "$file" 2>/dev/null; then
         # Extract description from frontmatter
@@ -447,13 +452,43 @@ extract_metadata_from_file() {
         description=$(grep -m 1 "^# " "$file" | sed 's/^# //' || echo "")
     fi
     
-    # Generate ID from filename
-    local filename
-    filename=$(basename "$file" .md)
-    id=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
-    
     # Generate name from filename (capitalize words)
     name=$(echo "$filename" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
+    
+    # Check if agent-metadata.json exists and merge metadata from it
+    local metadata_file="$REPO_ROOT/.opencode/config/agent-metadata.json"
+    if [ -f "$metadata_file" ] && command -v jq &> /dev/null; then
+        # Try to find metadata for this agent ID
+        local metadata_entry
+        metadata_entry=$(jq -r ".agents[\"$id\"] // empty" "$metadata_file" 2>/dev/null)
+        
+        if [ -n "$metadata_entry" ] && [ "$metadata_entry" != "null" ]; then
+            # Override name if present in metadata
+            local meta_name
+            meta_name=$(echo "$metadata_entry" | jq -r '.name // empty' 2>/dev/null)
+            if [ -n "$meta_name" ] && [ "$meta_name" != "null" ]; then
+                name="$meta_name"
+            fi
+            
+            # Merge tags (prefer frontmatter, fallback to metadata)
+            if [ -z "$tags" ]; then
+                local meta_tags
+                meta_tags=$(echo "$metadata_entry" | jq -r '.tags // [] | join(",")' 2>/dev/null)
+                if [ -n "$meta_tags" ] && [ "$meta_tags" != "null" ]; then
+                    tags="$meta_tags"
+                fi
+            fi
+            
+            # Merge dependencies (prefer frontmatter, fallback to metadata)
+            if [ -z "$dependencies" ]; then
+                local meta_deps
+                meta_deps=$(echo "$metadata_entry" | jq -r '.dependencies // [] | join(",")' 2>/dev/null)
+                if [ -n "$meta_deps" ] && [ "$meta_deps" != "null" ]; then
+                    dependencies="$meta_deps"
+                fi
+            fi
+        fi
+    fi
     
     echo "${id}|${name}|${description}|${tags}|${dependencies}"
 }

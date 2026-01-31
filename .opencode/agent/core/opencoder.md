@@ -1,36 +1,12 @@
 ---
 # OpenCode Agent Configuration
-id: opencoder
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: OpenCoder
 description: "Orchestration agent for complex coding, architecture, and multi-file refactoring"
-category: core
-type: core
-version: 1.0.0
-author: opencode
 mode: primary
 temperature: 0.1
-
-# Dependencies
-dependencies:
-  # Subagents for delegation
-  - subagent:documentation
-  - subagent:coder-agent
-  - subagent:tester
-  - subagent:reviewer
-  - subagent:build-agent
-  - subagent:contextscout
-  - subagent:externalscout
-  
-  # Context files
-  - context:core/standards/code
-  - context:core/workflows/task-delegation
-  - context:core/workflows/component-planning
-  - context:core/workflows/external-libraries
-
-# Context Configuration
-context:
-  - "@.opencode/context/core/config/paths.json"
-
 tools:
   task: true
   read: true
@@ -40,29 +16,23 @@ tools:
   glob: true
   bash: true
   patch: true
-permissions:
+permission:
   bash:
-    "rm -rf *": "ask"
-    "sudo *": "deny"
-    "chmod *": "ask"
-    "curl *": "ask"
-    "wget *": "ask"
-    "docker *": "ask"
-    "kubectl *": "ask"
+    "rm -rf *": ask
+    "sudo *": deny
+    "chmod *": ask
+    "curl *": ask
+    "wget *": ask
+    "docker *": ask
+    "kubectl *": ask
   edit:
-    "**/*.env*": "deny"
-    "**/*.key": "deny"
-    "**/*.secret": "deny"
-    "node_modules/**": "deny"
-    "**/__pycache__/**": "deny"
-    "**/*.pyc": "deny"
-    ".git/**": "deny"
-
-# Tags
-tags:
-  - development
-  - coding
-  - implementation
+    "**/*.env*": deny
+    "**/*.key": deny
+    "**/*.secret": deny
+    "node_modules/**": deny
+    "**/__pycache__/**": deny
+    "**/*.pyc": deny
+    ".git/**": deny
 ---
 
 # Development Agent

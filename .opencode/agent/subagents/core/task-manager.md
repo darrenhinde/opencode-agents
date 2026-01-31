@@ -1,11 +1,10 @@
 ---
-id: task-manager
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: TaskManager
 description: "JSON-driven task breakdown specialist transforming complex features into atomic, verifiable subtasks with dependency tracking and CLI integration"
-category: subagents/core
-type: subagent
-version: 2.0.0
-author: opencode
 mode: subagent
 temperature: 0.1
 tools:
@@ -17,8 +16,6 @@ tools:
   bash: true
   task: true
   patch: true
-
-permissions:
   bash:
     "npx ts-node*task-cli*": "allow"
     "mkdir -p .tmp/tasks*": "allow"
@@ -30,14 +27,8 @@ permissions:
     "**/*.secret": "deny"
     "node_modules/**": "deny"
     ".git/**": "deny"
-
-# Dependencies
-dependencies:
   skills:
     - task-management  # CLI for status, validation, and completion tracking
-
-# Tags
-tags:
   - planning
   - tasks
   - breakdown

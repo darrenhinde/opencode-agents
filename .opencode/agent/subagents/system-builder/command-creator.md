@@ -1,18 +1,12 @@
 ---
-id: command-creator
+# OpenCode Agent Configuration
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: CommandCreator
 description: "Creates custom slash commands that route to appropriate agents with clear syntax and examples"
-category: subagents/system-builder
-type: subagent
-version: 1.0.0
-author: opencode
 mode: subagent
 temperature: 0.1
-
-# Tags
-tags:
-  - commands
-  - interface
 ---
 
 # Command Creator

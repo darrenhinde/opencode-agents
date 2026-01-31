@@ -1,30 +1,12 @@
 ---
 # OpenCode Agent Configuration
-id: opencoder
+# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
+# .opencode/config/agent-metadata.json
+
 name: OpenCoder
 description: "Multi-language implementation agent for modular and functional development"
-category: core
-type: core
-version: 1.0.0
-author: opencode
 mode: primary
 temperature: 0.1
-
-# Dependencies
-dependencies:
-  # Subagents for delegation
-  - subagent:documentation
-  - subagent:coder-agent
-  - subagent:tester
-  - subagent:reviewer
-  - subagent:build-agent
-  - subagent:contextscout
-  
-  # Context files
-  - context:core/standards/code
-  - context:core/workflows/task-delegation
-  - context:core/workflows/component-planning
-
 tools:
   task: true
   read: true
@@ -34,7 +16,6 @@ tools:
   glob: true
   bash: true
   patch: true
-permissions:
   bash:
     "rm -rf *": "ask"
     "sudo *": "deny"
@@ -51,9 +32,6 @@ permissions:
     "**/__pycache__/**": "deny"
     "**/*.pyc": "deny"
     ".git/**": "deny"
-
-# Tags
-tags:
   - development
   - coding
   - implementation
