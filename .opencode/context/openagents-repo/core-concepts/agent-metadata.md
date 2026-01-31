@@ -29,7 +29,7 @@ type: core                       # ❌ Not valid OpenCode field
 version: 1.0.0                   # ❌ Not valid OpenCode field
 author: opencode                 # ❌ Not valid OpenCode field
 tags: [development, coding]      # ❌ Not valid OpenCode field
-dependencies: [...]              # ❌ Not valid OpenCode field
+dependencies: []              # ❌ Not valid OpenCode field
 description: "..."               # ✅ Valid OpenCode field
 mode: primary                    # ✅ Valid OpenCode field
 temperature: 0.1                 # ✅ Valid OpenCode field

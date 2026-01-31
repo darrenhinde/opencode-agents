@@ -103,10 +103,10 @@
           "subagent:build-agent",
           "subagent:contextscout",
           "subagent:externalscout",
-          "context:core/standards/code",
-          "context:core/workflows/task-delegation",
-          "context:core/workflows/component-planning",
-          "context:core/workflows/external-libraries"
+          "context:standards-code",
+          "context:workflows-delegation",
+          "context:component-planning",
+          "context:external-libraries"
         ],
         "category": "core"
       },
@@ -126,12 +126,12 @@
           "subagent:documentation",
           "subagent:contextscout",
           "subagent:externalscout",
-          "context:core/standards/code",
-          "context:core/standards/docs",
-          "context:core/standards/tests",
-          "context:core/workflows/review",
-          "context:core/workflows/delegation",
-          "context:core/workflows/external-libraries"
+          "context:standards-code",
+          "context:standards-docs",
+          "context:standards-tests",
+          "context:review-ref",
+          "context:delegation-ref",
+          "context:external-libraries"
         ],
         "category": "core"
       }
@@ -2945,6 +2945,19 @@
         "path": ".opencode/context/data/navigation.md",
         "description": "Data Context",
         "tags": [],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "agent-metadata",
+        "name": "Agent Metadata",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/core-concepts/agent-metadata.md",
+        "description": "...\\\"               # ✅ Valid OpenCode field",
+        "tags": [
+          "development",
+          "coding"
+        ],
         "dependencies": [],
         "category": "standard"
       }

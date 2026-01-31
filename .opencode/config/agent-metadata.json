@@ -16,12 +16,12 @@
         "subagent:documentation",
         "subagent:contextscout",
         "subagent:externalscout",
-        "context:core/standards/code",
-        "context:core/standards/docs",
-        "context:core/standards/tests",
-        "context:core/workflows/review",
-        "context:core/workflows/delegation",
-        "context:core/workflows/external-libraries"
+        "context:standards-code",
+        "context:standards-docs",
+        "context:standards-tests",
+        "context:review-ref",
+        "context:delegation-ref",
+        "context:external-libraries"
       ]
     },
     "opencoder": {
@@ -40,10 +40,10 @@
         "subagent:build-agent",
         "subagent:contextscout",
         "subagent:externalscout",
-        "context:core/standards/code",
-        "context:core/workflows/task-delegation",
-        "context:core/workflows/component-planning",
-        "context:core/workflows/external-libraries"
+        "context:standards-code",
+        "context:workflows-delegation",
+        "context:component-planning",
+        "context:external-libraries"
       ]
     },
     "repo-manager": {
@@ -89,7 +89,7 @@
       "author": "opencode",
       "tags": ["content", "marketing", "writing"],
       "dependencies": [
-        "context:core/standards/docs"
+        "context:standards-docs"
       ]
     },
     "technical-writer": {
@@ -101,7 +101,7 @@
       "author": "opencode",
       "tags": ["documentation", "technical", "writing"],
       "dependencies": [
-        "context:core/standards/docs"
+        "context:standards-docs"
       ]
     },
     "data-analyst": {
@@ -123,7 +123,7 @@
       "author": "opencode",
       "tags": ["testing", "evaluation", "quality"],
       "dependencies": [
-        "context:core/standards/tests"
+        "context:standards-tests"
       ]
     },
     "task-manager": {
@@ -135,7 +135,7 @@
       "author": "opencode",
       "tags": ["task-breakdown", "planning", "coordination"],
       "dependencies": [
-        "context:core/workflows/task-delegation"
+        "context:workflows-delegation"
       ]
     },
     "documentation": {
@@ -147,7 +147,7 @@
       "author": "opencode",
       "tags": ["documentation", "writing"],
       "dependencies": [
-        "context:core/standards/docs"
+        "context:standards-docs"
       ]
     },
     "contextscout": {
@@ -199,7 +199,7 @@
       "author": "opencode",
       "tags": ["coding", "implementation"],
       "dependencies": [
-        "context:core/standards/code"
+        "context:standards-code"
       ]
     },
     "tester": {
@@ -211,7 +211,7 @@
       "author": "opencode",
       "tags": ["testing", "tdd", "quality"],
       "dependencies": [
-        "context:core/standards/tests"
+        "context:standards-tests"
       ]
     },
     "reviewer": {
@@ -223,8 +223,8 @@
       "author": "opencode",
       "tags": ["review", "security", "quality"],
       "dependencies": [
-        "context:core/standards/code",
-        "context:core/workflows/review"
+        "context:standards-code",
+        "context:review-ref"
       ]
     },
     "build-agent": {
@@ -246,7 +246,7 @@
       "author": "opencode",
       "tags": ["frontend", "ui", "design"],
       "dependencies": [
-        "context:core/standards/code"
+        "context:standards-code"
       ]
     },
     "devops-specialist": {
