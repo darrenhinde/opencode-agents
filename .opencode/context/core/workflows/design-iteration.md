@@ -14,20 +14,263 @@ A structured 4-stage workflow for creating and iterating on UI designs. This pro
 
 ---
 
+## When to Use This Workflow
+
+### Delegate to OpenFrontendSpecialist When:
+
+**✅ STRONGLY RECOMMENDED** to delegate for:
+- **New UI/UX design work** - Landing pages, dashboards, app interfaces
+- **Design system creation** - Component libraries, theme systems, style guides
+- **Complex layouts** - Multi-column grids, responsive designs, intricate structures
+- **Visual polish** - Animations, transitions, micro-interactions
+- **Brand-focused work** - Marketing pages, product showcases, hero sections
+- **Accessibility-critical UI** - Forms, navigation, interactive components
+
+**Why delegate?**
+- OpenFrontendSpecialist follows the 4-stage design workflow (Layout → Theme → Animation → Implementation)
+- Ensures thoughtful design decisions with approval gates
+- Produces polished, accessible, production-ready UI
+- Handles responsive design, OKLCH colors, semantic HTML
+- Creates single-file HTML prototypes for quick iteration
+
+### Execute Directly When:
+
+**⚠️ Simple cases only**:
+- Minor text/content updates to existing UI
+- Small CSS tweaks (colors, spacing, fonts)
+- Adding simple utility classes
+- Updating existing component props
+- Bug fixes in existing UI code
+
+### Delegation Pattern
+
+```javascript
+// For UI design work
+task(
+  subagent_type="OpenFrontendSpecialist",
+  description="Design {feature} UI",
+  prompt="Design a {feature} following the 4-stage workflow:
+  
+  Requirements:
+  - {requirement 1}
+  - {requirement 2}
+  
+  Context: {what this UI is for}
+  
+  Follow the design iteration workflow:
+  1. Layout (ASCII wireframe)
+  2. Theme (design system, colors)
+  3. Animation (micro-interactions)
+  4. Implementation (single HTML file)
+  
+  Request approval between each stage."
+)
+```
+
+### Example Scenarios
+
+| Scenario | Action | Why |
+|----------|--------|-----|
+| "Create a landing page for our SaaS product" | ✅ Delegate to OpenFrontendSpecialist | Complex UI design, needs 4-stage workflow |
+| "Design a user dashboard with charts" | ✅ Delegate to OpenFrontendSpecialist | Complex layout, visual design, interactions |
+| "Build a component library with our brand" | ✅ Delegate to OpenFrontendSpecialist | Design system work, requires theme expertise |
+| "Fix button color from blue to green" | ⚠️ Execute directly | Simple CSS change |
+| "Update hero text content" | ⚠️ Execute directly | Content update only |
+
+---
+
+## Design Plan File (MANDATORY)
+
+**CRITICAL**: Before starting any design work, create a persistent design plan file.
+
+**Location**: `.tmp/design-plans/{project-name}-{feature-name}.md`
+
+**Purpose**: 
+- Preserve design decisions across stages
+- Allow user to review and edit the plan
+- Maintain context for subagent calls
+- Track design evolution and iterations
+
+**When to Create**: 
+- BEFORE Stage 1 (Layout Design)
+- After understanding user requirements
+- Before any design work begins
+
+**Template**:
+```markdown
+---
+project: {project-name}
+feature: {feature-name}
+created: {ISO timestamp}
+updated: {ISO timestamp}
+status: in_progress
+current_stage: layout
+---
+
+# Design Plan: {Feature Name}
+
+## User Requirements
+{What the user asked for - verbatim or close paraphrase}
+
+## Design Goals
+- {goal 1}
+- {goal 2}
+- {goal 3}
+
+## Target Audience
+{Who will use this UI}
+
+## Technical Constraints
+- Framework: {Next.js, React, etc.}
+- Responsive: {Yes/No}
+- Accessibility: {WCAG level}
+- Browser support: {Modern, IE11+, etc.}
+
+---
+
+## Stage 1: Layout Design
+
+### Status
+- [ ] Layout planned
+- [ ] ASCII wireframe created
+- [ ] User approved
+
+### Layout Structure
+{ASCII wireframe will be added here}
+
+### Component Breakdown
+{Component list will be added here}
+
+### User Feedback
+{User comments and requested changes}
+
+---
+
+## Stage 2: Theme Design
+
+### Status
+- [ ] Design system selected
+- [ ] Color palette chosen
+- [ ] Typography defined
+- [ ] User approved
+
+### Theme Details
+{Theme specifications will be added here}
+
+### User Feedback
+{User comments and requested changes}
+
+---
+
+## Stage 3: Animation Design
+
+### Status
+- [ ] Micro-interactions defined
+- [ ] Animation timing set
+- [ ] User approved
+
+### Animation Details
+{Animation specifications will be added here}
+
+### User Feedback
+{User comments and requested changes}
+
+---
+
+## Stage 4: Implementation
+
+### Status
+- [ ] HTML structure complete
+- [ ] CSS applied
+- [ ] Animations implemented
+- [ ] User approved
+
+### Output Files
+- HTML: {file path}
+- CSS: {file path}
+- Assets: {file paths}
+
+### User Feedback
+{Final comments and requested changes}
+
+---
+
+## Design Evolution
+
+### Iteration 1
+- Date: {timestamp}
+- Changes: {what changed}
+- Reason: {why it changed}
+
+### Iteration 2
+- Date: {timestamp}
+- Changes: {what changed}
+- Reason: {why it changed}
+```
+
+**Workflow Integration**:
+1. **Create plan file** → Write to `.tmp/design-plans/{name}.md`
+2. **Each stage** → Update plan file with decisions and user feedback
+3. **User approval** → Edit plan file with approved decisions
+4. **User requests changes** → Edit plan file with feedback, iterate
+5. **Subagent calls** → Pass plan file path for context preservation
+6. **Completion** → Plan file contains full design history
+
+**Benefits**:
+- ✅ Context preserved across subagent calls
+- ✅ User can review and edit plan directly
+- ✅ Design decisions documented
+- ✅ Easy to iterate and refine
+- ✅ Full design history tracked
+
+---
+
 ## Workflow Stages
+
+### Stage 0: Create Design Plan (MANDATORY FIRST STEP)
+
+**Purpose**: Create persistent plan file before any design work
+
+**Process**:
+1. Understand user requirements
+2. Identify design goals and constraints
+3. Create plan file at `.tmp/design-plans/{project-name}-{feature-name}.md`
+4. Populate with user requirements and goals
+5. Present plan file location to user
+6. Proceed to Stage 1
+
+**Deliverable**: Design plan file created and initialized
+
+**Example**:
+```
+✅ Design plan created: .tmp/design-plans/saas-landing-page.md
+
+You can review and edit this file at any time. All design decisions will be tracked here.
+
+Ready to proceed to Stage 1 (Layout Design)?
+```
+
+**Approval Gate**: "Plan file created. Ready to start layout design?"
+
+---
 
 ### Stage 1: Layout Design
 
 **Purpose**: Define the structure and component hierarchy before visual design
 
 **Process**:
-1. Analyze user requirements
-2. Identify core UI components
-3. Plan layout structure and responsive behavior
-4. Create ASCII wireframe
-5. Present to user for approval
+1. Read design plan file from `.tmp/design-plans/{name}.md`
+2. Analyze user requirements from plan
+3. Identify core UI components
+4. Plan layout structure and responsive behavior
+5. Create ASCII wireframe
+6. **Update plan file** with layout structure and component breakdown
+7. Present to user for approval
+8. **Update plan file** with user feedback and approval status
 
-**Deliverable**: ASCII wireframe with component breakdown
+**Deliverable**: 
+- ASCII wireframe with component breakdown
+- Updated plan file with Stage 1 complete
 
 **Example Output**:
 
@@ -106,14 +349,20 @@ Mobile (< 768px):
 **Purpose**: Define colors, typography, spacing, and visual style
 
 **Process**:
-1. Choose design system (neo-brutalism, modern dark, custom)
-2. Select color palette (avoid Bootstrap blue unless requested)
-3. Choose typography (Google Fonts)
-4. Define spacing and shadows
-5. Generate theme CSS file
-6. Present theme to user for approval
+1. Read design plan file from `.tmp/design-plans/{name}.md`
+2. Review approved layout from Stage 1
+3. Choose design system (neo-brutalism, modern dark, custom)
+4. Select color palette (avoid Bootstrap blue unless requested)
+5. Choose typography (Google Fonts)
+6. Define spacing and shadows
+7. Generate theme CSS file
+8. **Update plan file** with theme specifications
+9. Present theme to user for approval
+10. **Update plan file** with user feedback and approval status
 
-**Deliverable**: CSS theme file saved to `design_iterations/theme_N.css`
+**Deliverable**: 
+- CSS theme file saved to `design_iterations/theme_N.css`
+- Updated plan file with Stage 2 complete
 
 **Theme Selection Criteria**:
 
@@ -155,13 +404,19 @@ Key Design Decisions:
 **Purpose**: Define micro-interactions and transitions
 
 **Process**:
-1. Identify key interactions (hover, click, scroll)
-2. Define animation timing and easing
-3. Plan loading states and transitions
-4. Document animations using micro-syntax
-5. Present animation plan to user for approval
+1. Read design plan file from `.tmp/design-plans/{name}.md`
+2. Review approved theme from Stage 2
+3. Identify key interactions (hover, click, scroll)
+4. Define animation timing and easing
+5. Plan loading states and transitions
+6. Document animations using micro-syntax
+7. **Update plan file** with animation specifications
+8. Present animation plan to user for approval
+9. **Update plan file** with user feedback and approval status
 
-**Deliverable**: Animation specification in micro-syntax format
+**Deliverable**: 
+- Animation specification in micro-syntax format
+- Updated plan file with Stage 3 complete
 
 **Example Output**:
 
@@ -203,15 +458,21 @@ linkHover: 250ms ease-out [underline 0→100%]
 **Purpose**: Generate complete HTML file with all components
 
 **Process**:
-1. Build individual UI components
-2. Integrate theme CSS
-3. Add animations and interactions
-4. Combine into single HTML file
-5. Test responsive behavior
-6. Save to design_iterations folder
-7. Present to user for review
+1. Read design plan file from `.tmp/design-plans/{name}.md`
+2. Review all approved decisions from Stages 1-3
+3. Build individual UI components
+4. Integrate theme CSS
+5. Add animations and interactions
+6. Combine into single HTML file
+7. Test responsive behavior
+8. Save to design_iterations folder
+9. **Update plan file** with output file paths
+10. Present to user for review
+11. **Update plan file** with user feedback and final approval status
 
-**Deliverable**: Complete HTML file with embedded or linked CSS
+**Deliverable**: 
+- Complete HTML file with embedded or linked CSS
+- Updated plan file with Stage 4 complete and all output files documented
 
 **File Organization**:
 
@@ -589,6 +850,143 @@ Please review and let me know if you'd like any changes or iterations."
 "I'll update the design with [changes] and save it as {filename}_N.html.
 This preserves the previous version for reference."
 ```
+
+---
+
+## Handling Plan File Edits and Iterations
+
+### User Edits Plan File Directly
+
+**Scenario**: User opens `.tmp/design-plans/{name}.md` and makes changes
+
+**Process**:
+1. User edits plan file (changes requirements, adds constraints, modifies goals)
+2. User notifies agent: "I've updated the plan file"
+3. Agent reads updated plan file
+4. Agent identifies what changed
+5. Agent proposes how to incorporate changes
+6. Agent updates affected stages
+
+**Example**:
+```
+User: "I've updated the plan file - changed the color scheme to dark mode"
+
+Agent: 
+✅ Read updated plan: .tmp/design-plans/saas-landing-page.md
+
+Changes detected:
+- Color scheme: Light → Dark mode
+- Primary color: Blue → Purple
+
+This affects:
+- Stage 2 (Theme) - needs regeneration
+- Stage 4 (Implementation) - needs CSS update
+
+Would you like me to:
+1. Regenerate theme with dark mode
+2. Update implementation with new theme
+```
+
+### Iteration Within a Stage
+
+**Scenario**: User requests changes during a stage
+
+**Process**:
+1. Agent presents stage output (e.g., layout wireframe)
+2. User requests changes: "Make the hero section taller"
+3. Agent updates plan file with feedback
+4. Agent makes changes
+5. Agent updates plan file with new iteration
+6. Agent presents updated output
+
+**Example**:
+```
+Stage 1 - Layout Design
+
+Agent: [presents wireframe]
+
+User: "Make the hero section taller and move CTA above the fold"
+
+Agent:
+✅ Updated plan file with feedback
+✅ Revised layout wireframe
+✅ Updated plan file with Iteration 2
+
+[presents updated wireframe]
+```
+
+### Tracking Iterations in Plan File
+
+**Format**:
+```markdown
+## Design Evolution
+
+### Iteration 1 - Initial Layout
+- Date: 2026-01-30T10:00:00Z
+- Stage: Layout
+- Changes: Initial wireframe created
+- User feedback: "Hero section too short, CTA below fold"
+
+### Iteration 2 - Revised Layout
+- Date: 2026-01-30T10:15:00Z
+- Stage: Layout
+- Changes: Increased hero height from 400px to 600px, moved CTA above fold
+- User feedback: "Perfect! Approved."
+- Status: ✅ Approved
+
+### Iteration 3 - Theme Adjustment
+- Date: 2026-01-30T10:30:00Z
+- Stage: Theme
+- Changes: Changed from light to dark mode, primary color blue → purple
+- User feedback: "Love the dark mode!"
+- Status: ✅ Approved
+```
+
+### Subagent Context Preservation
+
+**Problem**: Subagents lose context between calls
+
+**Solution**: Always pass plan file path
+
+**Pattern**:
+```javascript
+// When delegating to subagent
+task(
+  subagent_type="OpenFrontendSpecialist",
+  description="Implement Stage 4",
+  prompt="Load design plan from .tmp/design-plans/saas-landing-page.md
+  
+  Read the plan file for:
+  - All approved decisions from Stages 1-3
+  - User requirements and constraints
+  - Design evolution and iterations
+  
+  Implement Stage 4 (Implementation) following all approved decisions.
+  
+  Update the plan file with:
+  - Output file paths
+  - Implementation status
+  - Any issues encountered"
+)
+```
+
+### Plan File as Single Source of Truth
+
+**Benefits**:
+- ✅ All design decisions in one place
+- ✅ User can review and edit anytime
+- ✅ Subagents have full context
+- ✅ Design history preserved
+- ✅ Easy to iterate and refine
+- ✅ No context loss between stages
+
+**Best Practices**:
+- Always read plan file at start of each stage
+- Update plan file after every user interaction
+- Track all iterations with timestamps
+- Document user feedback verbatim
+- Mark approved decisions clearly
+- Pass plan file path to all subagents
 
 ---
 

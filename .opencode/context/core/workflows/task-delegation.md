@@ -150,10 +150,133 @@ When TaskManager creates subtask JSONs, it MUST follow these rules:
 | **CoderAgent** | subtask JSON (`context_files` + `reference_files` + `external_context`) | Loads standards, references source files, reads external docs, implements |
 | **TestEngineer** | session `context.md` path (passed in prompt) | Knows what standards were applied, reads external context, writes tests accordingly |
 | **CodeReviewer** | session `context.md` path (passed in prompt) | Knows what standards were applied, reviews against them, considers external context |
+| **OpenFrontendSpecialist** | session `context.md` path (passed in prompt) | Follows 4-stage design workflow (Layout → Theme → Animation → Implementation) |
 
 **Key**: 
 - TestEngineer and CodeReviewer should ALWAYS receive the session context path when delegated. This way they review against the same standards that were used during implementation — not whatever they independently discover.
 - All agents should read `external_context` files to understand external library patterns and requirements — this avoids re-fetching and ensures consistency.
+- **OpenFrontendSpecialist should be used for UI/UX design work** - See `workflows/design-iteration.md` for when to delegate vs execute directly.
+
+---
+
+## When to Delegate to Specialists
+
+### OpenFrontendSpecialist - UI/UX Design
+
+**✅ STRONGLY RECOMMENDED to delegate when:**
+- Creating new UI/UX designs (landing pages, dashboards, app interfaces)
+- Building design systems (component libraries, themes, style guides)
+- Complex layouts requiring responsive design
+- Visual polish work (animations, transitions, micro-interactions)
+- Brand-focused pages (marketing, product showcases)
+- Accessibility-critical UI (forms, navigation, interactive components)
+
+**Delegation pattern:**
+```javascript
+task(
+  subagent_type="OpenFrontendSpecialist",
+  description="Design {feature} UI",
+  prompt="Load context from .tmp/sessions/{session-id}/context.md
+  
+  Design a {feature} following the 4-stage workflow:
+  
+  CRITICAL: Create design plan file at .tmp/design-plans/{project}-{feature}.md BEFORE starting
+  
+  Stages:
+  1. Stage 0: Create design plan file (MANDATORY FIRST)
+  2. Stage 1: Layout (ASCII wireframe) → Update plan file
+  3. Stage 2: Theme (design system, colors) → Update plan file
+  4. Stage 3: Animation (micro-interactions) → Update plan file
+  5. Stage 4: Implementation (single HTML file) → Update plan file
+  
+  Requirements:
+  - {requirement 1}
+  - {requirement 2}
+  
+  Plan file preserves context across stages and allows user to review/edit.
+  Request approval between each stage.
+  Update plan file after each stage and user feedback."
+)
+```
+
+**Why delegate?**
+- Follows structured 4-stage design workflow with approval gates
+- Produces polished, accessible, production-ready UI
+- Handles responsive design, OKLCH colors, semantic HTML
+- Creates single-file HTML prototypes for quick iteration
+
+**See**: `workflows/design-iteration.md` for full workflow details
+
+### TestEngineer - Test Authoring
+
+**Delegate when:**
+- Writing comprehensive test suites
+- TDD workflows (tests before implementation)
+- Complex test scenarios (edge cases, error handling)
+- Integration tests across multiple components
+
+**Delegation pattern:**
+```javascript
+task(
+  subagent_type="TestEngineer",
+  description="Write tests for {feature}",
+  prompt="Load context from .tmp/sessions/{session-id}/context.md
+  
+  Write comprehensive tests for {feature}
+  
+  Files to test:
+  - {file 1}
+  - {file 2}
+  
+  Follow test coverage standards from context."
+)
+```
+
+### CodeReviewer - Quality Assurance
+
+**Delegate when:**
+- Reviewing complex implementations
+- Security-critical code review
+- Pre-merge quality checks
+- Architecture validation
+
+**Delegation pattern:**
+```javascript
+task(
+  subagent_type="CodeReviewer",
+  description="Review {feature} implementation",
+  prompt="Load context from .tmp/sessions/{session-id}/context.md
+  
+  Review {feature} implementation against standards
+  
+  Files to review:
+  - {file 1}
+  - {file 2}
+  
+  Focus on: security, performance, maintainability"
+)
+```
+
+### CoderAgent - Focused Implementation
+
+**Delegate when:**
+- Implementing atomic subtasks from TaskManager
+- Isolated feature work (single component/module)
+- Following specific implementation specs
+
+**Delegation pattern:**
+```javascript
+task(
+  subagent_type="CoderAgent",
+  description="Implement {subtask}",
+  prompt="Load context from .tmp/sessions/{session-id}/context.md
+  
+  Implement subtask: {subtask description}
+  
+  Follow the implementation spec exactly.
+  Mark subtask as complete when done."
+)
+```
 
 ---
 
