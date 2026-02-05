@@ -185,7 +185,7 @@
         "id": "tester",
         "name": "TestEngineer",
         "type": "subagent",
-        "path": ".opencode/agent/subagents/code/tester.md",
+        "path": ".opencode/agent/subagents/code/test-engineer.md",
         "description": "Writes unit and integration tests",
         "tags": [
           "testing",

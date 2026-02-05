@@ -4,8 +4,6 @@ description: Executes coding subtasks in sequence, ensuring completion as specif
 mode: subagent
 temperature: 0
 permission:
-  bash:
-    "*": "deny"
   edit:
     "**/*.env*": "deny"
     "**/*.key": "deny"
@@ -13,9 +11,9 @@ permission:
     "node_modules/**": "deny"
     ".git/**": "deny"
   task:
-    "*": "deny"
     contextscout: "allow"
     externalscout: "allow"
+    TestEngineer: "allow"
 ---
 
 # CoderAgent

@@ -11,7 +11,6 @@ permission:
   write:
     "**/*": "deny"
   task:
-    "*": "deny"
     contextscout: "allow"
 ---
 

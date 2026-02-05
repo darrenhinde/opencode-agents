@@ -420,7 +420,7 @@ task(
         
         2. Delegate to subagent with inline context:
            
-           <!-- Example: Tester -->
+           <!-- Example: TestEngineer -->
            task(
              subagent_type="TestEngineer",
              description="Write tests for {feature}",

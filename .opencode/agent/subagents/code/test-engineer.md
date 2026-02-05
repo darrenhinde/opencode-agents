@@ -23,7 +23,6 @@ permission:
     "**/*.key": "deny"
     "**/*.secret": "deny"
   task:
-    "*": "deny"
     contextscout: "allow"
     externalscout: "allow"
 ---
