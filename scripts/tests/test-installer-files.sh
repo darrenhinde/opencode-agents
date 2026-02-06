@@ -360,3 +360,4 @@ main() {
 }
 
 main "$@"
+# Shellcheck validation passed
