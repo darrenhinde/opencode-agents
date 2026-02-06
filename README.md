@@ -417,6 +417,33 @@ Your coding standards automatically loaded by agents:
 - Team-ready (commit to repo)
 - Version controlled (track changes)
 
+### How Context Resolution Works
+
+ContextScout discovers context files using a **local-first** approach:
+
+```
+1. Check local: .opencode/context/core/navigation.md
+   ↓ Found? → Use local for everything. Done.
+   ↓ Not found?
+2. Check global: ~/.config/opencode/context/core/navigation.md
+   ↓ Found? → Use global for core/ files only.
+   ↓ Not found? → Proceed without core context.
+```
+
+**Key rules:**
+- **Local always wins** — if you installed locally, global is never checked
+- **Global fallback is only for `core/`** (standards, workflows, guides) — universal files that are the same across projects
+- **Project intelligence is always local** — your tech stack, patterns, and naming conventions live in `.opencode/context/project-intelligence/` and are never loaded from global
+- **One-time check** — ContextScout resolves the core location once at startup (max 2 glob checks), not per-file
+
+**Common setups:**
+
+| Setup | Core files from | Project intelligence from |
+|-------|----------------|--------------------------|
+| Local install (`bash install.sh developer`) | `.opencode/context/core/` | `.opencode/context/project-intelligence/` |
+| Global install + `/add-context` | `~/.config/opencode/context/core/` | `.opencode/context/project-intelligence/` |
+| Both local and global | `.opencode/context/core/` (local wins) | `.opencode/context/project-intelligence/` |
+
 ---
 
 
