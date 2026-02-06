@@ -91,6 +91,7 @@ validate_suite() {
     
     # 2. Validate against schema
     if [[ -f "$schema_file" ]]; then
+        # shellcheck disable=SC2294
         validation_output=$(eval "$AJV_CMD validate -s \"$schema_file\" -d \"$suite_file\" --strict=false 2>&1")
         if ! echo "$validation_output" | grep -q "valid"; then
             echo -e "  ${RED}❌ Schema validation failed${NC}"
@@ -137,7 +138,8 @@ validate_suite() {
             filename=$(basename "$missing")
             if [[ -d "$tests_dir/$dir" ]]; then
                 local similar
-                similar=$(find "$tests_dir/$dir" -name "*.yaml" -type f -exec basename {} \; | grep -i "$(echo $filename | cut -d'-' -f1)" | head -3)
+                # shellcheck disable=SC2001
+                similar=$(find "$tests_dir/$dir" -name "*.yaml" -type f -exec basename {} \; | grep -i "$(echo "$filename" | cut -d'-' -f1)" | head -3)
                 if [[ -n "$similar" ]]; then
                     echo -e "       ${YELLOW}Did you mean?${NC}"
                     echo "$similar" | sed 's/^/         - /'

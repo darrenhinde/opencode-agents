@@ -25,6 +25,7 @@ find "$SOURCE_DIR" -maxdepth 2 -name "*.md" -not -path "*/subagents/*" | while r
     # Claude needs name and description in frontmatter
     cp "$agent" "$DEST_DIR/$filename"
 done
+# shellcheck disable=SC2094
 
 # 3. Installation - Link to .claude directory for immediate use
 echo "🔗 Installing plugin to .claude/plugins/openagent..."

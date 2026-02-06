@@ -170,10 +170,9 @@ suggest_fix() {
     local component_id=$2
     
     # Extract directory and filename
-    local dir
+    local dir=""
+    local base_dir=""
     dir=$(dirname "$missing_path")
-    # local filename=$(basename "$missing_path") # Unused
-    local base_dir
     base_dir=$(echo "$dir" | cut -d'/' -f1-3)  # e.g., .opencode/command
     
     # Look for similar files in the expected directory and subdirectories
@@ -244,6 +243,7 @@ scan_for_orphaned_files() {
             fi
             
             # Check if this path is in registry
+            # shellcheck disable=SC2143
             if ! echo "$registry_paths" | grep -q "^${rel_path}$"; then
                 ORPHANED_FILES=$((ORPHANED_FILES + 1))
                 ORPHANED_COMPONENTS+=("$rel_path")
@@ -359,11 +359,13 @@ validate_component_dependencies() {
             continue
         fi
         
-        while IFS= read -r component; do
-            local id
-            id=$(echo "$component" | jq -r '.id')
-            local name
-            name=$(echo "$component" | jq -r '.name')
+    while IFS= read -r component; do
+        local id=""
+        local path=""
+        local name=""
+        id=$(echo "$component" | jq -r '.id')
+        path=$(echo "$component" | jq -r '.path')
+        name=$(echo "$component" | jq -r '.name')
             local dependencies
             dependencies=$(echo "$component" | jq -r '.dependencies[]?' 2>/dev/null)
             

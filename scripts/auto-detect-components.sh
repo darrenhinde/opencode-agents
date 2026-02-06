@@ -160,6 +160,7 @@ scan_for_new_components() {
             fi
             
             # Check if this path is in registry
+            # shellcheck disable=SC2143
             if ! echo "$registry_paths" | grep -q "^${rel_path}$"; then
                 # Extract metadata
                 local metadata

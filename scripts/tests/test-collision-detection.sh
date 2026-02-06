@@ -60,7 +60,7 @@ test_no_collisions() {
     
     for file in "${files[@]}"; do
         if [ -f "$file" ]; then
-            ((collisions+=1))
+            collisions=$((collisions + 1))
         fi
     done
     

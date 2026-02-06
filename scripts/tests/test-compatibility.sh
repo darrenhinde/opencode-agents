@@ -88,6 +88,7 @@ fi
 echo ""
 echo "Test 6: Profile Argument Parsing"
 for profile in essential developer full advanced; do
+    # shellcheck disable=SC2216
     if echo "n" | bash install.sh "$profile" 2>&1 | grep -q "Profile:"; then
         pass "Profile '$profile' argument works"
     else
@@ -99,6 +100,7 @@ done
 echo ""
 echo "Test 7: Profile Arguments with Dashes"
 for profile in --essential --developer --full --advanced; do
+    # shellcheck disable=SC2216
     if echo "n" | bash install.sh "$profile" 2>&1 | grep -q "Profile:"; then
         pass "Profile '$profile' argument works"
     else

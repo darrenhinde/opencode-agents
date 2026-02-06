@@ -213,6 +213,7 @@ scan_for_orphaned_files() {
             fi
             
             # Check if this path is in registry
+            # shellcheck disable=SC2143
             if ! echo "$registry_paths" | grep -q "^${rel_path}$"; then
                 ORPHANED_FILES=$((ORPHANED_FILES + 1))
                 ORPHANED_COMPONENTS+=("$rel_path")

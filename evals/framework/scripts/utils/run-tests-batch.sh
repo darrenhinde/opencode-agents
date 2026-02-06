@@ -47,6 +47,7 @@ for TEST_FILE in $TEST_FILES; do
   BATCH_COUNT=$((BATCH_COUNT + 1))
   
   # Run batch when it reaches BATCH_SIZE or is the last file
+  # shellcheck disable=SC2143
   if [ $BATCH_COUNT -eq $BATCH_SIZE ] || [ "$(echo "$TEST_FILES" | grep -c "$TEST_FILE")" -eq $TOTAL_TESTS ]; then
     echo -e "${YELLOW}📦 Running Batch $BATCH_NUM (${#CURRENT_BATCH[@]} tests)${NC}"
     echo "----------------------------------------"
@@ -55,6 +56,7 @@ for TEST_FILE in $TEST_FILES; do
     PATTERNS=""
     for FILE in "${CURRENT_BATCH[@]}"; do
       # Extract relative path from test directory
+      # shellcheck disable=SC2001
       REL_PATH=$(echo "$FILE" | sed "s|$TEST_DIR/||")
       echo "  - $REL_PATH"
       
@@ -70,6 +72,7 @@ for TEST_FILE in $TEST_FILES; do
     
     # Run tests in this batch
     for FILE in "${CURRENT_BATCH[@]}"; do
+      # shellcheck disable=SC2001
       REL_PATH=$(echo "$FILE" | sed "s|$TEST_DIR/||")
       echo -e "${GREEN}▶ Running: $REL_PATH${NC}"
       

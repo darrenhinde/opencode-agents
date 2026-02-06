@@ -585,6 +585,7 @@ scan_for_new_components() {
             fi
             
             # Check if this path is in registry
+            # shellcheck disable=SC2143
             if ! echo "$registry_paths" | grep -q "^${rel_path}$"; then
                 # Extract metadata
                 local metadata
@@ -622,7 +623,8 @@ scan_for_new_components() {
 
 check_dependencies() {
     local deps_str=$1
-    # local component_name=$2 # Unused
+    # shellcheck disable=SC2034
+    local component_name=$2
     
     if [ -z "$deps_str" ]; then
         return 0

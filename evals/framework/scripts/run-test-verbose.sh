@@ -13,7 +13,7 @@ echo "Pattern: $PATTERN"
 echo ""
 
 # Run test with debug mode and capture session ID
-OUTPUT=$(cd .. && npm run eval:sdk -- --agent=$AGENT --pattern="$PATTERN" --debug 2>&1)
+OUTPUT=$(cd .. && npm run eval:sdk -- --agent="$AGENT" --pattern="$PATTERN" --debug 2>&1)
 
 # Extract session ID from output
 SESSION_ID=$(echo "$OUTPUT" | grep -o "Session created: ses_[a-zA-Z0-9]*" | head -1 | cut -d' ' -f3)

@@ -198,7 +198,7 @@ if [[ -z "$MODEL" ]]; then
             if [[ $i -eq 1 ]]; then
                 PRIMARY_MODEL="$model"
             fi
-            ((i++))
+            i=$((i + 1))
         done <<< "$RECOMMENDED_MODELS"
         
         echo ""

@@ -18,8 +18,8 @@ ERRORS=0
 WARNINGS=0
 
 print_success() { echo -e "${GREEN}✓${NC} $1"; }
-print_error() { echo -e "${RED}✗${NC} $1"; ((ERRORS++)); }
-print_warning() { echo -e "${YELLOW}⚠${NC} $1"; ((WARNINGS++)); }
+print_error() { echo -e "${RED}✗${NC} $1"; ERRORS=$((ERRORS + 1)); }
+print_warning() { echo -e "${YELLOW}⚠${NC} $1"; WARNINGS=$((WARNINGS + 1)); }
 print_info() { echo -e "${BLUE}ℹ${NC} $1"; }
 
 validate_markdown_frontmatter() {
@@ -103,7 +103,7 @@ validate_directory_structure() {
     local found_categories=0
     for dir in "${category_dirs[@]}"; do
         if [ -d "$dir" ]; then
-            ((found_categories++))
+            found_categories=$((found_categories + 1))
         fi
     done
     

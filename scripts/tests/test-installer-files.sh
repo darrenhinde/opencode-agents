@@ -35,7 +35,6 @@ FAIL_COUNT=0
 
 # Cleanup function
 # shellcheck disable=SC2329
-# shellcheck disable=SC2329
 cleanup() {
     rm -rf "$TEMP_DIR" 2>/dev/null || true
 }
