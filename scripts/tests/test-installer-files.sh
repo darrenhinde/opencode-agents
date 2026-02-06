@@ -17,7 +17,6 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # Configuration
-REPO_URL="https://github.com/darrenhinde/OpenAgentsControl"
 BRANCH="main"
 RAW_URL="https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/${BRANCH}"
 TEMP_DIR="/tmp/opencode-installer-test-$$"
@@ -35,6 +34,8 @@ SUCCESS_COUNT=0
 FAIL_COUNT=0
 
 # Cleanup function
+# shellcheck disable=SC2329
+# shellcheck disable=SC2329
 cleanup() {
     rm -rf "$TEMP_DIR" 2>/dev/null || true
 }

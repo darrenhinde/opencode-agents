@@ -42,6 +42,7 @@ setup() {
     mkdir -p "$TEST_DIR"
 }
 
+# shellcheck disable=SC2329
 cleanup() {
     rm -rf "$TEST_DIR"
 }
