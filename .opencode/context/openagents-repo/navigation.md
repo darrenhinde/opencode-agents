@@ -2,7 +2,7 @@
 
 **Purpose**: Context files specific to the OpenAgents Control repository
 
-**Last Updated**: 2026-01-31
+**Last Updated**: 2026-02-04
 
 ---
 
@@ -11,11 +11,11 @@
 | Function | Files | Purpose |
 |----------|-------|---------|
 | **Standards** | 2 files | Agent creation standards |
-| **Concepts** | 2 files | Core ideas and principles |
-| **Examples** | 1 file | Working code samples |
-| **Guides** | 10 files | Step-by-step workflows |
-| **Lookup** | 4 files | Quick reference tables |
-| **Errors** | 1 file | Common issues + solutions |
+| **Concepts** | 6 files | Core ideas and principles |
+| **Examples** | 9 files | Working code samples |
+| **Guides** | 14 files | Step-by-step workflows |
+| **Lookup** | 11 files | Quick reference tables |
+| **Errors** | 2 files | Common issues + solutions |
 
 ---
 
@@ -34,9 +34,13 @@
 
 | File | Topic | Priority |
 |------|-------|----------|
+| `concepts/compatibility-layer.md` | Adapter pattern for AI coding tools | ⭐⭐⭐⭐⭐ |
 | `concepts/subagent-testing-modes.md` | Standalone vs delegation testing | ⭐⭐⭐⭐⭐ |
+| `concepts/hooks-system.md` | User-defined lifecycle commands | ⭐⭐⭐⭐ |
+| `concepts/agent-skills.md` | Skills that teach Claude tasks | ⭐⭐⭐⭐ |
+| `concepts/subagents-system.md` | Specialized AI assistants | ⭐⭐⭐⭐ |
 
-**When to read**: Before testing any subagent
+**When to read**: Before testing any subagent or working with tool adapters
 
 ---
 
@@ -44,9 +48,11 @@
 
 | File | Topic | Priority |
 |------|-------|----------|
+| `examples/baseadapter-pattern.md` | Template Method pattern for tool adapters | ⭐⭐⭐⭐⭐ |
+| `examples/zod-schema-migration.md` | Migrating TypeScript to Zod schemas | ⭐⭐⭐⭐ |
 | `examples/subagent-prompt-structure.md` | Optimized subagent prompt template | ⭐⭐⭐⭐ |
 
-**When to read**: When creating or optimizing subagent prompts
+**When to read**: When creating adapters, schemas, or optimizing subagent prompts
 
 ---
 
@@ -54,8 +60,13 @@
 
 | File | Topic | Priority |
 |------|-------|----------|
+| `guides/compatibility-layer-workflow.md` | Developing compatibility layer for AI tools | ⭐⭐⭐⭐⭐ |
 | `guides/testing-subagents.md` | How to test subagents standalone | ⭐⭐⭐⭐⭐ |
-| `guides/adding-agent.md` | How to add new agents | ⭐⭐⭐⭐ |
+| `guides/adding-agent-basics.md` | How to add new agents (basics) | ⭐⭐⭐⭐ |
+| `guides/adding-agent-testing.md` | How to add agent tests | ⭐⭐⭐⭐ |
+| `guides/adding-skill-basics.md` | How to add OpenCode skills | ⭐⭐⭐⭐ |
+| `guides/creating-skills.md` | How to create Claude Code skills | ⭐⭐⭐⭐ |
+| `guides/creating-subagents.md` | How to create Claude Code subagents | ⭐⭐⭐⭐ |
 | `guides/testing-agent.md` | How to test agents | ⭐⭐⭐⭐ |
 | `guides/external-libraries-workflow.md` | How to handle external library dependencies | ⭐⭐⭐⭐ |
 | `guides/github-issues-workflow.md` | How to work with GitHub issues and project board | ⭐⭐⭐⭐ |
@@ -73,11 +84,18 @@
 
 | File | Topic | Priority |
 |------|-------|----------|
+| `lookup/tool-feature-parity.md` | AI coding tool feature comparison | ⭐⭐⭐⭐⭐ |
+| `lookup/compatibility-layer-structure.md` | Compatibility package file structure | ⭐⭐⭐⭐⭐ |
 | `lookup/subagent-test-commands.md` | Subagent testing commands | ⭐⭐⭐⭐⭐ |
+| `lookup/hook-events.md` | All hook events reference | ⭐⭐⭐⭐ |
+| `lookup/skill-metadata.md` | SKILL.md frontmatter fields | ⭐⭐⭐⭐ |
+| `lookup/skills-comparison.md` | Skills vs other options | ⭐⭐⭐⭐ |
+| `lookup/builtin-subagents.md` | Default subagents (Explore, Plan) | ⭐⭐⭐⭐ |
+| `lookup/subagent-frontmatter.md` | Subagent configuration fields | ⭐⭐⭐⭐ |
 | `lookup/file-locations.md` | Where files are located | ⭐⭐⭐⭐ |
 | `lookup/commands.md` | Available slash commands | ⭐⭐⭐ |
 
-**When to read**: Quick command lookups
+**When to read**: Quick command lookups and feature comparisons
 
 ---
 
@@ -86,6 +104,7 @@
 | File | Topic | Priority |
 |------|-------|----------|
 | `errors/tool-permission-errors.md` | Tool permission issues | ⭐⭐⭐⭐⭐ |
+| `errors/skills-errors.md` | Skills not triggering/loading | ⭐⭐⭐⭐ |
 
 **When to read**: When tests fail with permission errors
 
@@ -116,7 +135,7 @@
 1. Load `standards/agent-frontmatter.md` (valid YAML frontmatter)
 2. Load `standards/subagent-structure.md` (file structure)
 3. Load `core-concepts/agents.md` (understand system)
-4. Load `guides/adding-agent.md` (step-by-step)
+4. Load `guides/adding-agent-basics.md` (step-by-step)
 5. **If using external libraries**: Load `guides/external-libraries-workflow.md` (fetch docs)
 6. Load `examples/subagent-prompt-structure.md` (if subagent)
 7. Load `guides/testing-agent.md` (validate)
@@ -153,7 +172,7 @@ All files follow MVI principle (<200 lines):
 - `../core/context-system/` - Context management system
 - `quick-start.md` - 2-minute repo orientation
 - `../content-creation/navigation.md` - Content creation principles
-- `../to-be-consumed/claude-code-docs/plugins.md` - Claude Code extension docs
+- `plugins/context/context-overview.md` - Plugin system context
 
 ---
 

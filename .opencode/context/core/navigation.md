@@ -28,6 +28,9 @@ core/
 │   ├── session-management.md
 │   └── design-iteration.md
 │
+├── guides/
+│   └── resuming-sessions.md      # NEW: Multi-session task resumption
+│
 ├── task-management/           # JSON-driven task tracking
 │   ├── navigation.md
 │   ├── standards/
@@ -61,6 +64,7 @@ core/
 | **Review code** | `workflows/code-review.md` |
 | **Delegate task** | `workflows/task-delegation.md` |
 | **Break down feature** | `workflows/feature-breakdown.md` |
+| **Resume session** | `guides/resuming-sessions.md` |
 | **Manage tasks** | `task-management/navigation.md` |
 | **Task CLI commands** | `task-management/lookup/task-commands.md` |
 | **Context system** | `context-system.md` |

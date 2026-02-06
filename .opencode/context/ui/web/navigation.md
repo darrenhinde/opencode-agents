@@ -12,11 +12,19 @@
 
 | File | Description | Priority |
 |------|-------------|----------|
-| [animation-patterns.md](animation-patterns.md) | CSS animations, transitions, micro-interactions | high |
+| [animation-basics.md](animation-basics.md) | Animation fundamentals, timing, easing | high |
+| [animation-components.md](animation-components.md) | Button, card, modal, dropdown animations | high |
+| [animation-chat.md](animation-chat.md) | Chat UI and message animations | medium |
+| [animation-loading.md](animation-loading.md) | Skeleton, spinner, progress animations | medium |
+| [animation-forms.md](animation-forms.md) | Form input and validation animations | medium |
+| [animation-advanced.md](animation-advanced.md) | Recipes, best practices, accessibility | medium |
 | [ui-styling-standards.md](ui-styling-standards.md) | CSS frameworks, Tailwind patterns, styling best practices | high |
 | [react-patterns.md](react-patterns.md) | Modern React patterns, hooks, component design | high |
 | [design-systems.md](design-systems.md) | Design system principles and component libraries | medium |
-| [design-assets.md](design-assets.md) | Icons, fonts, images, and asset management | medium |
+| [images-guide.md](images-guide.md) | Placeholder and responsive images | medium |
+| [icons-guide.md](icons-guide.md) | Icon systems (Lucide, Heroicons, FA) | medium |
+| [fonts-guide.md](fonts-guide.md) | Font loading and optimization | medium |
+| [cdn-resources.md](cdn-resources.md) | CDN libraries and resources | medium |
 
 ### Subcategories
 
@@ -34,8 +42,10 @@
 3. Reference `animation-patterns.md` (if animations needed)
 
 ### For animation work:
-1. Load `animation-patterns.md` (CSS animations, transitions)
-2. Reference `design/` subcategory for advanced patterns
+1. Load `animation-basics.md` (fundamentals, timing, easing)
+2. Load `animation-components.md` (UI component animations)
+3. Reference `animation-chat.md` for chat UI patterns
+4. Reference `animation-advanced.md` for recipes and accessibility
 
 ### For scroll animations:
 1. Navigate to `design/` subcategory
@@ -59,10 +69,10 @@ This subcategory covers:
 
 ## File Summaries
 
-### animation-patterns.md
-CSS animations, micro-interactions, and UI transitions. Covers timing standards, easing functions, button/card interactions, modals, loading states, and accessibility.
+### animation-basics.md, animation-components.md, animation-chat.md, animation-loading.md, animation-forms.md, animation-advanced.md
+CSS animations, micro-interactions, and UI transitions split into focused modules.
 
-**Key topics**: Animation micro-syntax, 60fps performance, reduced motion, chat UI animations
+**Key topics**: Animation micro-syntax, 60fps performance, reduced motion, chat UI animations, component patterns
 
 ### ui-styling-standards.md
 CSS framework usage, Tailwind CSS patterns, responsive design, and styling best practices.
@@ -79,10 +89,10 @@ Design system principles, component libraries, and maintaining consistency acros
 
 **Key topics**: Design tokens, component APIs, documentation, versioning
 
-### design-assets.md
-Managing icons, fonts, images, and other design assets in web applications.
+### images-guide.md, icons-guide.md, fonts-guide.md, cdn-resources.md
+Managing design assets in web applications - split into focused guides.
 
-**Key topics**: Icon libraries (Lucide, Font Awesome), web fonts, image optimization
+**Key topics**: Placeholder images, icon libraries (Lucide, Heroicons), web fonts, CDN resources
 
 ---
 
@@ -101,6 +111,6 @@ Managing icons, fonts, images, and other design assets in web applications.
 ---
 
 ## Statistics
-- Core files: 5
+- Core files: 8
 - Subcategories: 1 (design/)
-- **Total context files**: 5 + design subcategory
+- **Total context files**: 8 + design subcategory

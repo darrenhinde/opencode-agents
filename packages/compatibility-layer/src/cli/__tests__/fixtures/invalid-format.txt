@@ -1,0 +1,6 @@
+This is not valid YAML frontmatter
+---broken
+name: test
+---
+
+Some content

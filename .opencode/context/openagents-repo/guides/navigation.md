@@ -18,9 +18,12 @@ openagents-repo/guides/
 
 | Task | Path |
 |------|------|
-| **Adding agents** | `./adding-agent.md` |
+| **Adding agents (basics)** | `./adding-agent-basics.md` |
+| **Adding agents (tests)** | `./adding-agent-testing.md` |
+| **Adding OpenCode skills** | `./adding-skill-basics.md` |
+| **Creating Claude Code skills** | `./creating-skills.md` |
+| **Creating Claude Code subagents** | `./creating-subagents.md` |
 | **Testing subagents** | `./testing-subagents.md` |
-| **View all guides** | `./` |
 
 ---
 
