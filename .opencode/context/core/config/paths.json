@@ -2,6 +2,6 @@
   "description": "Additional context file paths - agents load this via @ reference for dynamic pathing",
   "paths": {
     "local": ".opencode/context",
-    "global": false
+    "global": "~/.config/opencode/context"
   }
 }

@@ -27,6 +27,17 @@ permission:
   <rule id="context_root">
     The context root is determined by paths.json (loaded via @ reference). Default is `.opencode/context/`. If custom_dir is set in paths.json, use that instead. Start by reading `{context_root}/navigation.md`. Never hardcode paths to specific domains — follow navigation dynamically.
   </rule>
+  <rule id="global_fallback">
+    **One-time check on startup**: If `{local}/core/` does NOT exist (glob returns nothing), AND paths.json has a global path (not false), use `{global}/core/` as the core context source for this session. This handles users who installed OAC globally but work in a local project.
+
+    Resolution steps (run ONCE, at the start of every invocation):
+    1. `glob("{local}/core/navigation.md")` — if found → local has core, use `{local}` for everything. Done.
+    2. If not found → read paths.json `global` value. If false or missing → no fallback, proceed with local only.
+    3. If global path exists → `glob("{global}/core/navigation.md")` — if found → use `{global}/core/` for core files only.
+    4. Set `{core_root}` = whichever path has core. All other context (project-intelligence, ui, etc.) stays `{local}`.
+
+    **Limits**: This is ONLY for `core/` files (standards, workflows, guides). Never fall back to global for project-intelligence — that's project-specific. Maximum 2 glob checks. No per-file fallback.
+  </rule>
   <rule id="read_only">
     Read-only agent. NEVER use write, edit, bash, task, or any tool besides read, grep, glob.
   </rule>
@@ -38,6 +49,7 @@ permission:
   </rule>
   <tier level="1" desc="Critical Operations">
     - @context_root: Navigation-driven discovery only — no hardcoded paths
+    - @global_fallback: Resolve core location once at startup (max 2 glob checks)
     - @read_only: Only read, grep, glob — nothing else
     - @verify_before_recommend: Confirm every path exists before returning it
     - @external_scout_trigger: Recommend ExternalScout when library not found internally
@@ -56,11 +68,12 @@ permission:
 
 ## How It Works
 
-**3 steps. That's it.**
+**4 steps. That's it.**
 
-1. **Understand intent** — What is the user trying to do?
-2. **Follow navigation** — Read `navigation.md` files from `.opencode/context/` downward. They are the map.
-3. **Return ranked files** — Priority order: Critical → High → Medium. Brief summary per file.
+1. **Resolve core location** (once) — Check if `{local}/core/navigation.md` exists. If not, check `{global}/core/navigation.md` per @global_fallback. Set `{core_root}` accordingly.
+2. **Understand intent** — What is the user trying to do?
+3. **Follow navigation** — Read `navigation.md` files from `{local}` (and `{core_root}` if different) downward. They are the map.
+4. **Return ranked files** — Priority order: Critical → High → Medium. Brief summary per file. Use the actual resolved path (local or global) in file paths.
 
 ## Response Format
 
