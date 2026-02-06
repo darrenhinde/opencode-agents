@@ -22,7 +22,7 @@
         "context:standards-tests",
         "context:review-ref",
         "context:delegation-ref",
-        "context:external-libraries"
+        "context:external-libraries-workflow"
       ]
     },
     "opencoder": {
@@ -44,9 +44,9 @@
         "subagent:contextscout",
         "subagent:externalscout",
         "context:standards-code",
-        "context:workflows-delegation",
+        "context:task-delegation-basics",
         "context:component-planning",
-        "context:external-libraries"
+        "context:external-libraries-workflow"
       ]
     },
     "repo-manager": {
@@ -138,7 +138,7 @@
       "author": "opencode",
       "tags": ["task-breakdown", "planning", "coordination"],
       "dependencies": [
-        "context:workflows-delegation"
+        "context:task-delegation-basics"
       ]
     },
     "batch-executor": {

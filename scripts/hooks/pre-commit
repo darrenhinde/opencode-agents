@@ -1,0 +1,57 @@
+#!/bin/bash
+# Pre-commit hook for registry validation
+# Place this file in .git/hooks/pre-commit (or use Husky)
+
+set -e
+
+echo "Running pre-commit registry checks..."
+echo ""
+
+# Check if bun is available
+if ! command -v bun &> /dev/null; then
+    echo "⚠️  Warning: bun not found. Skipping registry checks."
+    exit 0
+fi
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Track if any check failed
+FAILED=0
+
+echo "1. Checking registry paths and JSON validity..."
+if bun run scripts/registry/validate-registry.ts > /dev/null 2>&1; then
+    echo -e "${GREEN}✓${NC} Registry is valid JSON and all paths exist"
+else
+    echo -e "${RED}✗${NC} Registry validation failed"
+    bun run scripts/registry/validate-registry.ts
+    FAILED=1
+fi
+
+echo ""
+echo "2. Checking dependencies and profile consistency..."
+if bun run scripts/registry/check-dependencies.ts > /dev/null 2>&1; then
+    echo -e "${GREEN}✓${NC} All dependencies and profile references are valid"
+else
+    echo -e "${RED}✗${NC} Some dependencies or profile references are invalid"
+    bun run scripts/registry/check-dependencies.ts
+    FAILED=1
+fi
+
+echo ""
+if [ $FAILED -eq 0 ]; then
+    echo -e "${GREEN}✓ All pre-commit checks passed!${NC}"
+    exit 0
+else
+    echo -e "${RED}✗ Pre-commit checks failed. Please fix the issues above.${NC}"
+    echo ""
+    echo "Quick fixes:"
+    echo "  - Run 'bun run scripts/registry/validate-registry.ts' for path/JSON issues"
+    echo "  - Run 'bun run scripts/registry/check-dependencies.ts' for dependency issues"
+    exit 1
+fi

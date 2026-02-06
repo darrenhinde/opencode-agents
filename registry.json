@@ -104,9 +104,9 @@
           "subagent:contextscout",
           "subagent:externalscout",
           "context:standards-code",
-          "context:workflows-delegation",
+          "context:task-delegation-basics",
           "context:component-planning",
-          "context:external-libraries"
+          "context:external-libraries-workflow"
         ],
         "category": "core"
       },
@@ -131,7 +131,7 @@
           "context:standards-tests",
           "context:review-ref",
           "context:delegation-ref",
-          "context:external-libraries"
+          "context:external-libraries-workflow"
         ],
         "category": "core"
       }
@@ -335,7 +335,7 @@
         "type": "subagent",
         "path": ".opencode/agent/subagents/core/contextscout.md",
         "version": "5.1.0",
-        "description": "Get accurate context FIRST before diving deep—save time, energy, and avoid rework. ContextScout intelligently discovers and retrieves the exact context files you need with precise file paths and line ranges, so you start with the right information instead of guessing. Optimized for multi-model compatibility (Claude, Gemini, GPT-4) with 20% token reduction.",
+        "description": "Get accurate context FIRST before diving deep\u2014save time, energy, and avoid rework. ContextScout intelligently discovers and retrieves the exact context files you need with precise file paths and line ranges, so you start with the right information instead of guessing. Optimized for multi-model compatibility (Claude, Gemini, GPT-4) with 20% token reduction.",
         "tags": [
           "context",
           "search",
@@ -351,7 +351,9 @@
           "context:mvi",
           "context:structure",
           "context:workflows",
-          "subagent:externalscout"
+          "subagent:externalscout",
+          "context:root-navigation",
+          "context:context-paths-config"
         ],
         "category": "core"
       },
@@ -806,7 +808,7 @@
         "name": "Project Context",
         "type": "context",
         "path": ".opencode/context/project/project-context.md",
-        "description": "⛔ DEPRECATED: Replaced by project-intelligence/technical-domain.md",
+        "description": "\u26d4 DEPRECATED: Replaced by project-intelligence/technical-domain.md",
         "tags": [
           "deprecated",
           "context",
@@ -881,20 +883,6 @@
           "standards",
           "analysis",
           "quality"
-        ],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "workflows-delegation",
-        "name": "Delegation Workflow",
-        "type": "context",
-        "path": ".opencode/context/core/workflows/task-delegation.md",
-        "description": "Delegation template and process",
-        "tags": [
-          "workflows",
-          "delegation",
-          "coordination"
         ],
         "dependencies": [],
         "category": "standard"
@@ -1008,41 +996,11 @@
         "category": "standard"
       },
       {
-        "id": "design-iteration",
-        "name": "Design Iteration",
-        "type": "context",
-        "path": ".opencode/context/core/workflows/design-iteration.md",
-        "description": "Design Iteration Workflow",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "design-assets",
-        "name": "Design Assets",
-        "type": "context",
-        "path": ".opencode/context/ui/web/design-assets.md",
-        "description": "Design Assets",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
         "id": "ui-styling-standards",
         "name": "Ui Styling Standards",
         "type": "context",
         "path": ".opencode/context/ui/web/ui-styling-standards.md",
         "description": "UI Styling Standards",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "animation-patterns",
-        "name": "Animation Patterns",
-        "type": "context",
-        "path": ".opencode/context/ui/web/animation-patterns.md",
-        "description": "Animation Patterns",
         "tags": [],
         "dependencies": [],
         "category": "standard"
@@ -1083,26 +1041,6 @@
         "type": "context",
         "path": ".opencode/context/openagents-repo/lookup/file-locations.md",
         "description": "Lookup: File Locations",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "adding-agent",
-        "name": "Adding Agent",
-        "type": "context",
-        "path": ".opencode/context/openagents-repo/guides/adding-agent.md",
-        "description": "Brief description of what this agent does",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "adding-skill",
-        "name": "Adding Skill",
-        "type": "context",
-        "path": ".opencode/context/openagents-repo/guides/adding-skill.md",
-        "description": "Guide: Adding a new skill",
         "tags": [],
         "dependencies": [],
         "category": "standard"
@@ -1672,16 +1610,6 @@
         "category": "standard"
       },
       {
-        "id": "navigation-design",
-        "name": "Navigation Design",
-        "type": "context",
-        "path": ".opencode/context/core/context-system/guides/navigation-design.md",
-        "description": "Guide: Designing Navigation Files",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
         "id": "organizing-context",
         "name": "Organizing Context",
         "type": "context",
@@ -2134,62 +2062,6 @@
         "category": "standard"
       },
       {
-        "id": "claude-agent-skills",
-        "name": "Claude Agent Skills",
-        "type": "context",
-        "path": ".opencode/context/to-be-consumed/claude-code-docs/agent-skills.md",
-        "description": "Claude Code: Agent Skills Documentation",
-        "tags": [
-          "claude",
-          "skills",
-          "docs"
-        ],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "claude-create-subagents",
-        "name": "Claude Create Subagents",
-        "type": "context",
-        "path": ".opencode/context/to-be-consumed/claude-code-docs/create-subagents.md",
-        "description": "Claude Code: Creating Subagents",
-        "tags": [
-          "claude",
-          "subagents",
-          "docs"
-        ],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "claude-hooks",
-        "name": "Claude Hooks",
-        "type": "context",
-        "path": ".opencode/context/to-be-consumed/claude-code-docs/hooks.md",
-        "description": "Claude Code: Hooks Documentation",
-        "tags": [
-          "claude",
-          "hooks",
-          "docs"
-        ],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "claude-plugins",
-        "name": "Claude Plugins",
-        "type": "context",
-        "path": ".opencode/context/to-be-consumed/claude-code-docs/plugins.md",
-        "description": "Claude Code: Plugins Documentation",
-        "tags": [
-          "claude",
-          "plugins",
-          "docs"
-        ],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
         "id": "delegation-ref",
         "name": "Delegation Workflow Reference",
         "type": "context",
@@ -2245,21 +2117,8 @@
           "delegation"
         ],
         "dependencies": [
-          "context:workflows-delegation",
+          "context:task-delegation-basics",
           "context:workflows-external-context-management"
-        ],
-        "category": "standard"
-      },
-      {
-        "id": "external-libraries",
-        "name": "External Libraries Workflow",
-        "type": "context",
-        "path": ".opencode/context/core/workflows/external-libraries.md",
-        "description": "Workflow for handling external library documentation and integration patterns",
-        "tags": [
-          "external-libraries",
-          "workflows",
-          "documentation"
         ],
         "category": "standard"
       },
@@ -2339,9 +2198,9 @@
           "dependencies"
         ],
         "dependencies": [
-          "context:external-libraries",
-          "context:adding-agent",
-          "context:adding-skill"
+          "context:external-libraries-workflow",
+          "context:adding-agent-basics",
+          "context:adding-skill-basics"
         ],
         "category": "standard"
       },
@@ -2749,86 +2608,6 @@
         "category": "navigation"
       },
       {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/system-builder-templates/navigation.md",
-        "description": "Overview of available templates for generating context-aware AI systems",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/content-creation/formats/navigation.md",
-        "description": "Content Formats Navigation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/content-creation/workflows/navigation.md",
-        "description": "Content Workflows Navigation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/content-creation/navigation.md",
-        "description": "Content Creation Navigation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/content-creation/examples/navigation.md",
-        "description": "Content Examples Navigation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/content-creation/principles/navigation.md",
-        "description": "Content Principles Navigation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/tasks/schemas/navigation.md",
-        "description": "Task Schemas",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/to-be-consumed/claude-code-docs/navigation.md",
-        "description": "Claude Code Documentation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
         "id": "context-paths",
         "name": "Context Paths",
         "type": "context",
@@ -2844,76 +2623,6 @@
         "type": "context",
         "path": ".opencode/context/development/frontend/when-to-delegate.md",
         "description": "When to Delegate to Frontend Specialist",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/development/frontend/react/navigation.md",
-        "description": "React Development",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/development/ai/mastra-ai/navigation.md",
-        "description": "MAStra AI Navigation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/development/frameworks/tanstack-start/navigation.md",
-        "description": "Tanstack Start Navigation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/learning/navigation.md",
-        "description": "Learning Context",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/navigation.md",
-        "description": "Context Navigation",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/product/navigation.md",
-        "description": "Product Context",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/project/navigation.md",
-        "description": "Project Context",
         "tags": [],
         "dependencies": [],
         "category": "standard"
@@ -2939,27 +2648,430 @@
         "category": "standard"
       },
       {
-        "id": "navigation",
-        "name": "Navigation",
-        "type": "context",
-        "path": ".opencode/context/data/navigation.md",
-        "description": "Data Context",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
         "id": "agent-metadata",
         "name": "Agent Metadata",
         "type": "context",
         "path": ".opencode/context/openagents-repo/core-concepts/agent-metadata.md",
-        "description": "...\\\"               # ✅ Valid OpenCode field",
+        "description": "...\\\"               # \u2705 Valid OpenCode field",
         "tags": [
           "development",
           "coding"
         ],
         "dependencies": [],
         "category": "standard"
+      },
+      {
+        "id": "task-delegation-basics",
+        "name": "Task Delegation Basics",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/task-delegation-basics.md",
+        "description": "Task delegation fundamentals and basic usage patterns",
+        "tags": [
+          "workflows",
+          "delegation"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "task-delegation-specialists",
+        "name": "Task Delegation Specialists",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/task-delegation-specialists.md",
+        "description": "Specialist subagents for task delegation workflows",
+        "tags": [
+          "workflows",
+          "delegation",
+          "subagents"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "task-delegation-caching",
+        "name": "Task Delegation Caching",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/task-delegation-caching.md",
+        "description": "Caching strategies for task delegation workflows",
+        "tags": [
+          "workflows",
+          "delegation",
+          "caching"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-overview",
+        "name": "Design Iteration Overview",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-overview.md",
+        "description": "Overview of the design iteration workflow process",
+        "tags": [
+          "workflows",
+          "design",
+          "iteration"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-plan-file",
+        "name": "Design Iteration Plan File",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-plan-file.md",
+        "description": "Structure and format for design iteration plan files",
+        "tags": [
+          "workflows",
+          "design",
+          "planning"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-plan-iterations",
+        "name": "Design Iteration Plan Iterations",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-plan-iterations.md",
+        "description": "Planning iterations in the design workflow",
+        "tags": [
+          "workflows",
+          "design",
+          "planning"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-stage-layout",
+        "name": "Design Iteration Stage - Layout",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-stage-layout.md",
+        "description": "Layout stage guidelines for design iteration",
+        "tags": [
+          "workflows",
+          "design",
+          "layout"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-stage-theme",
+        "name": "Design Iteration Stage - Theme",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-stage-theme.md",
+        "description": "Theme stage guidelines for design iteration",
+        "tags": [
+          "workflows",
+          "design",
+          "theme"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-stage-implementation",
+        "name": "Design Iteration Stage - Implementation",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-stage-implementation.md",
+        "description": "Implementation stage guidelines for design iteration",
+        "tags": [
+          "workflows",
+          "design",
+          "implementation"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-stage-animation",
+        "name": "Design Iteration Stage - Animation",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-stage-animation.md",
+        "description": "Animation stage guidelines for design iteration",
+        "tags": [
+          "workflows",
+          "design",
+          "animation"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-visual-content",
+        "name": "Design Iteration Visual Content",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-visual-content.md",
+        "description": "Visual content guidelines for design iteration",
+        "tags": [
+          "workflows",
+          "design",
+          "visual"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "design-iteration-best-practices",
+        "name": "Design Iteration Best Practices",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/design-iteration-best-practices.md",
+        "description": "Best practices for design iteration workflows",
+        "tags": [
+          "workflows",
+          "design",
+          "best-practices"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "external-libraries-scenarios",
+        "name": "External Libraries Scenarios",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/external-libraries-scenarios.md",
+        "description": "Common scenarios for external library integration",
+        "tags": [
+          "workflows",
+          "external",
+          "libraries",
+          "scenarios"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "external-libraries-faq",
+        "name": "External Libraries FAQ",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/external-libraries-faq.md",
+        "description": "Frequently asked questions about external libraries",
+        "tags": [
+          "workflows",
+          "external",
+          "libraries",
+          "faq"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "adding-agent-basics",
+        "name": "Adding Agent - Basics",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/guides/adding-agent-basics.md",
+        "description": "Basic guide for adding new agents",
+        "tags": [
+          "guides",
+          "agents",
+          "basics"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "adding-agent-testing",
+        "name": "Adding Agent - Testing",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/guides/adding-agent-testing.md",
+        "description": "Testing guide for new agents",
+        "tags": [
+          "guides",
+          "agents",
+          "testing"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "adding-skill-basics",
+        "name": "Adding Skill - Basics",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/guides/adding-skill-basics.md",
+        "description": "Basic guide for adding new skills",
+        "tags": [
+          "guides",
+          "skills",
+          "basics"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "adding-skill-implementation",
+        "name": "Adding Skill - Implementation",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/guides/adding-skill-implementation.md",
+        "description": "Implementation guide for new skills",
+        "tags": [
+          "guides",
+          "skills",
+          "implementation"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "adding-skill-example",
+        "name": "Adding Skill - Example",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/guides/adding-skill-example.md",
+        "description": "Example of adding a new skill",
+        "tags": [
+          "guides",
+          "skills",
+          "examples"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "navigation-design-basics",
+        "name": "Navigation Design Basics",
+        "type": "context",
+        "path": ".opencode/context/core/context-system/guides/navigation-design-basics.md",
+        "description": "Basics of designing navigation files",
+        "tags": [
+          "context-system",
+          "navigation",
+          "design"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "navigation-templates",
+        "name": "Navigation Templates",
+        "type": "context",
+        "path": ".opencode/context/core/context-system/guides/navigation-templates.md",
+        "description": "Templates for navigation files",
+        "tags": [
+          "context-system",
+          "navigation",
+          "templates"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "animation-basics",
+        "name": "Animation Basics",
+        "type": "context",
+        "path": ".opencode/context/ui/web/animation-basics.md",
+        "description": "Basic animation patterns and guidelines",
+        "tags": [
+          "ui",
+          "web",
+          "animation"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "animation-advanced",
+        "name": "Animation Advanced",
+        "type": "context",
+        "path": ".opencode/context/ui/web/animation-advanced.md",
+        "description": "Advanced animation patterns and techniques",
+        "tags": [
+          "ui",
+          "web",
+          "animation"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "animation-components",
+        "name": "Animation Components",
+        "type": "context",
+        "path": ".opencode/context/ui/web/animation-components.md",
+        "description": "Component-specific animation patterns",
+        "tags": [
+          "ui",
+          "web",
+          "animation",
+          "components"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "animation-forms",
+        "name": "Animation Forms",
+        "type": "context",
+        "path": ".opencode/context/ui/web/animation-forms.md",
+        "description": "Animation patterns for forms",
+        "tags": [
+          "ui",
+          "web",
+          "animation",
+          "forms"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "animation-chat",
+        "name": "Animation Chat",
+        "type": "context",
+        "path": ".opencode/context/ui/web/animation-chat.md",
+        "description": "Animation patterns for chat interfaces",
+        "tags": [
+          "ui",
+          "web",
+          "animation",
+          "chat"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "animation-loading",
+        "name": "Animation Loading",
+        "type": "context",
+        "path": ".opencode/context/ui/web/animation-loading.md",
+        "description": "Loading animation patterns",
+        "tags": [
+          "ui",
+          "web",
+          "animation",
+          "loading"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "context-paths-config",
+        "name": "Context Paths Configuration",
+        "type": "context",
+        "path": ".opencode/context/core/config/paths.json",
+        "description": "CRITICAL: Context root path configuration - loaded via @ reference by agents",
+        "tags": [
+          "config",
+          "paths",
+          "critical",
+          "context-system"
+        ],
+        "dependencies": [],
+        "category": "essential"
+      },
+      {
+        "id": "root-navigation",
+        "name": "Root Navigation",
+        "type": "context",
+        "path": ".opencode/context/navigation.md",
+        "description": "CRITICAL: Root navigation file for context discovery - ContextScout starts here",
+        "tags": [
+          "navigation",
+          "root",
+          "critical",
+          "context-system"
+        ],
+        "dependencies": [],
+        "category": "essential"
       }
     ],
     "config": [
@@ -3015,12 +3127,12 @@
         "context:standards-tests",
         "context:standards-docs",
         "context:standards-analysis",
-        "context:workflows-delegation",
+        "context:task-delegation-basics",
         "context:session-management",
         "context:feature-breakdown",
         "context:workflows-review",
         "context:system-context-guide",
-        "context:adding-skill",
+        "context:adding-skill-basics",
         "config:env-example"
       ]
     },
@@ -3055,14 +3167,15 @@
         "context:quick-start",
         "context:core/*",
         "context:project-intelligence/*",
-        "context:adding-skill",
+        "context:adding-skill-basics",
         "context:ui/*",
         "context:development/*",
         "context:design-systems",
         "context:react-patterns",
-        "context:animation-patterns",
+        "context:animation-basics",
+        "context:animation-components",
+        "context:animation-advanced",
         "context:ui-styling-standards",
-        "context:design-assets",
         "context:clean-code",
         "context:api-design",
         "config:env-example",
@@ -3095,7 +3208,7 @@
         "context:quick-start",
         "context:core/*",
         "context:project-intelligence/*",
-        "context:adding-skill",
+        "context:adding-skill-basics",
         "config:env-example",
         "config:readme"
       ]
@@ -3139,14 +3252,15 @@
         "context:quick-start",
         "context:core/*",
         "context:project-intelligence/*",
-        "context:adding-skill",
+        "context:adding-skill-basics",
         "context:ui/*",
         "context:development/*",
         "context:design-systems",
         "context:react-patterns",
-        "context:animation-patterns",
+        "context:animation-basics",
+        "context:animation-components",
+        "context:animation-advanced",
         "context:ui-styling-standards",
-        "context:design-assets",
         "context:clean-code",
         "context:api-design",
         "config:env-example",
@@ -3202,15 +3316,15 @@
         "context:quick-start",
         "context:core/*",
         "context:project-intelligence/*",
-        "context:to-be-consumed/*",
-        "context:adding-skill",
+        "context:adding-skill-basics",
         "context:ui/*",
         "context:development/*",
         "context:design-systems",
         "context:react-patterns",
-        "context:animation-patterns",
+        "context:animation-basics",
+        "context:animation-components",
+        "context:animation-advanced",
         "context:ui-styling-standards",
-        "context:design-assets",
         "context:clean-code",
         "context:api-design",
         "context:system-builder-guide",
