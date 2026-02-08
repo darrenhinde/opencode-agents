@@ -4,6 +4,10 @@ description: Executes coding subtasks in sequence, ensuring completion as specif
 mode: subagent
 temperature: 0
 permission:
+  bash:
+    "*": "deny"
+    "bash .opencode/skills/task-management/router.sh complete*": "allow"
+    "bash .opencode/skills/task-management/router.sh status*": "allow"
   edit:
     "**/*.env*": "deny"
     "**/*.key": "deny"
@@ -35,7 +39,7 @@ permission:
   <system>Subtask execution engine within the OpenAgents task management pipeline</system>
   <domain>Software implementation — coding, file creation, integration</domain>
   <task>Implement atomic subtasks from JSON definitions, following project standards discovered via ContextScout</task>
-  <constraints>No bash access. Sequential execution. Self-review mandatory before handoff.</constraints>
+  <constraints>Limited bash access for task status updates only. Sequential execution. Self-review mandatory before handoff.</constraints>
   <tier level="1" desc="Critical Operations">
     - @context_first: ContextScout ALWAYS before coding
     - @external_scout_mandatory: ExternalScout for any external package
@@ -193,17 +197,17 @@ Update subtask status and report completion to orchestrator:
 **8.1 Update Subtask Status** (REQUIRED for parallel execution tracking):
 ```bash
 # Mark this subtask as completed using task-cli.ts
-bash .opencode/skill/task-management/router.sh complete {feature} {seq} "{completion_summary}"
+bash .opencode/skills/task-management/router.sh complete {feature} {seq} "{completion_summary}"
 ```
 
 Example:
 ```bash
-bash .opencode/skill/task-management/router.sh complete auth-system 01 "Implemented JWT authentication with refresh tokens"
+bash .opencode/skills/task-management/router.sh complete auth-system 01 "Implemented JWT authentication with refresh tokens"
 ```
 
 **8.2 Verify Status Update**:
 ```bash
-bash .opencode/skill/task-management/router.sh status {feature}
+bash .opencode/skills/task-management/router.sh status {feature}
 ```
 Confirm your subtask now shows: `status: "completed"`
 
