@@ -1,0 +1,25 @@
+# Ignore placeholders and template rules.
+\{.*\}
+\*
+
+# Ignore common template path placeholders.
+literal:path/to/
+literal:another/file
+literal:optional/file
+literal:category/
+literal:/your-
+literal:/my-
+literal:/existing-
+literal:.opencode/command/build-context-system.md
+literal:.opencode/command/validate-repo.md
+
+# Ignore external and anchor links (also filtered in code, kept for clarity).
+^https?://
+^mailto:
+^#
+
+# Temporary legacy exclusions (to keep CI green while docs are migrated).
+^\.opencode/context/openagents-repo/.+?\.md$
+^\.opencode/command/prompt-engineering/.+?\.md$
+^\.opencode/agent/meta/.+?\.md$
+^\.opencode/command/openagents/.+?\.md$

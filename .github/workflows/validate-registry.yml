@@ -195,6 +195,30 @@ jobs:
             echo "See [CONTRIBUTING.md](docs/contributing/CONTRIBUTING.md) for details" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
+
+      - name: Validate markdown context links
+        if: github.event.inputs.skip_validation != 'true'
+        id: validate_context_links
+        run: |
+          echo "## 🔗 Context Link Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if bun run scripts/validation/validate-markdown-links.ts > /tmp/context-link-validation.txt 2>&1; then
+            echo "context_links=passed" >> $GITHUB_OUTPUT
+            echo "✅ Context markdown links are valid!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat /tmp/context-link-validation.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "context_links=failed" >> $GITHUB_OUTPUT
+            echo "❌ Context markdown link validation failed!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat /tmp/context-link-validation.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
       
       - name: Validate registry
         if: github.event.inputs.skip_validation != 'true'
@@ -308,12 +332,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           PROMPT_VALID="${{ steps.validate_prompts.outputs.prompt_validation }}"
+          CONTEXT_LINKS_VALID="${{ steps.validate_context_links.outputs.context_links }}"
           REGISTRY_VALID="${{ steps.validate.outputs.validation }}"
-          
-          if [ "$PROMPT_VALID" = "passed" ] && [ "$REGISTRY_VALID" = "passed" ]; then
+
+          if [ "$PROMPT_VALID" = "passed" ] && [ "$CONTEXT_LINKS_VALID" = "passed" ] && [ "$REGISTRY_VALID" = "passed" ]; then
             echo "### ✅ All Validations Passed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ Prompt library structure is valid" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Context markdown links are valid" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ Registry paths are valid" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "This PR is ready for review!" >> $GITHUB_STEP_SUMMARY
@@ -326,7 +352,13 @@ jobs:
             else
               echo "- ✅ Prompt library validation passed" >> $GITHUB_STEP_SUMMARY
             fi
-            
+
+            if [ "$CONTEXT_LINKS_VALID" != "passed" ]; then
+              echo "- ❌ Context markdown link validation failed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ✅ Context markdown link validation passed" >> $GITHUB_STEP_SUMMARY
+            fi
+
             if [ "$REGISTRY_VALID" != "passed" ]; then
               echo "- ❌ Registry validation failed" >> $GITHUB_STEP_SUMMARY
             else
@@ -339,7 +371,7 @@ jobs:
       
       - name: Fail if validation failed
         if: |
-          (steps.validate_prompts.outputs.prompt_validation == 'failed' || steps.validate.outputs.validation == 'failed') &&
+          (steps.validate_prompts.outputs.prompt_validation == 'failed' || steps.validate_context_links.outputs.context_links == 'failed' || steps.validate.outputs.validation == 'failed') &&
           github.event.inputs.skip_validation != 'true'
         run: |
           echo "❌ Validation failed - blocking PR merge"

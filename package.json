@@ -80,6 +80,7 @@
     "dev:test": "cd evals/framework && npm test",
     "dev:clean": "cd evals/framework && rm -rf dist node_modules && npm install",
     "validate:registry": "bun run scripts/registry/validate-registry.ts",
+    "validate:context-links": "bun run scripts/validation/validate-markdown-links.ts",
     "validate:registry:verbose": "bun run scripts/registry/validate-registry.ts -v",
     "validate:registry:fix": "bun run scripts/registry/validate-registry.ts -f"
   },
