@@ -40,7 +40,7 @@ All files are in `.opencode/context/core/` with organized subfolders:
 - `standards/code-analysis.md` - Analysis framework [high]
 
 ### Workflows (Process Templates + Review)
-- `workflows/task-delegation.md` - Delegation template [high]
+- `workflows/task-delegation-basics.md` - Delegation template [high]
 - `workflows/feature-breakdown.md` - Complex task breakdown [high]
 - `workflows/session-management.md` - Session lifecycle [medium]
 - `workflows/code-review.md` - Code review guidelines [high]
@@ -95,7 +95,7 @@ All files are in `.opencode/context/core/` with organized subfolders:
 - Investigating bugs
 - Evaluating architecture
 
-### .opencode/context/core/workflows/task-delegation.md
+### .opencode/context/core/workflows/task-delegation-basics.md
 - Delegating to general agent
 - Creating task context
 - Multi-file coordination

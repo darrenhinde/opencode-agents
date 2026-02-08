@@ -464,5 +464,5 @@ task(
 - **Design Systems** → `../../ui/web/design-systems.md`
 - **UI Styling Standards** → `../../ui/web/ui-styling-standards.md`
 - **Animation Patterns** → `../../ui/web/animation-patterns.md`
-- **Delegation Workflow** → `../../core/workflows/task-delegation.md`
+- **Delegation Workflow** → `../../core/workflows/task-delegation-basics.md`
 - **React Patterns** → `react/react-patterns.md`

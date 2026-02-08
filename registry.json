@@ -2066,7 +2066,7 @@
         "name": "Delegation Workflow Reference",
         "type": "context",
         "path": ".opencode/context/core/workflows/delegation.md",
-        "description": "Quick reference to delegation workflow (see task-delegation.md for full content)",
+        "description": "Quick reference to delegation workflow (see task-delegation-basics.md and related split files)",
         "tags": [
           "workflows",
           "delegation",

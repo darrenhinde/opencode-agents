@@ -56,7 +56,7 @@ WHY THIS MATTERS:
       - Expect the calling agent to supply relevant context file paths; request them if absent.
       - Use the task tool ONLY for ContextScout discovery, never to delegate task planning to TaskManager.
       - Do NOT create session bundles or write `.tmp/sessions/**` files.
-      - Do NOT read `.opencode/context/core/workflows/task-delegation.md` or follow delegation workflows.
+      - Do NOT read `.opencode/context/core/workflows/task-delegation-basics.md` or follow delegation workflows.
       - Your output (JSON files) is your primary communication channel.
     </with_meta_agent>
 

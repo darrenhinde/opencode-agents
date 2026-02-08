@@ -45,7 +45,7 @@
 
 **For complex features**:
 1. Load `feature-breakdown.md` (high)
-2. Depends on: `task-delegation.md`
+2. Depends on: `task-delegation-basics.md`
 
 **For session management**:
 1. Load `session-management.md` (medium)

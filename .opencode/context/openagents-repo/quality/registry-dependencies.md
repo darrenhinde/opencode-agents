@@ -127,7 +127,7 @@ Dependency:    context:core/standards/code
 dependencies:
   - context:core/standards/code           # .opencode/context/core/standards/code-quality.md
   - context:core/standards/docs           # .opencode/context/core/standards/documentation.md
-  - context:core/workflows/delegation     # .opencode/context/core/workflows/task-delegation.md
+  - context:core/workflows/delegation     # .opencode/context/core/workflows/task-delegation-basics.md
   - context:openagents-repo/guides/adding-agent  # Project-specific context
 ```
 

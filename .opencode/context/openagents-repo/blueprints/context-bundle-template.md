@@ -42,7 +42,7 @@ Status: in_progress
 - `.opencode/context/core/standards/security-patterns.md` → Error handling, security patterns
 
 **Core Workflows**:
-- `.opencode/context/core/workflows/task-delegation.md` → Delegation process
+- `.opencode/context/core/workflows/task-delegation-basics.md` → Delegation process
 - `.opencode/context/core/workflows/feature-breakdown.md` → Task breakdown methodology
 - `.opencode/context/core/workflows/code-review.md` → Code review guidelines
 

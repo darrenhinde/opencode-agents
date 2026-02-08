@@ -201,7 +201,7 @@ analyze_context_reads
 - **code.md** (2 reads)
   `.opencode/context/core/standards/code-quality.md`
 - **delegation.md** (1 read)
-  `.opencode/context/core/workflows/task-delegation.md`
+  `.opencode/context/core/workflows/task-delegation-basics.md`
 
 ### Timeline:
 1. [10:23:45] code.md
@@ -235,7 +235,7 @@ check_context_compliance
 
 ### ✅ Compliant Actions:
 - ✅ Loaded standards/code-quality.md before code writing
-- ✅ Loaded workflows/task-delegation.md before delegation
+- ✅ Loaded workflows/task-delegation-basics.md before delegation
 
 ### Context Loading Rules:
 According to OpenAgent prompt, the agent should:
@@ -251,7 +251,7 @@ According to OpenAgent prompt, the agent should:
 - Writing docs → should read `standards/documentation.md`
 - Writing tests → should read `standards/test-coverage.md`
 - Code review → should read `workflows/code-review.md`
-- Delegating → should read `workflows/task-delegation.md`
+- Delegating → should read `workflows/task-delegation-basics.md`
 
 **When to use:**
 - To verify lazy loading is working

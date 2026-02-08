@@ -1,7 +1,7 @@
 <!-- Context: workflows/delegation | Priority: high | Version: 2.0 | Updated: 2025-01-21 -->
 # Delegation Context Template
 
-> **Note**: This is a reference file. The full content is in [`task-delegation.md`](./task-delegation.md).
+> **Note**: This is a reference file. Start with [`task-delegation-basics.md`](./task-delegation-basics.md).
 
 ## Quick Reference
 
@@ -13,4 +13,8 @@
 
 ---
 
-For the complete delegation workflow template, see [task-delegation.md](./task-delegation.md).
+For the full delegation workflow, use:
+
+- [task-delegation-basics.md](./task-delegation-basics.md)
+- [task-delegation-specialists.md](./task-delegation-specialists.md)
+- [task-delegation-caching.md](./task-delegation-caching.md)

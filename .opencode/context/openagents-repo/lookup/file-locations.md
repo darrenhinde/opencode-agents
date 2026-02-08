@@ -157,7 +157,7 @@ README.md                            # Main documentation
 .opencode/context/core/standards/documentation.md
 .opencode/context/core/standards/test-coverage.md
 .opencode/context/core/standards/security-patterns.md
-.opencode/context/core/workflows/task-delegation.md
+.opencode/context/core/workflows/task-delegation-basics.md
 .opencode/context/core/workflows/code-review.md
 ```
 
