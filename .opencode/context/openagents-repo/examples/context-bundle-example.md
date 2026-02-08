@@ -90,7 +90,7 @@ Create a new data analyst agent for the OpenAgents Control repository. This agen
 
 **Modify**:
 - `registry.json` - Add data-analyst agent entry
-- `.opencode/context/index.md` - Add data category context if needed
+- `.opencode/context/navigation.md` - Add data category context if needed
 
 ## Success Criteria
 

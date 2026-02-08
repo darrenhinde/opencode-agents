@@ -316,7 +316,7 @@ task(
 </principles>
 
 <static_context>
-  Context index: .opencode/context/index.md
+  Context index: .opencode/context/navigation.md
   
   Load index when discovering contexts by keywords. For common tasks:
   - Code tasks → .opencode/context/core/standards/code-quality.md
