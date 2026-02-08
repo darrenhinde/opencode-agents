@@ -75,7 +75,7 @@ main().catch(console.error)
       "id": "{skill-name}",
       "name": "Skill Name",
       "type": "skill",
-      "path": ".opencode/skill/{skill-name}/SKILL.md",
+      "path": ".opencode/skills/{skill-name}/SKILL.md",
       "description": "Brief description",
       "tags": ["tag1", "tag2"],
       "dependencies": []
@@ -106,13 +106,13 @@ main().catch(console.error)
 
 ```bash
 # Test help
-bash .opencode/skill/{skill-name}/router.sh help
+bash .opencode/skills/{skill-name}/router.sh help
 
 # Test commands
-bash .opencode/skill/{skill-name}/router.sh command1 --option value
+bash .opencode/skills/{skill-name}/router.sh command1 --option value
 
 # Test with npx
-npx ts-node .opencode/skill/{skill-name}/scripts/skill-cli.ts help
+npx ts-node .opencode/skills/{skill-name}/scripts/skill-cli.ts help
 ```
 
 ### Test OpenCode Integration
@@ -149,8 +149,8 @@ npx ts-node .opencode/skill/{skill-name}/scripts/skill-cli.ts help
 
 ## Checklist
 
-- [ ] `.opencode/skill/{skill-name}/SKILL.md` created
-- [ ] `.opencode/skill/{skill-name}/router.sh` created (if CLI-based)
+- [ ] `.opencode/skills/{skill-name}/SKILL.md` created
+- [ ] `.opencode/skills/{skill-name}/router.sh` created (if CLI-based)
 - [ ] Router script is executable (`chmod +x`)
 - [ ] Registry updated (if needed)
 - [ ] Profile updated (if needed)

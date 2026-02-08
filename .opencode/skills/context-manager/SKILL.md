@@ -38,49 +38,49 @@ I provide 8 powerful operations for managing context:
 
 ### 1. Discover Context
 ```bash
-bash .opencode/skill/context/router.sh discover authentication
+bash .opencode/skills/context-manager/router.sh discover authentication
 ```
 Finds all context files related to authentication patterns.
 
 ### 2. Fetch External Documentation
 ```bash
-bash .opencode/skill/context/router.sh fetch "Drizzle ORM" "modular schemas"
+bash .opencode/skills/context-manager/router.sh fetch "Drizzle ORM" "modular schemas"
 ```
 Retrieves live documentation from external libraries.
 
 ### 3. Harvest Context
 ```bash
-bash .opencode/skill/context/router.sh harvest ANALYSIS.md
+bash .opencode/skills/context-manager/router.sh harvest ANALYSIS.md
 ```
 Extracts key concepts from summary files into permanent context.
 
 ### 4. Extract Information
 ```bash
-bash .opencode/skill/context/router.sh extract code-quality.md "naming conventions"
+bash .opencode/skills/context-manager/router.sh extract code-quality.md "naming conventions"
 ```
 Pulls specific information from context files.
 
 ### 5. Compress Files
 ```bash
-bash .opencode/skill/context/router.sh compress .opencode/context/ 100KB
+bash .opencode/skills/context-manager/router.sh compress .opencode/context/ 100KB
 ```
 Reduces large context files to save space.
 
 ### 6. Organize Context
 ```bash
-bash .opencode/skill/context/router.sh organize .opencode/context/
+bash .opencode/skills/context-manager/router.sh organize .opencode/context/
 ```
 Restructures context by concern for better organization.
 
 ### 7. Cleanup Stale Files
 ```bash
-bash .opencode/skill/context/router.sh cleanup .tmp/ 7
+bash .opencode/skills/context-manager/router.sh cleanup .tmp/ 7
 ```
 Removes temporary or old files (older than 7 days).
 
 ### 8. Guided Workflow
 ```bash
-bash .opencode/skill/context/router.sh process "organize authentication context" .opencode/context/
+bash .opencode/skills/context-manager/router.sh process "organize authentication context" .opencode/context/
 ```
 Step-by-step guidance for complex context operations.
 
@@ -468,7 +468,7 @@ process [goal] [scope]
 ## File Structure
 
 ```
-.opencode/skill/context/
+.opencode/skills/context-manager/
 ├── SKILL.md                          # This file
 ├── router.sh                         # CLI router (entry point)
 ├── CONTEXT_SKILL_QUICK_START.md      # Quick start guide

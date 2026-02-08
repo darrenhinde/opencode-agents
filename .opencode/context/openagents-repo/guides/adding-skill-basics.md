@@ -32,12 +32,12 @@ Adding an OpenCode skill involves:
 ### Create Structure
 
 ```bash
-mkdir -p .opencode/skill/{skill-name}/scripts
+mkdir -p .opencode/skills/{skill-name}/scripts
 ```
 
 **Standard structure**:
 ```
-.opencode/skill/{skill-name}/
+.opencode/skills/{skill-name}/
 ├── SKILL.md              # Required: Main skill documentation
 ├── router.sh             # Optional: CLI router script
 └── scripts/
@@ -71,7 +71,7 @@ description: Brief description of what the skill provides
 ### Basic Commands
 
 ```bash
-npx ts-node .opencode/skill/{skill-name}/scripts/skill-cli.ts command1
+npx ts-node .opencode/skills/{skill-name}/scripts/skill-cli.ts command1
 ```
 
 ### Command Reference
@@ -126,7 +126,7 @@ esac
 ```
 
 ```bash
-chmod +x .opencode/skill/{skill-name}/router.sh
+chmod +x .opencode/skills/{skill-name}/router.sh
 ```
 
 ---

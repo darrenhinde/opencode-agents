@@ -37,19 +37,19 @@ I provide a command-line interface for managing task breakdowns created by the T
 
 ```bash
 # Show all task statuses
-bash .opencode/skill/task-management/router.sh status
+bash .opencode/skills/task-management/router.sh status
 
 # Show next eligible tasks
-bash .opencode/skill/task-management/router.sh next
+bash .opencode/skills/task-management/router.sh next
 
 # Show blocked tasks
-bash .opencode/skill/task-management/router.sh blocked
+bash .opencode/skills/task-management/router.sh blocked
 
 # Mark a task complete
-bash .opencode/skill/task-management/router.sh complete <feature> <seq> "summary"
+bash .opencode/skills/task-management/router.sh complete <feature> <seq> "summary"
 
 # Validate all tasks
-bash .opencode/skill/task-management/router.sh validate
+bash .opencode/skills/task-management/router.sh validate
 ```
 
 ### Command Reference
@@ -72,7 +72,7 @@ bash .opencode/skill/task-management/router.sh validate
 ### Check Overall Progress
 
 ```bash
-$ bash .opencode/skill/task-management/router.sh status
+$ bash .opencode/skills/task-management/router.sh status
 
 [my-feature] My Feature Implementation
   Status: active | Progress: 45% (5/11)
@@ -82,7 +82,7 @@ $ bash .opencode/skill/task-management/router.sh status
 ### Find What's Next
 
 ```bash
-$ bash .opencode/skill/task-management/router.sh next
+$ bash .opencode/skills/task-management/router.sh next
 
 === Ready Tasks (deps satisfied) ===
 
@@ -94,7 +94,7 @@ $ bash .opencode/skill/task-management/router.sh next
 ### Mark Complete
 
 ```bash
-$ bash .opencode/skill/task-management/router.sh complete my-feature 05 "Implemented authentication module"
+$ bash .opencode/skills/task-management/router.sh complete my-feature 05 "Implemented authentication module"
 
 ✓ Marked my-feature/05 as completed
   Summary: Implemented authentication module
@@ -104,7 +104,7 @@ $ bash .opencode/skill/task-management/router.sh complete my-feature 05 "Impleme
 ### Check Dependencies
 
 ```bash
-$ bash .opencode/skill/task-management/router.sh deps my-feature 07
+$ bash .opencode/skills/task-management/router.sh deps my-feature 07
 
 === Dependency Tree: my-feature/07 ===
 
@@ -116,7 +116,7 @@ $ bash .opencode/skill/task-management/router.sh deps my-feature 07
 ### Validate Everything
 
 ```bash
-$ bash .opencode/skill/task-management/router.sh validate
+$ bash .opencode/skills/task-management/router.sh validate
 
 === Validation Results ===
 
@@ -129,7 +129,7 @@ $ bash .opencode/skill/task-management/router.sh validate
 ## Architecture
 
 ```
-.opencode/skill/task-management/
+.opencode/skills/task-management/
 ├── SKILL.md                          # This file
 ├── router.sh                         # CLI router (entry point)
 └── scripts/
@@ -258,7 +258,7 @@ The `validate` command performs comprehensive checks on task files:
 
 Run `validate` regularly to catch issues early:
 ```bash
-bash .opencode/skill/task-management/router.sh validate my-feature
+bash .opencode/skills/task-management/router.sh validate my-feature
 ```
 
 ### 6. Context and Reference Files
@@ -294,7 +294,7 @@ Working agents (CoderAgent, TestEngineer, etc.) execute subtasks and report comp
 task(subagent_type="TaskManager", description="Implement feature X", ...)
 
 # 2. Check what's ready
-bash .opencode/skill/task-management/router.sh next
+bash .opencode/skills/task-management/router.sh next
 
 # 3. Delegate first task to working agent
 task(subagent_type="CoderAgent", description="Implement subtask 01", ...)
@@ -304,36 +304,36 @@ task(subagent_type="CoderAgent", description="Implement subtask 01", ...)
 
 ```bash
 # Check overall status
-bash .opencode/skill/task-management/router.sh status my-feature
+bash .opencode/skills/task-management/router.sh status my-feature
 
 # See what's next
-bash .opencode/skill/task-management/router.sh next my-feature
+bash .opencode/skills/task-management/router.sh next my-feature
 
 # Check what's blocked
-bash .opencode/skill/task-management/router.sh blocked my-feature
+bash .opencode/skills/task-management/router.sh blocked my-feature
 ```
 
 ### Completing Tasks
 
 ```bash
 # After working agent finishes
-bash .opencode/skill/task-management/router.sh complete my-feature 05 "Implemented auth module with JWT support"
+bash .opencode/skills/task-management/router.sh complete my-feature 05 "Implemented auth module with JWT support"
 
 # Check progress
-bash .opencode/skill/task-management/router.sh status my-feature
+bash .opencode/skills/task-management/router.sh status my-feature
 
 # Find next task
-bash .opencode/skill/task-management/router.sh next my-feature
+bash .opencode/skills/task-management/router.sh next my-feature
 ```
 
 ### Validating Everything
 
 ```bash
 # Validate all tasks
-bash .opencode/skill/task-management/router.sh validate
+bash .opencode/skills/task-management/router.sh validate
 
 # Validate specific feature
-bash .opencode/skill/task-management/router.sh validate my-feature
+bash .opencode/skills/task-management/router.sh validate my-feature
 ```
 
 ---
@@ -353,19 +353,19 @@ complete my-feature 05 "Done"
 ### 2. Check Dependencies Before Starting
 ```bash
 # See what a task depends on
-bash .opencode/skill/task-management/router.sh deps my-feature 07
+bash .opencode/skills/task-management/router.sh deps my-feature 07
 ```
 
 ### 3. Identify Parallelizable Work
 ```bash
 # Find tasks that can run in parallel
-bash .opencode/skill/task-management/router.sh parallel my-feature
+bash .opencode/skills/task-management/router.sh parallel my-feature
 ```
 
 ### 4. Regular Validation
 ```bash
 # Validate regularly to catch issues early
-bash .opencode/skill/task-management/router.sh validate
+bash .opencode/skills/task-management/router.sh validate
 ```
 
 ---
@@ -388,11 +388,11 @@ Run `validate` to see specific issues, then check the JSON files in `.tmp/tasks/
 
 ## File Locations
 
-- **Skill**: `.opencode/skill/task-management/`
-- **Router**: `.opencode/skill/task-management/router.sh`
-- **CLI**: `.opencode/skill/task-management/scripts/task-cli.ts`
+- **Skill**: `.opencode/skills/task-management/`
+- **Router**: `.opencode/skills/task-management/router.sh`
+- **CLI**: `.opencode/skills/task-management/scripts/task-cli.ts`
 - **Tasks**: `.tmp/tasks/` (created by TaskManager)
-- **Documentation**: `.opencode/skill/task-management/SKILL.md` (this file)
+- **Documentation**: `.opencode/skills/task-management/SKILL.md` (this file)
 
 ---
 

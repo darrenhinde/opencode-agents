@@ -364,7 +364,7 @@ function scanDirectory(dir: string, registryPaths: Set<string>): void {
       if (relPath.endsWith('/plugin/agent-validator.ts')) continue;
       
       // Skip skill support files (only SKILL.md needs to be in registry, all other files are copied with the skill)
-      if (relPath.includes('/skill/') && !entry.name.match(/^SKILL\.md$/i)) continue;
+      if (relPath.includes('/skills/') && !entry.name.match(/^SKILL\.md$/i)) continue;
       
       // Check if in registry
       if (!registryPaths.has(relPath)) {

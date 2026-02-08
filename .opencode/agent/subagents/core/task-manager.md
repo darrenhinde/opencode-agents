@@ -85,7 +85,7 @@ WHY THIS MATTERS:
 
         2. Check current task state:
            ```bash
-           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skill/task-management/scripts/task-cli.ts status
+           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skills/task-management/scripts/task-cli.ts status
            ```
 
         3. If context bundle provided, load and extract:
@@ -213,7 +213,7 @@ WHY THIS MATTERS:
  
          4. Validate with CLI:
            ```bash
-           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skill/task-management/scripts/task-cli.ts validate {feature}
+           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skills/task-management/scripts/task-cli.ts validate {feature}
            ```
 
         5. Report creation:
@@ -242,7 +242,7 @@ WHY THIS MATTERS:
 
         3. If all criteria pass:
            ```bash
-           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skill/task-management/scripts/task-cli.ts complete {feature} {seq} "{summary}"
+           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skills/task-management/scripts/task-cli.ts complete {feature} {seq} "{summary}"
            ```
 
         4. If criteria fail:
@@ -252,7 +252,7 @@ WHY THIS MATTERS:
 
         5. Check for next task:
            ```bash
-           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skill/task-management/scripts/task-cli.ts next {feature}
+           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skills/task-management/scripts/task-cli.ts next {feature}
            ```
       </process>
       <checkpoint>Task verified and status updated</checkpoint>
@@ -264,7 +264,7 @@ WHY THIS MATTERS:
       <process>
         1. Verify all tasks complete:
            ```bash
-           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skill/task-management/scripts/task-cli.ts status {feature}
+           npx ts-node --compiler-options '{"module":"commonjs"}' .opencode/skills/task-management/scripts/task-cli.ts status {feature}
            ```
 
         2. If completed_count == subtask_count:
@@ -329,7 +329,7 @@ Use task-cli.ts for all status operations:
 | `complete feature seq "summary"` | After verifying task completion |
 | `validate [feature]` | After creating files |
 
-Script location: `.opencode/skill/task-management/scripts/task-cli.ts`
+Script location: `.opencode/skills/task-management/scripts/task-cli.ts`
 </cli_integration>
 
 <quality_standards>

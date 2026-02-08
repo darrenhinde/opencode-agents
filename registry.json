@@ -705,7 +705,7 @@
         "id": "task-management",
         "name": "Task Management",
         "type": "skill",
-        "path": ".opencode/skill/task-management/SKILL.md",
+        "path": ".opencode/skills/task-management/SKILL.md",
         "description": "Task management CLI for tracking and managing feature subtasks with status, dependencies, and validation",
         "tags": [
           "tasks",
@@ -715,16 +715,16 @@
         "dependencies": [],
         "category": "essential",
         "files": [
-          ".opencode/skill/task-management/SKILL.md",
-          ".opencode/skill/task-management/router.sh",
-          ".opencode/skill/task-management/scripts/task-cli.ts"
+          ".opencode/skills/task-management/SKILL.md",
+          ".opencode/skills/task-management/router.sh",
+          ".opencode/skills/task-management/scripts/task-cli.ts"
         ]
       },
       {
         "id": "smart-router-skill",
         "name": "Smart Router Skill",
         "type": "skill",
-        "path": ".opencode/skill/smart-router-skill/SKILL.md",
+        "path": ".opencode/skills/smart-router-skill/SKILL.md",
         "description": "Movie character personality skill with configurable missions and themed workflows",
         "tags": [
           "routing",
@@ -734,19 +734,19 @@
         "dependencies": [],
         "category": "specialized",
         "files": [
-          ".opencode/skill/smart-router-skill/SKILL.md",
-          ".opencode/skill/smart-router-skill/router.sh",
-          ".opencode/skill/smart-router-skill/config/personality-config.json",
-          ".opencode/skill/smart-router-skill/scripts/sherlock-workflow.sh",
-          ".opencode/skill/smart-router-skill/scripts/stark-workflow.sh",
-          ".opencode/skill/smart-router-skill/scripts/yoda-workflow.sh"
+          ".opencode/skills/smart-router-skill/SKILL.md",
+          ".opencode/skills/smart-router-skill/router.sh",
+          ".opencode/skills/smart-router-skill/config/personality-config.json",
+          ".opencode/skills/smart-router-skill/scripts/sherlock-workflow.sh",
+          ".opencode/skills/smart-router-skill/scripts/stark-workflow.sh",
+          ".opencode/skills/smart-router-skill/scripts/yoda-workflow.sh"
         ]
       },
       {
         "id": "context7",
         "name": "Context7",
         "type": "skill",
-        "path": ".opencode/skill/context7/SKILLS.MD",
+        "path": ".opencode/skills/context7/SKILL.md",
         "description": "Fetch live, version-specific documentation for external libraries and frameworks via Context7 API",
         "tags": [
           "documentation",
@@ -757,17 +757,17 @@
         "dependencies": [],
         "category": "essential",
         "files": [
-          ".opencode/skill/context7/SKILLS.MD",
-          ".opencode/skill/context7/README.md",
-          ".opencode/skill/context7/library-registry.md",
-          ".opencode/skill/context7/navigation.md"
+          ".opencode/skills/context7/SKILL.md",
+          ".opencode/skills/context7/README.md",
+          ".opencode/skills/context7/library-registry.md",
+          ".opencode/skills/context7/navigation.md"
         ]
       },
       {
-        "id": "context",
+        "id": "context-manager",
         "name": "Context Manager",
         "type": "skill",
-        "path": ".opencode/skill/context/SKILL.md",
+        "path": ".opencode/skills/context-manager/SKILL.md",
         "description": "Comprehensive context management with 8 operations: discover, fetch, harvest, extract, compress, organize, cleanup, and process. Integrates with ContextScout and ExternalScout with lazy loading and clear guidance.",
         "tags": [
           "context-management",
@@ -783,8 +783,8 @@
         ],
         "category": "essential",
         "files": [
-          ".opencode/skill/context/SKILL.md",
-          ".opencode/skill/context/router.sh"
+          ".opencode/skills/context-manager/SKILL.md",
+          ".opencode/skills/context-manager/router.sh"
         ]
       }
     ],

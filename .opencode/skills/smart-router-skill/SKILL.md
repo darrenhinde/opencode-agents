@@ -38,7 +38,7 @@ This shows how skills can adapt behavior based on simple configuration changes!
 When you ask to use this skill, I'll present the character options and ask you to choose. Then I'll run:
 
 ```bash
-cd .opencode/skill/smart-router-skill
+cd .opencode/skills/smart-router-skill
 bash router.sh --character <your_choice>
 ```
 
@@ -60,7 +60,7 @@ Me: *runs bash router.sh --character yoda*
 
 Want to see different behavior? Edit the config file!
 
-**File:** `.opencode/skill/smart-router-skill/config/personality-config.json`
+**File:** `.opencode/skills/smart-router-skill/config/personality-config.json`
 
 ```json
 {
@@ -127,7 +127,7 @@ Want to see different behavior? Edit the config file!
 
 A bash script that loads a character personality and runs their themed workflow.
 
-**Location:** `.opencode/skill/smart-router-skill/router.sh`
+**Location:** `.opencode/skills/smart-router-skill/router.sh`
 
 ```bash
 # Basic usage

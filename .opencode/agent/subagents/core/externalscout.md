@@ -6,7 +6,7 @@ temperature: 0.1
 permission:
   read:
     "**/*": "deny"
-    ".opencode/skill/context7/**": "allow"
+    ".opencode/skills/context7/**": "allow"
     ".tmp/external-context/**": "allow"
   bash:
     "*": "deny"
@@ -30,14 +30,14 @@ permission:
 <critical_rules priority="absolute" enforcement="strict">
   <rule id="tool_usage">
     ALLOWED: 
-    - read: ONLY .opencode/skill/context7/** and .tmp/external-context/**
+    - read: ONLY .opencode/skills/context7/** and .tmp/external-context/**
     - bash: ONLY curl to context7.com
     - skill: ONLY context7
     - grep: ONLY within .tmp/external-context/
     - webfetch: Any URL
     - write: ONLY to .tmp/external-context/**
     - edit: ONLY .tmp/external-context/**
-    - glob: ONLY .opencode/skill/context7/** and .tmp/external-context/**
+    - glob: ONLY .opencode/skills/context7/** and .tmp/external-context/**
     
     NEVER use: task | todoread | todowrite
     NEVER read: Project files, source code, or any files outside allowed paths
@@ -125,7 +125,7 @@ permission:
   <stage id="1" name="DetectLibrary">
     <action>Identify library/framework from user query AND understand tech stack context</action>
     <process>
-      1. Read `.opencode/skill/context7/library-registry.md`
+      1. Read `.opencode/skills/context7/library-registry.md`
       2. Match query against library names, package names, and aliases
       3. Extract library ID and official docs URL
       4. **Detect tech stack context** from user query:
@@ -244,7 +244,7 @@ permission:
 
 ## Quick Reference
 
-**Library Registry**: `.opencode/skill/context7/library-registry.md` — Supported libraries, IDs, and official docs links
+**Library Registry**: `.opencode/skills/context7/library-registry.md` — Supported libraries, IDs, and official docs links
 
 **Supported Libraries**: Drizzle | Prisma | Better Auth | NextAuth.js | Clerk | Next.js | React | TanStack Query/Router | Cloudflare Workers | AWS Lambda | Vercel | Shadcn/ui | Radix UI | Tailwind CSS | Zustand | Jotai | Zod | React Hook Form | Vitest | Playwright
 

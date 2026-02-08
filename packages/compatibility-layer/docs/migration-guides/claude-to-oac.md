@@ -148,7 +148,7 @@ You are a senior developer.
 | **Permissions** | Binary modes only | Granular per-path rules |
 | **Temperature** | Not supported | Full control (0.0-2.0) |
 | **Max steps** | Not supported | Configurable limit |
-| **Skills path** | `.claude/skills/` | `.opencode/skill/` |
+| **Skills path** | `.claude/skills/` | `.opencode/skills/` |
 
 ### 4. Feature Mapping
 
@@ -430,7 +430,7 @@ Features that don't fully translate between formats:
 | Max steps | Not supported | Configurable | Add limit after migration |
 | Granular permissions | Binary modes | Per-path rules | Expand after migration |
 | Permission mode `acceptEdits` | Supported | No direct equivalent | Use `permission: { edit: "allow" }` |
-| Skill directory structure | `.claude/skills/` | `.opencode/skill/` | Move and rename |
+| Skill directory structure | `.claude/skills/` | `.opencode/skills/` | Move and rename |
 | Agent directory | `.claude/agents/` | `.opencode/agent/` | Move and rename |
 
 ### 7. Validation
@@ -587,7 +587,7 @@ Valid events: `PreToolUse`, `PostToolUse`, `PermissionRequest`, `AgentStart`, `A
 .claude/skills/my-skill/SKILL.md
 
 # OAC location
-.opencode/skill/my-skill/SKILL.md
+.opencode/skills/my-skill/SKILL.md
 ```
 
 Update skill references in agent:

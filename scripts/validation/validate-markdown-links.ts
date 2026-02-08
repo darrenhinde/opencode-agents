@@ -8,7 +8,7 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SKIP_RULES_FILE = join(REPO_ROOT, 'scripts', 'validation', 'markdown-link-skip-patterns.txt')
 const TARGET_DIRS = [
   '.opencode/agent',
-  '.opencode/skill',
+  '.opencode/skills',
   '.opencode/command',
   '.opencode/context'
 ]

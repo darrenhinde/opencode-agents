@@ -33,9 +33,9 @@ All notable changes to this project will be documented in this file.
   - Added to registry with `skill:context7` dependency
 
 - **Context7 Skill**: Registered in system for external documentation fetching
-  - Path: `.opencode/skill/context7/SKILLS.MD`
-  - Library registry: `.opencode/skill/context7/library-registry.md`
-  - Navigation guide: `.opencode/skill/context7/navigation.md`
+  - Path: `.opencode/skills/context7/SKILL.md`
+  - Library registry: `.opencode/skills/context7/library-registry.md`
+  - Navigation guide: `.opencode/skills/context7/navigation.md`
 
 ### Changed
 - **ContextScout v5.1.0**: Optimized with research-backed prompt engineering patterns

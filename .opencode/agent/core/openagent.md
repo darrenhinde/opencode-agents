@@ -305,10 +305,10 @@ task(
          1. **Identify Parallel Batches** (use task-cli.ts):
             ```bash
             # Get all parallel-ready tasks
-            bash .opencode/skill/task-management/router.sh parallel {feature}
+            bash .opencode/skills/task-management/router.sh parallel {feature}
             
             # Get next eligible tasks
-            bash .opencode/skill/task-management/router.sh next {feature}
+            bash .opencode/skills/task-management/router.sh next {feature}
             ```
          
          2. **Build Execution Plan**:
@@ -346,7 +346,7 @@ task(
          
          4. **Verify Batch 1 Complete**:
             ```bash
-            bash .opencode/skill/task-management/router.sh status {feature}
+            bash .opencode/skills/task-management/router.sh status {feature}
             ```
             Confirm tasks 01, 02, 03 all show status: "completed"
          

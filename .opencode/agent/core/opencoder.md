@@ -329,7 +329,7 @@ Code Standards
               
               3. Validate batch completion:
                  ```bash
-                 bash .opencode/skill/task-management/router.sh status {feature}
+                 bash .opencode/skills/task-management/router.sh status {feature}
                  ```
                  - Check all subtasks in batch have status: "completed"
                  - Verify deliverables exist

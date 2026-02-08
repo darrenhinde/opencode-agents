@@ -10,10 +10,10 @@
 
 **Don't start from scratch.** Use the standard pattern to build robust CLIs in minutes.
 
-1.  **Create**: `mkdir -p .opencode/skill/{name}/scripts`
+1.  **Create**: `mkdir -p .opencode/skills/{name}/scripts`
 2.  **Implement**: Create `skill-cli.ts` (TypeScript) and `router.sh` (Bash)
 3.  **Register**: Add to `registry.json`
-4.  **Run**: `bash .opencode/skill/{name}/router.sh help`
+4.  **Run**: `bash .opencode/skills/{name}/router.sh help`
 
 ---
 

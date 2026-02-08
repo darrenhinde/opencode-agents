@@ -10,7 +10,7 @@
 context7/
 ├── navigation.md              # This file
 ├── README.md                  # Quick start and workflow
-├── SKILLS.MD                  # Context7 API documentation
+├── SKILL.md                  # Context7 API documentation
 └── library-registry.md        # Supported libraries and query patterns
 ```
 
@@ -21,7 +21,7 @@ context7/
 | Task | Path |
 |------|------|
 | **Quick start** | `README.md` |
-| **API reference** | `SKILLS.MD` |
+| **API reference** | `SKILL.md` |
 | **Supported libraries** | `library-registry.md` (lines 18-181) |
 | **Query patterns** | `library-registry.md` (lines 199-261) |
 | **Add new library** | `library-registry.md` (lines 264-279) |
@@ -33,7 +33,7 @@ context7/
 
 **Using Context7**:
 - Quick start → `README.md`
-- API details → `SKILLS.MD`
+- API details → `SKILL.md`
 
 **Adding Libraries**:
 - Template → `library-registry.md` (lines 272-279)
@@ -41,11 +41,11 @@ context7/
 
 **Integration**:
 - ContextScout workflow → `README.md` (lines 54-73)
-- ExternalScout subagent → `.opencode/agent/subagents/core/external-scout.md`
+- ExternalScout subagent → `.opencode/agent/subagents/core/externalscout.md`
 
 ---
 
 ## Related
 
-- **ExternalScout**: `.opencode/agent/subagents/core/external-scout.md`
+- **ExternalScout**: `.opencode/agent/subagents/core/externalscout.md`
 - **ContextScout**: `.opencode/agent/subagents/core/contextscout.md`

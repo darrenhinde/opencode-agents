@@ -46,7 +46,7 @@ FEATURES:
   ✓ Clean up stale files
   ✓ Guided workflows
 
-For detailed documentation, see: .opencode/skill/context/SKILL.md
+For detailed documentation, see: .opencode/skills/context-manager/SKILL.md
 HELP
 }
 
@@ -87,42 +87,42 @@ case "$OPERATION" in
     discover)
         echo "📍 DISCOVER: Finding context files..."
         echo "Target: $*"
-        echo "See .opencode/skill/context/SKILL.md for full documentation"
+        echo "See .opencode/skills/context-manager/SKILL.md for full documentation"
         ;;
     fetch)
         echo "📥 FETCH: Retrieving external documentation..."
         echo "Libraries: $*"
-        echo "See .opencode/skill/context/SKILL.md for full documentation"
+        echo "See .opencode/skills/context-manager/SKILL.md for full documentation"
         ;;
     harvest)
         echo "🌾 HARVEST: Extracting context from summaries..."
         echo "Source: $*"
-        echo "See .opencode/skill/context/SKILL.md for full documentation"
+        echo "See .opencode/skills/context-manager/SKILL.md for full documentation"
         ;;
     extract)
         echo "🔍 EXTRACT: Pulling key information..."
         echo "Target: $*"
-        echo "See .opencode/skill/context/SKILL.md for full documentation"
+        echo "See .opencode/skills/context-manager/SKILL.md for full documentation"
         ;;
     compress)
         echo "🗜️  COMPRESS: Reducing file sizes..."
         echo "Target: $*"
-        echo "See .opencode/skill/context/SKILL.md for full documentation"
+        echo "See .opencode/skills/context-manager/SKILL.md for full documentation"
         ;;
     organize)
         echo "📂 ORGANIZE: Restructuring context..."
         echo "Target: $*"
-        echo "See .opencode/skill/context/SKILL.md for full documentation"
+        echo "See .opencode/skills/context-manager/SKILL.md for full documentation"
         ;;
     cleanup)
         echo "🧹 CLEANUP: Removing stale files..."
         echo "Target: $*"
-        echo "See .opencode/skill/context/SKILL.md for full documentation"
+        echo "See .opencode/skills/context-manager/SKILL.md for full documentation"
         ;;
     process)
         echo "⚙️  PROCESS: Guided workflow..."
         echo "Goal: $*"
-        echo "See .opencode/skill/context/SKILL.md for full documentation"
+        echo "See .opencode/skills/context-manager/SKILL.md for full documentation"
         ;;
     *)
         echo "❌ Unknown operation: $OPERATION"

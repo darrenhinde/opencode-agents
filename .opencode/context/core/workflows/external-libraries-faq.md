@@ -150,7 +150,7 @@ Before implementing with external libraries:
 
 ## Supported Libraries
 
-**See**: `.opencode/skill/context7/library-registry.md`
+**See**: `.opencode/skills/context7/library-registry.md`
 
 **Categories:** Database/ORM | Auth | Frontend | Infrastructure | UI | State | Validation | Testing
 

@@ -38,7 +38,7 @@ curl -s "https://context7.com/api/v2/libs/search?libraryName=LIBRARY&query=TOPIC
 curl -s "https://context7.com/api/v2/context?libraryId=LIBRARY_ID&query=OPTIMIZED_QUERY&type=txt"
 ```
 
-See `SKILLS.MD` for detailed API documentation.
+See `SKILL.md` for detailed API documentation.
 
 ## Supported Libraries
 
@@ -76,7 +76,7 @@ User receives current, actionable docs
 
 ## Files
 
-- **`SKILLS.MD`** - Context7 API documentation and usage
+- **`SKILL.md`** - Context7 API documentation and usage
 - **`library-registry.md`** - Supported libraries, aliases, and query patterns
 - **`README.md`** - This file (overview and quick start)
 
@@ -98,5 +98,5 @@ To add a new library to the registry:
 
 ## Related
 
-- **ExternalScout**: `.opencode/agent/subagents/core/external-scout.md`
+- **ExternalScout**: `.opencode/agent/subagents/core/externalscout.md`
 - **ContextScout**: `.opencode/agent/subagents/core/contextscout.md`

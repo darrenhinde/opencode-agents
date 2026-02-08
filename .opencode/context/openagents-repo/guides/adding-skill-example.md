@@ -7,11 +7,11 @@
 ## Directory Structure
 
 ```bash
-mkdir -p .opencode/skill/task-management/scripts
+mkdir -p .opencode/skills/task-management/scripts
 ```
 
 ```
-.opencode/skill/task-management/
+.opencode/skills/task-management/
 ├── SKILL.md
 ├── router.sh
 └── scripts/
@@ -44,13 +44,13 @@ description: Task management CLI for tracking feature subtasks
 
 ```bash
 # Show all task statuses
-npx ts-node .opencode/skill/task-management/scripts/task-cli.ts status
+npx ts-node .opencode/skills/task-management/scripts/task-cli.ts status
 
 # Show next eligible tasks
-npx ts-node .opencode/skill/task-management/scripts/task-cli.ts next
+npx ts-node .opencode/skills/task-management/scripts/task-cli.ts next
 
 # Mark complete
-npx ts-node .opencode/skill/task-management/scripts/task-cli.ts complete <feature> <seq> "summary"
+npx ts-node .opencode/skills/task-management/scripts/task-cli.ts complete <feature> <seq> "summary"
 ```
 ```
 
