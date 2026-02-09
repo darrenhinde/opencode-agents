@@ -144,7 +144,7 @@ temperature: 0.1
       ```
     </template>
     <output>Complete command files</output>
-  </step_5>
+  </step_4>
 
   <step_5>
     <action>Create command usage guide</action>

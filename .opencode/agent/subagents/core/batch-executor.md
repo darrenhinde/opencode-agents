@@ -19,6 +19,7 @@ permission:
     contextscout: "allow"
     externalscout: "allow"
     coderagent: "allow"
+    OpenFrontendSpecialist: "allow"
 ---
 
 # BatchExecutor

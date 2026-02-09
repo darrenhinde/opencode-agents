@@ -207,9 +207,10 @@ WHY THIS MATTERS:
  
               **FRONTEND RULE**: If a task involves UI design, styling, or frontend implementation:
               1. Set `suggested_agent`: "OpenFrontendSpecialist"
-              2. Include `.opencode/context/ui/web/ui-styling-standards.md` and `.opencode/context/core/workflows/design-iteration.md` in `context_files`.
-              3. Ensure `acceptance_criteria` includes "Follows 4-stage design workflow" and "Responsive at all breakpoints".
-              4. **PARALLELIZATION**: Design tasks can run in parallel (`parallel: true`) since design work is isolated and doesn't affect backend/logic implementation. Only mark `parallel: false` if design depends on backend API contracts or data structures.
+              2. Include `.opencode/context/ui/web/ui-styling-standards.md` and `.opencode/context/core/workflows/design-iteration-overview.md` in `context_files`.
+              3. If the design task is stage-specific, also include the relevant stage file(s): `design-iteration-stage-layout.md`, `design-iteration-stage-theme.md`, `design-iteration-stage-animation.md`, `design-iteration-stage-implementation.md`.
+              4. Ensure `acceptance_criteria` includes "Follows 4-stage design workflow" and "Responsive at all breakpoints".
+              5. **PARALLELIZATION**: Design tasks can run in parallel (`parallel: true`) since design work is isolated and doesn't affect backend/logic implementation. Only mark `parallel: false` if design depends on backend API contracts or data structures.
  
          4. Validate with CLI:
            ```bash
@@ -364,4 +365,3 @@ Script location: `.opencode/skills/task-management/scripts/task-cli.ts`
     <lazy_loading>Reference context files, don't embed content</lazy_loading>
     <no_self_delegation>Do not create session bundles or delegate to TaskManager; execute directly</no_self_delegation>
   </principles>
-
