@@ -300,11 +300,45 @@ function cmdValidate(feature?: string): void {
   const features = feature ? [feature] : getFeatureDirs();
   let hasErrors = false;
 
+  const validTaskStatuses = new Set(['active', 'completed', 'blocked', 'archived']);
+  const validSubtaskStatuses = new Set(['pending', 'in_progress', 'completed', 'blocked']);
+
+  const requiredTaskFields = [
+    'id',
+    'name',
+    'status',
+    'objective',
+    'context_files',
+    'exit_criteria',
+    'subtask_count',
+    'completed_count',
+    'created_at',
+    'completed_at',
+  ];
+
+  const requiredSubtaskFields = [
+    'id',
+    'seq',
+    'title',
+    'status',
+    'depends_on',
+    'parallel',
+    'context_files',
+    'acceptance_criteria',
+    'deliverables',
+    'agent_id',
+    'started_at',
+    'completed_at',
+    'completion_summary',
+  ];
+
+  const hasField = (obj: any, field: string): boolean => Object.prototype.hasOwnProperty.call(obj, field);
+  const isStringArray = (value: any): boolean => Array.isArray(value) && value.every(v => typeof v === 'string');
+
   console.log('\n=== Validation Results ===\n');
 
   for (const f of features) {
     const errors: string[] = [];
-    const warnings: string[] = [];
 
     // Check task.json exists
     const task = loadTask(f);
@@ -314,16 +348,106 @@ function cmdValidate(feature?: string): void {
 
     // Load and validate subtasks
     const subtasks = loadSubtasks(f);
+    const seqCounts = new Map<string, number>();
+    for (const s of subtasks) {
+      const seq = typeof s.seq === 'string' ? s.seq : '';
+      seqCounts.set(seq, (seqCounts.get(seq) || 0) + 1);
+    }
     const seqs = new Set(subtasks.map(s => s.seq));
 
+    if (task) {
+      // Required fields in task.json
+      for (const field of requiredTaskFields) {
+        if (!hasField(task, field)) {
+          errors.push(`task.json: missing required field '${field}'`);
+        }
+      }
+
+      // Task ID should match feature slug
+      if (task.id !== f) {
+        errors.push(`task.json id ('${task.id}') should match feature slug ('${f}')`);
+      }
+
+      // Task status should be valid
+      if (!validTaskStatuses.has(task.status)) {
+        errors.push(`task.json: invalid status '${task.status}'`);
+      }
+
+      // Basic type checks for key task fields
+      if (!isStringArray(task.context_files)) {
+        errors.push('task.json: context_files must be string[]');
+      }
+      if (hasField(task, 'reference_files') && task.reference_files !== undefined && !isStringArray(task.reference_files)) {
+        errors.push('task.json: reference_files must be string[] when present');
+      }
+      if (!isStringArray(task.exit_criteria)) {
+        errors.push('task.json: exit_criteria must be string[]');
+      }
+      if (typeof task.subtask_count !== 'number') {
+        errors.push('task.json: subtask_count must be number');
+      }
+      if (typeof task.completed_count !== 'number') {
+        errors.push('task.json: completed_count must be number');
+      }
+    }
+
     for (const s of subtasks) {
+      // Required fields in subtask files
+      for (const field of requiredSubtaskFields) {
+        if (!hasField(s, field)) {
+          errors.push(`${s.seq || '??'}: missing required field '${field}'`);
+        }
+      }
+
+      // Sequence format and uniqueness
+      if (!/^\d{2}$/.test(s.seq)) {
+        errors.push(`${s.seq}: sequence must be 2 digits (e.g., 01, 02)`);
+      }
+      if ((seqCounts.get(s.seq) || 0) > 1) {
+        errors.push(`${s.seq}: duplicate sequence number`);
+      }
+
       // Check ID format
       if (!s.id.startsWith(f)) {
         errors.push(`${s.seq}: ID should start with feature name`);
       }
 
+      // Status should be valid
+      if (!validSubtaskStatuses.has(s.status)) {
+        errors.push(`${s.seq}: invalid status '${s.status}'`);
+      }
+
+      // Type checks
+      if (!isStringArray(s.depends_on)) {
+        errors.push(`${s.seq}: depends_on must be string[]`);
+      }
+      if (typeof s.parallel !== 'boolean') {
+        errors.push(`${s.seq}: parallel must be boolean`);
+      }
+      if (!isStringArray(s.context_files)) {
+        errors.push(`${s.seq}: context_files must be string[]`);
+      }
+      if (hasField(s, 'reference_files') && s.reference_files !== undefined && !isStringArray(s.reference_files)) {
+        errors.push(`${s.seq}: reference_files must be string[] when present`);
+      }
+      if (!isStringArray(s.acceptance_criteria)) {
+        errors.push(`${s.seq}: acceptance_criteria must be string[]`);
+      } else if (s.acceptance_criteria.length === 0) {
+        errors.push(`${s.seq}: No acceptance criteria defined`);
+      }
+      if (!isStringArray(s.deliverables)) {
+        errors.push(`${s.seq}: deliverables must be string[]`);
+      } else if (s.deliverables.length === 0) {
+        errors.push(`${s.seq}: No deliverables defined`);
+      }
+
+      // Self dependency is invalid
+      if (Array.isArray(s.depends_on) && s.depends_on.includes(s.seq)) {
+        errors.push(`${s.seq}: task cannot depend on itself`);
+      }
+
       // Check for missing dependencies
-      for (const dep of s.depends_on) {
+      for (const dep of (Array.isArray(s.depends_on) ? s.depends_on : [])) {
         if (!seqs.has(dep)) {
           errors.push(`${s.seq}: depends on non-existent task ${dep}`);
         }
@@ -348,14 +472,6 @@ function cmdValidate(feature?: string): void {
         return false;
       };
       checkCircular(s.seq, []);
-
-      // Warnings
-      if (s.acceptance_criteria.length === 0) {
-        warnings.push(`${s.seq}: No acceptance criteria defined`);
-      }
-      if (s.deliverables.length === 0) {
-        warnings.push(`${s.seq}: No deliverables defined`);
-      }
     }
 
     // Check counts match
@@ -365,15 +481,12 @@ function cmdValidate(feature?: string): void {
 
     // Print results
     console.log(`[${f}]`);
-    if (errors.length === 0 && warnings.length === 0) {
+    if (errors.length === 0) {
       console.log('  ✓ All checks passed');
     } else {
       for (const e of errors) {
         console.log(`  ✗ ERROR: ${e}`);
         hasErrors = true;
-      }
-      for (const w of warnings) {
-        console.log(`  ⚠ WARNING: ${w}`);
       }
     }
     console.log();
