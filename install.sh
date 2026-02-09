@@ -513,10 +513,10 @@ show_install_location_menu() {
     echo "     Examples:"
     case "$PLATFORM" in
         Windows)
-            echo "       ${CYAN}C:/Users/username/my-agents${NC} or ${CYAN}~/my-agents${NC}"
+            echo -e "       ${CYAN}C:/Users/username/my-agents${NC} or ${CYAN}~/my-agents${NC}"
             ;;
         *)
-            echo "       ${CYAN}/home/username/my-agents${NC} or ${CYAN}~/my-agents${NC}"
+            echo -e "       ${CYAN}/home/username/my-agents${NC} or ${CYAN}~/my-agents${NC}"
             ;;
     esac
     echo ""
@@ -952,7 +952,7 @@ show_collision_report() {
             tools+=("$file")
         elif [[ $file == *"/plugin/"* ]]; then
             plugins+=("$file")
-        elif [[ $file == *"/skill/"* ]]; then
+        elif [[ $file == *"/skills/"* ]]; then
             skills+=("$file")
         elif [[ $file == *"/context/"* ]]; then
             contexts+=("$file")
@@ -1235,12 +1235,12 @@ show_post_install() {
     # Check if env.example was installed
     if [ -f "${INSTALL_DIR}/env.example" ] || [ -f "env.example" ]; then
         echo "2. Copy env.example to .env and configure:"
-        echo "   ${CYAN}cp env.example .env${NC}"
+        echo -e "   ${CYAN}cp env.example .env${NC}"
         echo "3. Start using OpenCode agents:"
     else
         echo "2. Start using OpenCode agents:"
     fi
-    echo "   ${CYAN}opencode${NC}"
+    echo -e "   ${CYAN}opencode${NC}"
     echo ""
     
     # Show installation location info
@@ -1396,26 +1396,26 @@ main() {
                 echo ""
                 echo -e "${BOLD}Examples:${NC}"
                 echo ""
-                echo "  ${CYAN}# Interactive mode (choose location and components)${NC}"
+                echo -e "  ${CYAN}# Interactive mode (choose location and components)${NC}"
                 echo "  $0"
                 echo ""
-                echo "  ${CYAN}# Quick install with default location (.opencode/)${NC}"
+                echo -e "  ${CYAN}# Quick install with default location (.opencode/)${NC}"
                 echo "  $0 developer"
                 echo ""
-                echo "  ${CYAN}# Install to global location (Linux/macOS)${NC}"
+                echo -e "  ${CYAN}# Install to global location (Linux/macOS)${NC}"
                 echo "  $0 developer --install-dir ~/.config/opencode"
                 echo ""
-                echo "  ${CYAN}# Install to global location (Windows Git Bash)${NC}"
+                echo -e "  ${CYAN}# Install to global location (Windows Git Bash)${NC}"
                 echo "  $0 developer --install-dir ~/.config/opencode"
                 echo ""
-                echo "  ${CYAN}# Install to custom location${NC}"
+                echo -e "  ${CYAN}# Install to custom location${NC}"
                 echo "  $0 essential --install-dir ~/my-agents"
                 echo ""
-                echo "  ${CYAN}# Using environment variable${NC}"
+                echo -e "  ${CYAN}# Using environment variable${NC}"
                 echo "  export OPENCODE_INSTALL_DIR=~/.config/opencode"
                 echo "  $0 developer"
                 echo ""
-                echo "  ${CYAN}# Install from URL (non-interactive)${NC}"
+                echo -e "  ${CYAN}# Install from URL (non-interactive)${NC}"
                 echo "  curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer"
                 echo ""
                 echo -e "${BOLD}Platform Support:${NC}"

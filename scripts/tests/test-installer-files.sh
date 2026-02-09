@@ -202,12 +202,12 @@ print_summary() {
     echo -e "${BOLD}Test Summary${NC}"
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo "Total files tested:  ${CYAN}$((SUCCESS_COUNT + FAIL_COUNT))${NC}"
-    echo "Files accessible:    ${GREEN}${SUCCESS_COUNT}${NC}"
-    echo "Files NOT FOUND:     ${RED}${FAIL_COUNT}${NC}"
+    echo -e "Total files tested:  ${CYAN}$((SUCCESS_COUNT + FAIL_COUNT))${NC}"
+    echo -e "Files accessible:    ${GREEN}${SUCCESS_COUNT}${NC}"
+    echo -e "Files NOT FOUND:     ${RED}${FAIL_COUNT}${NC}"
     
     if [ ${#SKIPPED_FILES[@]} -gt 0 ]; then
-        echo "Skipped:             ${YELLOW}${#SKIPPED_FILES[@]}${NC}"
+        echo -e "Skipped:             ${YELLOW}${#SKIPPED_FILES[@]}${NC}"
     fi
     
     echo ""
@@ -223,7 +223,7 @@ print_summary() {
             echo "    URL: ${RAW_URL}/${path}"
         done
         echo ""
-        echo "${YELLOW}These files need to be:${NC}"
+        echo -e "${YELLOW}These files need to be:${NC}"
         echo "  1. Added to the repository, OR"
         echo "  2. Removed from registry.json"
         echo ""
