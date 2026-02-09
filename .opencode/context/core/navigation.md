@@ -26,7 +26,7 @@ core/
 │   ├── task-delegation-basics.md
 │   ├── feature-breakdown.md
 │   ├── session-management.md
-│   └── design-iteration.md
+│   └── design-iteration-overview.md
 │
 ├── guides/
 │   └── resuming-sessions.md      # NEW: Multi-session task resumption

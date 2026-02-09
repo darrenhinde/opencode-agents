@@ -282,7 +282,7 @@ task(
     TASK:
     1. Use grep to find all references to context files in:
        - .opencode/agent/**/*.md
-       - .opencode/prompts/**/*.md
+       - .opencode/command/**/*.md
     
     2. Search for these patterns:
        - ".opencode/context/core/" (direct paths)

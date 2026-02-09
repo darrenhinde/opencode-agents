@@ -796,28 +796,7 @@ Express: `src/routes/ controllers/ models/ middleware/`
 ✅ Version 1.4 → 1.5
 ```
 
-### Example 4: Extract External Context
-```bash
-/add-context
-
-# Found external context files in .tmp/
-#   📄 .tmp/external-context.md (2.4 KB)
-#   📄 .tmp/api-patterns.md (1.8 KB)
-# 
-# Choose: 1. Extract & use these files
-# 
-# Extracted patterns:
-#   ✓ Tech Stack: Next.js 15 + TypeScript + PostgreSQL + Tailwind
-#   ✓ API Pattern: [from external-context.md]
-#   ✓ Component: [from api-patterns.md]
-#   ✓ Naming: kebab-case files, PascalCase components
-#   ✓ Standards: TypeScript strict, Zod validation
-#   ✓ Security: Input validation, parameterized queries
-#
-# ✅ Created: technical-domain.md (merged with external patterns)
-```
-
-### Example 5: External Context Files Present
+### Example 4: External Context Files Present
 ```bash
 /add-context
 
@@ -843,7 +822,7 @@ Express: `src/routes/ controllers/ models/ middleware/`
 # After harvesting, run /add-context again.
 ```
 
-### Example 6: After Harvesting External Context
+### Example 5: After Harvesting External Context
 ```bash
 # After running: /context harvest
 

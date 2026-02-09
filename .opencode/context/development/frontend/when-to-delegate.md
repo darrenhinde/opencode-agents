@@ -292,7 +292,7 @@ The frontend-specialist will automatically load these via ContextScout:
 - `development/frontend/react/react-patterns.md` - React patterns (if React project)
 
 **Workflows**:
-- `core/workflows/design-iteration.md` - Design iteration workflow
+- `core/workflows/design-iteration-overview.md` - Design iteration workflow
 
 ---
 

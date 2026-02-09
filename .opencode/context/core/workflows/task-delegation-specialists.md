@@ -127,4 +127,4 @@ task(
 
 - `task-delegation-basics.md` - Core delegation workflow
 - `task-delegation-caching.md` - Context caching
-- `design-iteration.md` - OpenFrontendSpecialist workflow
+- `design-iteration-overview.md` - OpenFrontendSpecialist workflow
