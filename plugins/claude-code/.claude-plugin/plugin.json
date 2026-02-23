@@ -1,7 +1,7 @@
 {
   "name": "oac",
-  "description": "OpenAgents Control - Intelligent code review, TDD test generation, automated documentation, and smart task breakdown with context-aware AI agents",
-  "version": "1.0.0",
+  "description": "OpenAgentsControl — multi-agent orchestration for Claude Code. Context-aware development with skills, subagents, parallel execution, and automated code review.",
+  "version": "1.0.1",
   "author": {
     "name": "darrenhinde",
     "url": "https://github.com/darrenhinde"
