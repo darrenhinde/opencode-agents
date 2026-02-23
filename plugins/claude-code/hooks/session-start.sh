@@ -30,6 +30,7 @@ escape_for_json() {
 using_oac_escaped=$(escape_for_json "$using_oac_content")
 
 # Build skill catalogue from skills directory
+# Use real newlines (not literal \n) so escape_for_json encodes them correctly as \n in JSON
 skill_catalogue=""
 if [ -d "${PLUGIN_ROOT}/skills" ]; then
     for skill_dir in "${PLUGIN_ROOT}/skills"/*/; do
@@ -39,9 +40,9 @@ if [ -d "${PLUGIN_ROOT}/skills" ]; then
             # Extract description from frontmatter
             description=$(grep -m1 '^description:' "$skill_file" 2>/dev/null | sed 's/^description: *//;s/^"//;s/"$//' || echo "")
             if [ -n "$description" ]; then
-                skill_catalogue="${skill_catalogue}\n- oac:${skill_name} — ${description}"
+                skill_catalogue="${skill_catalogue}"$'\n'"- oac:${skill_name} — ${description}"
             else
-                skill_catalogue="${skill_catalogue}\n- oac:${skill_name}"
+                skill_catalogue="${skill_catalogue}"$'\n'"- oac:${skill_name}"
             fi
         fi
     done
