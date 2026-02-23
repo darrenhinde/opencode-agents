@@ -72,7 +72,7 @@ CONTEXT_SCOUT_INSTRUCTION="## Context Discovery\nBefore responding to any coding
 context_scout_escaped=$(escape_for_json "$CONTEXT_SCOUT_INSTRUCTION")
 
 # Build context string
-OAC_CONTEXT="<EXTREMELY_IMPORTANT>\nYou have OAC (OpenAgents Control).\n\n**Below is the full content of your 'oac:using-oac' skill — your introduction to using OAC skills. For all other skills, use the 'Skill' tool:**\n\n${using_oac_escaped}\n\n## Available OAC Skills (invoke with the Skill tool):\n${skill_catalogue_escaped}\n\n${OAC_SYSTEM_PATHS}\n\n${context_scout_escaped}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
+OAC_CONTEXT="<EXTREMELY_IMPORTANT>\nYou have OAC (OpenAgents Control) installed. BEFORE responding to the user's first message, you MUST invoke the Skill tool with name='using-oac'. This is mandatory. Do not skip it. Do not respond first and invoke later. Invoke the skill FIRST.\n\n**Below is the full content of your 'oac:using-oac' skill — your introduction to using OAC skills. For all other skills, use the 'Skill' tool:**\n\n${using_oac_escaped}\n\n## Available OAC Skills (invoke with the Skill tool):\n${skill_catalogue_escaped}\n\n${OAC_SYSTEM_PATHS}\n\n${context_scout_escaped}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
 
 # Output dual-format JSON for cross-tool compatibility
 # - additionalContext: Claude Code (hookSpecificOutput)
