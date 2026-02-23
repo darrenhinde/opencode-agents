@@ -133,6 +133,14 @@ curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/
 bash install.sh
 ```
 
+### Keep Updated
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/update.sh | bash
+```
+
+> Use `--install-dir PATH` if you installed to a custom location (e.g. `~/.config/opencode`).
+
 ### Step 2: Start Building
 
 ```bash

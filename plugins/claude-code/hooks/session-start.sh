@@ -58,15 +58,13 @@ warning_escaped=$(escape_for_json "$warning_message")
 skill_catalogue_escaped=$(escape_for_json "$skill_catalogue")
 
 # Build OAC system paths block
-# Use real newlines + escape_for_json so the block is safe to embed in the JSON string
 PROTOCOL_PATH="${PLUGIN_ROOT}/skills/context-discovery/context-discovery-protocol.md"
 plugin_root_escaped=$(escape_for_json "$PLUGIN_ROOT")
 protocol_path_escaped=$(escape_for_json "$PROTOCOL_PATH")
-OAC_SYSTEM_PATHS="## OAC System Paths"$'\n'"- Plugin Root: ${plugin_root_escaped}"$'\n'"- Context Discovery Protocol: ${protocol_path_escaped}"
-oac_system_paths_escaped=$(escape_for_json "$OAC_SYSTEM_PATHS")
+OAC_SYSTEM_PATHS="## OAC System Paths\n- Plugin Root: ${plugin_root_escaped}\n- Context Discovery Protocol: ${protocol_path_escaped}"
 
 # Build context string
-OAC_CONTEXT="<EXTREMELY_IMPORTANT>\nYou have OAC (OpenAgents Control).\n\n**Below is the full content of your 'oac:using-oac' skill — your introduction to using OAC skills. For all other skills, use the 'Skill' tool:**\n\n${using_oac_escaped}\n\n## Available OAC Skills (invoke with the Skill tool):\n${skill_catalogue_escaped}\n\n${oac_system_paths_escaped}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
+OAC_CONTEXT="<EXTREMELY_IMPORTANT>\nYou have OAC (OpenAgents Control).\n\n**Below is the full content of your 'oac:using-oac' skill — your introduction to using OAC skills. For all other skills, use the 'Skill' tool:**\n\n${using_oac_escaped}\n\n## Available OAC Skills (invoke with the Skill tool):\n${skill_catalogue_escaped}\n\n${OAC_SYSTEM_PATHS}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
 
 # Output dual-format JSON for cross-tool compatibility
 # - additionalContext: Claude Code (hookSpecificOutput)
