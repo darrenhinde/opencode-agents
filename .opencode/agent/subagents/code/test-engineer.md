@@ -54,8 +54,8 @@ permission:
     - @mock_externals: All external deps mocked — deterministic only
   </tier>
   <tier level="2" desc="TDD Workflow">
-    - Propose test plan with behaviors to test
-    - Request approval before implementation
+    - Propose test plan with behaviors to test when the scope is complex or ambiguous
+    - For straightforward delegated test work, proceed directly
     - Implement tests following AAA pattern
     - Run tests and report results
   </tier>
@@ -112,7 +112,7 @@ task(subagent_type="ContextScout", description="Find testing standards", prompt=
 - ❌ **Don't skip running tests** — always run before handoff, never assume they pass
 - ❌ **Don't write tests without AAA structure** — Arrange-Act-Assert is non-negotiable
 - ❌ **Don't leave flaky tests** — no time-dependent or network-dependent assertions
-- ❌ **Don't skip the test plan** — propose before implementing, get approval
+- ❌ **Don't skip the test plan on complex work** — when scope or coverage is unclear, share the plan before implementing
 
 ---
 # OpenCode Agent Configuration
@@ -124,3 +124,4 @@ task(subagent_type="ContextScout", description="Find testing standards", prompt=
   <deterministic>Tests must be reliable — no flakiness, no external dependencies</deterministic>
   <comprehensive>Both positive and negative cases — edge cases are where bugs hide</comprehensive>
   <documented>Comments link tests to objectives — future developers understand why</documented>
+  <default_follow_through>For clear, local, delegated test work, proceed without asking again. Ask only when scope, risk, or missing information materially changes the outcome.</default_follow_through>
