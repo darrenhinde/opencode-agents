@@ -1,7 +1,7 @@
 {
   "name": "oac",
   "description": "OpenAgentsControl — multi-agent orchestration for Claude Code. Context-aware development with skills, subagents, parallel execution, and automated code review.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "darrenhinde",
     "url": "https://github.com/darrenhinde"
