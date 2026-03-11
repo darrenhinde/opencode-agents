@@ -27,10 +27,11 @@ package-lock.json
 .opencode/tool/
 **/.opencode/tool/
 
-# Build and test artifacts
-dist/
-build/
-out/
+# Build and test artifacts — NOTE: packages/cli/dist/ must NOT be excluded
+# (it is the published CLI binary). Only exclude root-level build dirs.
+/dist/
+/build/
+/out/
 coverage/
 .nyc_output/
 *.tsbuildinfo
@@ -55,7 +56,13 @@ evals/
 dev/
 tasks/
 integrations/
-packages/
+# Exclude packages source/config but NOT the compiled CLI dist
+packages/cli/src/
+packages/cli/node_modules/
+packages/cli/tsconfig*.json
+packages/cli/bun.lock
+packages/compatibility-layer/
+packages/plugin-abilities/
 
 # Test and development scripts
 Makefile

@@ -206,4 +206,73 @@ describe('readManifest / writeManifest', () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  // ✅ Positive (subtask-10 gate): writeManifest creates .oac/ directory if it does not exist.
+  //
+  // Context: Bun.write() with a string path currently auto-creates parent directories
+  // as undocumented behavior. The subtask-10 fix adds an explicit mkdir() call to make
+  // this behavior documented and reliable across Bun versions.
+  //
+  // This test CURRENTLY PASSES (Bun.write auto-creates dirs in current Bun version).
+  // It acts as a REGRESSION GUARD — after subtask-10 adds explicit mkdir, the test
+  // must continue to pass. If Bun ever removes the auto-create behavior, the explicit
+  // mkdir in subtask-10 ensures this test still passes.
+  //
+  // The test is labeled "subtask-10 gate" because it validates the acceptance criteria
+  // of subtask-10 (writeManifest must work on a fresh directory with no .oac/).
+  test('writeManifest creates .oac/ directory if it does not exist (subtask-10 gate)', async () => {
+    // Arrange — a completely fresh directory with NO .oac/ subdirectory
+    const freshDir = await mkdtemp(join(tmpdir(), 'oac-manifest-mkdir-'));
+    try {
+      // Verify .oac/ does NOT exist before the call
+      const oacDir = join(freshDir, '.oac');
+      expect(await Bun.file(join(oacDir, 'manifest.json')).exists()).toBe(false);
+
+      // Act — must succeed whether or not Bun.write auto-creates dirs
+      // After subtask-10: explicit mkdir guarantees this works on all Bun versions
+      await writeManifest(freshDir, createEmptyManifest('1.0.0'));
+
+      // Assert — .oac/manifest.json must now exist
+      expect(await Bun.file(join(oacDir, 'manifest.json')).exists()).toBe(true);
+    } finally {
+      await rm(freshDir, { recursive: true, force: true });
+    }
+  });
+
+  // ✅ Positive (subtask-10 gate): writeManifest is idempotent — calling twice does not throw.
+  // CURRENTLY PASSES. Regression guard for subtask-10.
+  test('writeManifest is idempotent — calling twice with different manifests does not throw (subtask-10 gate)', async () => {
+    // Arrange — fresh directory, no .oac/
+    const freshDir = await mkdtemp(join(tmpdir(), 'oac-manifest-idempotent-'));
+    try {
+      const first = createEmptyManifest('1.0.0');
+      const second = createEmptyManifest('2.0.0');
+
+      // Act — both calls must succeed without throwing
+      await writeManifest(freshDir, first);
+      await writeManifest(freshDir, second);
+
+      // Assert — the second write's data is what readManifest returns
+      const read = await readManifest(freshDir);
+      expect(read?.oacVersion).toBe('2.0.0');
+    } finally {
+      await rm(freshDir, { recursive: true, force: true });
+    }
+  });
+
+  // ❌ Negative (regression guard): writeManifest on an existing .oac/ dir does not throw.
+  // This test CURRENTLY PASSES (the existing round-trip test already covers this).
+  // It acts as a regression guard — subtask-10 must not break the happy path.
+  test('writeManifest does not throw when .oac/ already exists (regression guard)', async () => {
+    // Arrange — use the shared tmpDir which already has .oac/ from the round-trip test
+    const existingDir = await mkdtemp(join(tmpdir(), 'oac-manifest-existing-'));
+    try {
+      // First write creates .oac/
+      await writeManifest(existingDir, createEmptyManifest('1.0.0'));
+      // Second write — .oac/ already exists, must not throw
+      await expect(writeManifest(existingDir, createEmptyManifest('1.1.0'))).resolves.toBeUndefined();
+    } finally {
+      await rm(existingDir, { recursive: true, force: true });
+    }
+  });
 });

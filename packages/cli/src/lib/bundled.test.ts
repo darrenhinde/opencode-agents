@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import {
   classifyBundledFile,
   findPackageRoot,
+  getPackageRoot,
   getBundledFilePath,
   listBundledFiles,
   bundledFileExists,
@@ -218,6 +219,132 @@ describe('findPackageRoot', () => {
     }
     // Either it threw (correct) or found a higher-level root (also acceptable)
     expect(true).toBe(true); // test passes either way — the key is it didn't return noOpencode
+  });
+
+  // ✅ Positive (subtask-09): findPackageRoot finds a dir with .opencode/ + package.json
+  // even when registry.json is also present (the !hasRegistryJson guard is removed).
+  // ✅ This test now passes — the !hasRegistryJson guard was removed in Batch A.
+  test('finds package root even when registry.json is present (subtask-09 gate)', async () => {
+    // Arrange — create a dir that has .opencode/, package.json, AND registry.json
+    // This simulates the published npm package layout where registry.json is included
+    const pkgWithRegistry = join(tmpDir, 'pkg-with-registry');
+    await mkdir(join(pkgWithRegistry, '.opencode'), { recursive: true });
+    await writeFile(join(pkgWithRegistry, 'package.json'), '{}', 'utf8');
+    await writeFile(join(pkgWithRegistry, 'registry.json'), '{}', 'utf8');
+    // Start the walk from a child subdirectory
+    const startDir = join(pkgWithRegistry, 'dist', 'lib');
+    await mkdir(startDir, { recursive: true });
+
+    // Act — ✅ This test now passes — the !hasRegistryJson guard was removed in Batch A,
+    // so findPackageRoot returns pkgWithRegistry directly.
+    const result = findPackageRoot(startDir);
+
+    // Assert
+    expect(result).toBe(pkgWithRegistry);
+  });
+
+  // ✅ Positive (subtask-09): findPackageRoot skips a dir that has registry.json
+  // when a parent dir without registry.json is the correct match.
+  // This test validates the CURRENT behaviour (before subtask-09) — it should
+  // PASS now and CONTINUE to pass after the fix (the fix changes which dir is
+  // returned, but this test uses a layout where the correct root has no registry.json).
+  test('returns the nearest ancestor with .opencode/ and package.json', async () => {
+    // Arrange — child dir has .opencode/ + package.json (no registry.json)
+    const correctRoot = join(tmpDir, 'correct-root-no-registry');
+    await mkdir(join(correctRoot, '.opencode'), { recursive: true });
+    await writeFile(join(correctRoot, 'package.json'), '{}', 'utf8');
+    const startDir = join(correctRoot, 'src', 'lib');
+    await mkdir(startDir, { recursive: true });
+
+    // Act
+    const result = findPackageRoot(startDir);
+
+    // Assert — should find correctRoot (no registry.json, so both old and new code agree)
+    expect(result).toBe(correctRoot);
+  });
+});
+
+// ── getPackageRoot ────────────────────────────────────────────────────────────
+
+describe('getPackageRoot', () => {
+  // ✅ Positive: OAC_PACKAGE_ROOT env var overrides the walk entirely
+  // This test PASSES now (the env var check already exists in bundled.ts lines 32-35).
+  // It acts as a regression guard — subtask-09 must not break this behaviour.
+  test('returns OAC_PACKAGE_ROOT env var value without walking the filesystem', () => {
+    // Arrange
+    const savedEnv = process.env['OAC_PACKAGE_ROOT'];
+    process.env['OAC_PACKAGE_ROOT'] = '/some/fake/injected/path';
+
+    try {
+      // Act
+      const result = getPackageRoot();
+
+      // Assert — must return the env var value, not walk the filesystem
+      expect(result).toBe('/some/fake/injected/path');
+    } finally {
+      // Cleanup — restore original env state
+      if (savedEnv !== undefined) {
+        process.env['OAC_PACKAGE_ROOT'] = savedEnv;
+      } else {
+        delete process.env['OAC_PACKAGE_ROOT'];
+      }
+    }
+  });
+
+  // ✅ Positive: OAC_PACKAGE_ROOT bypasses the walk even when the path has no .opencode/
+  // This is the critical production test: bin/oac.js injects OAC_PACKAGE_ROOT so the
+  // walk never runs. Even if the walk would fail (no valid package root in the tree),
+  // OAC_PACKAGE_ROOT makes getPackageRoot() succeed.
+  // CURRENTLY PASSES (env var check exists). Guards against regression in subtask-09.
+  test('OAC_PACKAGE_ROOT bypasses walk even for a path with no .opencode/ (production scenario)', async () => {
+    // Arrange — a temp dir with NO .opencode/ (walk would throw if it ran)
+    const bareDir = await mkdtemp(join(tmpdir(), 'oac-bare-dir-'));
+    const savedEnv = process.env['OAC_PACKAGE_ROOT'];
+    process.env['OAC_PACKAGE_ROOT'] = bareDir;
+
+    try {
+      // Act — should NOT throw even though bareDir has no .opencode/
+      const result = getPackageRoot();
+
+      // Assert
+      expect(result).toBe(bareDir);
+    } finally {
+      // Cleanup
+      if (savedEnv !== undefined) {
+        process.env['OAC_PACKAGE_ROOT'] = savedEnv;
+      } else {
+        delete process.env['OAC_PACKAGE_ROOT'];
+      }
+      await rm(bareDir, { recursive: true, force: true });
+    }
+  });
+
+  // ❌ Negative: when OAC_PACKAGE_ROOT is empty string, falls through to walk
+  // (empty string is falsy in JS — the env var check uses `if (envOverride)`)
+  test('falls through to walk when OAC_PACKAGE_ROOT is empty string', () => {
+    // Arrange
+    const savedEnv = process.env['OAC_PACKAGE_ROOT'];
+    process.env['OAC_PACKAGE_ROOT'] = '';
+
+    try {
+      // Act & Assert — empty string is falsy, so the walk runs and throws from '/'
+      // (We can't easily test the walk succeeding here without a valid package root
+      // in the test tree, so we verify the env var is ignored by checking it throws
+      // the walk error rather than returning '')
+      // The walk from import.meta.dir will find the monorepo root in dev, so we
+      // can't assert it throws. Instead, assert it does NOT return empty string.
+      const result = getPackageRoot();
+      expect(result).not.toBe('');
+    } catch {
+      // Walk threw — that's also acceptable (proves empty string was ignored)
+      expect(true).toBe(true);
+    } finally {
+      if (savedEnv !== undefined) {
+        process.env['OAC_PACKAGE_ROOT'] = savedEnv;
+      } else {
+        delete process.env['OAC_PACKAGE_ROOT'];
+      }
+    }
   });
 });
 

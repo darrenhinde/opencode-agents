@@ -2,6 +2,7 @@
 
 import { Command } from 'commander'
 import { readCliVersion } from './lib/version.js'
+import { checkForUpdate } from './lib/update-check.js'
 
 const program = new Command()
 
@@ -9,6 +10,11 @@ program
   .name('oac')
   .description('OpenAgents Control — install, manage, and update AI agents and context files')
   .version(readCliVersion(), '-v, --version', 'Print version and exit')
+
+// Restore terminal state on Ctrl-C or kill signal
+// Exit codes follow Unix convention: 128 + signal number
+process.on('SIGINT', () => process.exit(130))   // 128 + 2 (SIGINT)
+process.on('SIGTERM', () => process.exit(143))  // 128 + 15 (SIGTERM)
 
 // Lazy-load command modules in parallel — keeps startup < 100ms
 async function main(): Promise<void> {
@@ -55,12 +61,18 @@ async function main(): Promise<void> {
     process.exitCode = 1
   })
 
+  // Print help when no command is given — must happen before update check
+  // so we don't fire a background fetch that gets abandoned on process.exit()
+  if (args.length === 0) {
+    program.help() // exits the process
+  }
+
   await program.parseAsync(process.argv)
 
-  // Print help when no command is given
-  if (args.length === 0) {
-    program.help()
-  }
+  // Non-blocking update check — runs after command completes, max once per 24h
+  // void: intentionally not awaited — failure must never affect exit code
+  // Note: skipped on --version fast path (returns before reaching this line)
+  void checkForUpdate()
 }
 
 main().catch((err: unknown) => {

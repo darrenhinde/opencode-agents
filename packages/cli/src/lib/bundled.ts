@@ -19,15 +19,15 @@ const BUNDLED_SUBDIRS = [
 // --- Package root resolution ---
 
 /**
- * Walks up the directory tree from `startDir` until it finds a directory
- * that contains both `.opencode/` and `package.json` — the npm package root.
+ * Returns the OAC package root directory.
  *
- * Works in both development (monorepo) and when installed via npm.
- * import.meta.dir is Bun's native equivalent of __dirname.
+ * In production (npm global install), bin/oac.js injects OAC_PACKAGE_ROOT
+ * before invoking the Bun binary, so this function returns immediately.
+ * In dev/test environments where OAC_PACKAGE_ROOT is not set, falls back
+ * to walking up the directory tree from import.meta.dir.
  */
 export function getPackageRoot(): string {
-  // Allow dev/monorepo override via environment variable.
-  // In production (npm install), OAC_PACKAGE_ROOT is not set so the walk runs as before.
+  // In production, bin/oac.js always injects OAC_PACKAGE_ROOT.
   // In dev, set OAC_PACKAGE_ROOT=/path/to/repo to bypass the walk entirely.
   const envOverride = process.env['OAC_PACKAGE_ROOT'];
   if (envOverride) {
@@ -39,12 +39,14 @@ export function getPackageRoot(): string {
 
 /**
  * Synchronously walks up from `dir` until finding a directory that has
- * all three anchors:
+ * both anchors:
  *   1. `.opencode/`   — OAC configuration directory
  *   2. `package.json` — npm package manifest
- *   3. No `registry.json` at the same level — `registry.json` is present at
- *      the monorepo root but NOT at the CLI package root, so its absence
- *      distinguishes the CLI package from the repo root in a monorepo layout.
+ *
+ * In production, this function is bypassed entirely because bin/oac.js
+ * injects OAC_PACKAGE_ROOT before invoking the Bun binary.
+ * This fallback is used only in dev/test environments where OAC_PACKAGE_ROOT
+ * is not set.
  *
  * Throws if the filesystem root is reached without finding a match.
  *
@@ -56,12 +58,8 @@ export function findPackageRoot(dir: string): string {
   while (true) {
     const hasOpencode = existsSync(join(current, ".opencode"));
     const hasPackageJson = existsSync(join(current, "package.json"));
-    // registry.json exists at the monorepo root but NOT at the CLI package root.
-    // Excluding directories that have it prevents the walk from stopping at the
-    // repo root instead of the actual CLI package root.
-    const hasRegistryJson = existsSync(join(current, "registry.json"));
 
-    if (hasOpencode && hasPackageJson && !hasRegistryJson) {
+    if (hasOpencode && hasPackageJson) {
       return current;
     }
 
@@ -70,7 +68,7 @@ export function findPackageRoot(dir: string): string {
     if (parent === current) {
       throw new Error(
         `getPackageRoot: could not find a directory with ".opencode/" and "package.json" ` +
-          `(without a "registry.json" at the same level) walking up from "${dir}". ` +
+          `walking up from "${dir}". ` +
           `Is @nextsystems/oac installed correctly? ` +
           `In dev/monorepo mode, set OAC_PACKAGE_ROOT env var to the repo root.`,
       );

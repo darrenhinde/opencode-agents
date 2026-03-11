@@ -25,7 +25,7 @@ export const setVerbose = (enabled: boolean): void => {
 
 export const log     = (msg: string): void => console.log(msg);
 export const info    = (msg: string): void => console.log(chalk.blue(`  ℹ ${msg}`));
-export const warn    = (msg: string): void => console.log(chalk.yellow(`  ⚠ ${msg}`));
+export const warn    = (msg: string): void => console.error(chalk.yellow(`  ⚠ ${msg}`));
 export const error   = (msg: string): void => console.error(chalk.red(`  ✗ ${msg}`));
 export const success = (msg: string): void => console.log(chalk.green(`  ✓ ${msg}`));
 export const dim     = (msg: string): void => console.log(chalk.gray(msg));

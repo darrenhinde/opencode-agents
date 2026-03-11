@@ -37,9 +37,11 @@
     "packages/cli/dist/"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
   },
   "scripts": {
+    "prepublishOnly": "npm run typecheck -w packages/cli && npm run build -w packages/cli && node -e \"require('fs').existsSync('packages/cli/dist/index.js') || (console.error('Build output missing: packages/cli/dist/index.js'), process.exit(1))\"",
     "test": "npm run test:all",
     "test:all": "cd evals/framework && npm run eval:sdk",
     "test:core": "npm run test:openagent:core",
@@ -72,9 +74,9 @@
     "results:latest": "cat evals/results/latest.json 2>/dev/null | jq '.agent, .passed, .failed' || echo 'No results yet'",
     "version": "node -p \"require('./package.json').version\"",
     "version:bump": "./scripts/versioning/bump-version.sh",
-    "version:bump:patch": "npm version patch --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
-    "version:bump:minor": "npm version minor --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
-    "version:bump:major": "npm version major --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
+    "version:bump:patch": "npm version patch --no-git-tag-version && node scripts/sync-version.js && node -p \"require('./package.json').version\" > VERSION",
+    "version:bump:minor": "npm version minor --no-git-tag-version && node scripts/sync-version.js && node -p \"require('./package.json').version\" > VERSION",
+    "version:bump:major": "npm version major --no-git-tag-version && node scripts/sync-version.js && node -p \"require('./package.json').version\" > VERSION",
     "version:bump:alpha": "npm version prerelease --preid=alpha --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
     "version:bump:beta": "npm version prerelease --preid=beta --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
     "version:bump:rc": "npm version prerelease --preid=rc --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
@@ -104,9 +106,13 @@
   ],
   "author": "Darren Hinde",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/darrenhinde/OpenAgentsControl.git"
+    "url": "https://github.com/darrenhinde/OpenAgentsControl.git",
+    "directory": "."
   },
   "bugs": {
     "url": "https://github.com/darrenhinde/OpenAgentsControl/issues"

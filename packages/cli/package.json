@@ -1,15 +1,17 @@
 {
   "name": "@nextsystems/oac-cli",
-  "version": "1.0.0",
+  "version": "0.7.1",
   "description": "OAC CLI — install, manage, and update AI agents and context files",
   "type": "module",
-  "bin": {
-    "oac": "./dist/index.js"
+  "private": true,
+  "publishConfig": {
+    "access": "public"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
+    "prepublishOnly": "npm run typecheck && npm run build",
     "build": "rm -rf dist && bun build src/index.ts --outdir dist --target bun --splitting",
     "build:watch": "bun build src/index.ts --outdir dist --target bun --splitting --watch",
     "dev": "bun run src/index.ts",
@@ -33,5 +35,10 @@
   },
   "engines": {
     "bun": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darrenhinde/OpenAgentsControl.git",
+    "directory": "packages/cli"
   }
 }

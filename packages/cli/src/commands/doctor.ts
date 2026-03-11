@@ -3,6 +3,7 @@ import { type Command } from 'commander';
 import semver from 'semver';
 
 import { readCliVersion } from '../lib/version.js';
+import { fetchLatestNpmVersion } from '../lib/update-check.js';
 import { readManifest } from '../lib/manifest.js';
 import { readConfig } from '../lib/config.js';
 import { computeFileHash, hashesMatch } from '../lib/sha256.js';
@@ -29,22 +30,6 @@ type DoctorSummary = {
   ok: number;
   warnings: number;
   errors: number;
-};
-
-// ── Version helpers ───────────────────────────────────────────────────────────
-
-/** Fetches the latest version from the npm registry. Returns null if offline. */
-const fetchLatestNpmVersion = async (packageName: string): Promise<string | null> => {
-  try {
-    const url = `https://registry.npmjs.org/${packageName}/latest`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { version?: string };
-    return data.version ?? null;
-  } catch {
-    // Network unavailable or timeout — non-blocking
-    return null;
-  }
 };
 
 // ── Individual check functions ────────────────────────────────────────────────
