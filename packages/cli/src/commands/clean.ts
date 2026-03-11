@@ -55,9 +55,12 @@ export async function cleanCommand(options: CleanOptions): Promise<void> {
   }
 
   if (options.ide) {
-    const claudeMd = join(projectRoot, 'CLAUDE.md')
-    if (await pathExists(claudeMd)) {
-      targets.push({ path: claudeMd, label: 'CLAUDE.md' })
+    const IDE_OUTPUT_FILES = ['CLAUDE.md', '.cursorrules', '.windsurfrules']
+    for (const filename of IDE_OUTPUT_FILES) {
+      const filePath = join(projectRoot, filename)
+      if (await pathExists(filePath)) {
+        targets.push({ path: filePath, label: filename })
+      }
     }
   }
 
@@ -92,6 +95,7 @@ export async function cleanCommand(options: CleanOptions): Promise<void> {
   }
 
   // Force mode — remove all targets
+  let hadError = false
   for (const t of targets) {
     try {
       await rm(t.path, { recursive: true, force: true })
@@ -99,8 +103,10 @@ export async function cleanCommand(options: CleanOptions): Promise<void> {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       warn(`Failed to remove ${t.label}: ${msg}`)
+      hadError = true
     }
   }
+  if (hadError) process.exitCode = 1
 }
 
 // ── Commander registration ────────────────────────────────────────────────────
@@ -117,7 +123,6 @@ export function registerCleanCommand(program: Command): void {
     .option('--dry-run', 'Preview what would be removed without removing anything', false)
     .option('--keep-opencode', 'Remove only .oac/ — preserve .opencode/', false)
     .option('--ide', 'Also remove IDE-specific files (e.g. CLAUDE.md)', false)
-    .option('--verbose', 'Show additional output', false)
     .action(async (opts: { force: boolean; dryRun: boolean; keepOpencode: boolean; ide: boolean }) => {
       await cleanCommand({
         force: opts.force,

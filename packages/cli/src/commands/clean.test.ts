@@ -13,7 +13,7 @@
  * exist yet. Bun's test runner resolves modules at runtime.
  */
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
-import { mkdtemp, rm, mkdir, writeFile, access } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile, access, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { Option } from 'commander';
@@ -226,6 +226,48 @@ describe('cleanCommand() removal behaviour (subtask-13 gate)', () => {
     process.chdir(originalCwd);
   });
 
+  // ✅ Positive: --ide flag removes .cursorrules when present
+  test('cleanCommand --ide --force removes .cursorrules when present', async () => {
+    // Arrange
+    const projectDir = join(tmpDir, 'test-ide-cursorrules')
+    await mkdir(join(projectDir, '.oac'), { recursive: true })
+    await writeFile(join(projectDir, '.oac', 'manifest.json'), '{}')
+    await writeFile(join(projectDir, '.cursorrules'), '# Cursor rules')
+    process.chdir(projectDir)
+
+    const { cleanCommand } = await loadClean()
+
+    // Act
+    await cleanCommand({ force: true, keepOpencode: false, dryRun: false, ide: true })
+
+    // Assert — .cursorrules removed
+    expect(await pathExists(join(projectDir, '.cursorrules'))).toBe(false)
+
+    // Cleanup
+    process.chdir(originalCwd)
+  })
+
+  // ✅ Positive: --ide flag removes .windsurfrules when present
+  test('cleanCommand --ide --force removes .windsurfrules when present', async () => {
+    // Arrange
+    const projectDir = join(tmpDir, 'test-ide-windsurfrules')
+    await mkdir(join(projectDir, '.oac'), { recursive: true })
+    await writeFile(join(projectDir, '.oac', 'manifest.json'), '{}')
+    await writeFile(join(projectDir, '.windsurfrules'), '# Windsurf rules')
+    process.chdir(projectDir)
+
+    const { cleanCommand } = await loadClean()
+
+    // Act
+    await cleanCommand({ force: true, keepOpencode: false, dryRun: false, ide: true })
+
+    // Assert — .windsurfrules removed
+    expect(await pathExists(join(projectDir, '.windsurfrules'))).toBe(false)
+
+    // Cleanup
+    process.chdir(originalCwd)
+  })
+
   // ❌ CURRENTLY FAILS: module does not exist yet.
   // ❌ Negative: without --ide flag, CLAUDE.md is preserved
   test('cleanCommand without --ide preserves CLAUDE.md', async () => {
@@ -247,6 +289,38 @@ describe('cleanCommand() removal behaviour (subtask-13 gate)', () => {
     // Cleanup
     process.chdir(originalCwd);
   });
+
+  // ❌ Negative: when rm() throws, process.exitCode is set to 1
+  test('cleanCommand sets process.exitCode = 1 when removal fails', async () => {
+    // Arrange
+    const projectDir = join(tmpDir, 'test-exit-code-failure')
+    await mkdir(join(projectDir, '.oac'), { recursive: true })
+    await writeFile(join(projectDir, '.oac', 'manifest.json'), '{}')
+    process.chdir(projectDir)
+
+    const { cleanCommand } = await loadClean()
+
+    // Save and reset process.exitCode before the test
+    const originalExitCode = process.exitCode
+    process.exitCode = undefined
+
+    // Make .oac/ unremovable by removing write permission from the parent directory.
+    // chmod 0o000 on the .oac dir itself prevents rm from descending into it.
+    await chmod(join(projectDir, '.oac'), 0o000)
+
+    try {
+      // Act
+      await cleanCommand({ force: true, keepOpencode: false, dryRun: false, ide: false })
+
+      // Assert — exit code must be 1
+      expect(process.exitCode).toBe(1)
+    } finally {
+      // Restore permissions so afterAll cleanup can remove the temp dir
+      await chmod(join(projectDir, '.oac'), 0o755)
+      process.exitCode = originalExitCode
+      process.chdir(originalCwd)
+    }
+  })
 });
 
 // ── registerCleanCommand() — Commander integration ────────────────────────────

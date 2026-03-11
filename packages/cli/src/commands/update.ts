@@ -126,12 +126,13 @@ async function runUpdate(projectRoot: string, opts: UpdateOptions): Promise<Inst
 
   spinner.succeed('Scan complete.');
 
-  // Write updated manifest only when not in dry-run mode
-  if (!opts.dryRun && result.errors.length === 0) {
+  // Write updated manifest for all successfully processed files (not dry-run)
+  if (!opts.dryRun) {
     await writeManifest(projectRoot, updatedManifest);
     verbose('Manifest written.');
-  } else if (!opts.dryRun && result.errors.length > 0) {
-    warn('Manifest not written due to errors above. Fix the issues and re-run.');
+    if (result.errors.length > 0) {
+      warn('Some files failed — manifest updated for successful files. Re-run to retry failures.');
+    }
   }
 
   return result;

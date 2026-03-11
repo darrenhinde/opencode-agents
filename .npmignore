@@ -80,9 +80,11 @@ COMPATIBILITY.md
 .opencode-test/
 .opencode-agents-version
 
+# Exclude scripts/ subdirectory READMEs (only sync-version.js is published)
+scripts/README.md
+
 # Keep these (explicitly included in package.json files field)
 !.opencode/
-!scripts/
 !bin/
 !registry.json
 !install.sh
