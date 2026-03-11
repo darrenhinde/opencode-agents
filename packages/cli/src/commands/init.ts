@@ -253,6 +253,15 @@ export function registerInitCommand(program: Command): void {
     .option('--yolo', 'Skip conflict checks and overwrite user-modified files', false)
     .option('--dry-run', 'Print what would happen without making any changes', false)
     .option('--verbose', 'Show each file being copied', false)
+    .addHelpText('after', `
+Examples:
+  $ oac init                    Install all OAC agents and context files
+  $ oac init --dry-run          Preview what would be installed
+  $ oac init --verbose          Show each file as it is copied
+  $ oac init --yolo             Overwrite files you have modified (backs them up first)
+
+After init, run 'oac doctor' to verify your setup.
+`)
     .action(async (opts: { yolo: boolean; dryRun: boolean; verbose: boolean }) => {
       await initCommand({
         yolo: opts.yolo,

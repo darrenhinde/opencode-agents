@@ -186,6 +186,17 @@ export function registerUpdateCommand(program: Command): void {
     .option('--check', 'Alias for --dry-run: show what would change')
     .option('--yolo', 'Back up user-modified files and overwrite them anyway')
     .option('--verbose', 'Show SHA256 comparison details per file')
+    .addHelpText('after', `
+Examples:
+  $ oac update                  Update all OAC files (skips files you modified)
+  $ oac update --dry-run        Preview what would change without modifying anything
+  $ oac update --check          Same as --dry-run (alias)
+  $ oac update --yolo           Back up modified files and overwrite them
+  $ oac update --verbose        Show SHA256 hash comparison for each file
+
+Files you have modified since 'oac init' are skipped by default.
+Use --yolo to overwrite them (your changes are backed up to .oac/backups/).
+`)
     .action(async (cmdOpts: { dryRun?: boolean; check?: boolean; yolo?: boolean; verbose?: boolean }) => {
       await handleUpdate({
         dryRun: cmdOpts.dryRun ?? false,

@@ -115,9 +115,43 @@ Use any AI model (Claude, GPT, Gemini, local). No vendor lock-in.
 
 ## 🚀 Quick Start
 
+### Install via npm (recommended)
+
+**Prerequisites:** [Bun](https://bun.sh) ≥ 1.0 • Node.js ≥ 18
+
+> ⚠️ **Bun is required.** The OAC CLI runs on the [Bun](https://bun.sh) runtime.
+> Install Bun first: `curl -fsSL https://bun.sh/install | bash`
+
+**Global install (use `oac` anywhere):**
+```bash
+npm install -g @nextsystems/oac
+```
+
+**Then set up a project:**
+```bash
+cd your-project
+oac init
+```
+
+**No-install (try without committing):**
+```bash
+npx @nextsystems/oac init
+```
+
+**Keep updated:**
+```bash
+npm update -g @nextsystems/oac
+# or check your current version:
+oac doctor
+```
+
+---
+
+### Install via curl (alternative)
+
 **Prerequisites:** [OpenCode CLI](https://opencode.ai/docs) (free, open-source) • Bash 3.2+ • Git
 
-### Step 1: Install
+### Step 2: Install via curl
 
 **One command:**
 

@@ -10,6 +10,18 @@ program
   .name('oac')
   .description('OpenAgents Control — install, manage, and update AI agents and context files')
   .version(readCliVersion(), '-v, --version', 'Print version and exit')
+  .addHelpText('after', `
+Examples:
+  $ oac init                    Set up OAC in the current project
+  $ oac update                  Update OAC files (skips files you modified)
+  $ oac update --dry-run        Preview what would be updated
+  $ oac doctor                  Check your setup and report issues
+  $ oac add agent:openagent     Add a specific agent from the registry
+  $ oac apply cursor            Generate Cursor IDE rules file
+  $ oac clean --dry-run         Preview what oac clean would remove
+
+Docs: https://github.com/darrenhinde/OpenAgentsControl#readme
+`)
 
 // Restore terminal state on Ctrl-C or kill signal
 // Exit codes follow Unix convention: 128 + signal number
@@ -36,6 +48,7 @@ async function main(): Promise<void> {
     { registerDoctorCommand },
     { registerListCommand },
     { registerStatusCommand },
+    { registerCleanCommand },
   ] = await Promise.all([
     import('./commands/init.js'),
     import('./commands/update.js'),
@@ -44,6 +57,7 @@ async function main(): Promise<void> {
     import('./commands/doctor.js'),
     import('./commands/list.js'),
     import('./commands/status.js'),
+    import('./commands/clean.js'),
   ])
 
   registerInitCommand(program)
@@ -53,6 +67,7 @@ async function main(): Promise<void> {
   registerDoctorCommand(program)
   registerListCommand(program)
   registerStatusCommand(program)
+  registerCleanCommand(program)
 
   // Unknown commands: print a helpful error and exit 1
   program.on('command:*', (operands: string[]) => {
