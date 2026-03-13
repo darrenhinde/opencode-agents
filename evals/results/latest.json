@@ -1,58 +1,36 @@
 {
   "meta": {
-    "timestamp": "2026-01-17T20:39:20.106Z",
-    "agent": "core/opencoder",
+    "timestamp": "2026-02-08T16:50:42.868Z",
+    "agent": "core/openagent",
     "model": "opencode/grok-code-fast",
     "framework_version": "0.1.0",
-    "git_commit": "76e875b"
+    "git_commit": "013682c"
   },
   "summary": {
     "total": 1,
-    "passed": 0,
-    "failed": 1,
-    "duration_ms": 122016,
-    "pass_rate": 0
+    "passed": 1,
+    "failed": 0,
+    "duration_ms": 47081,
+    "pass_rate": 1
   },
   "by_category": {
     "developer": {
-      "passed": 0,
+      "passed": 1,
       "total": 1
     }
   },
   "tests": [
     {
-      "id": "workflow-test",
+      "id": "smoke-test-001",
       "category": "developer",
-      "passed": false,
-      "duration_ms": 122016,
-      "events": 81,
+      "passed": true,
+      "duration_ms": 47081,
+      "events": 6,
       "approvals": 0,
       "violations": {
-        "total": 4,
-        "errors": 4,
-        "warnings": 0,
-        "details": [
-          {
-            "type": "missing-approval",
-            "severity": "error",
-            "message": "Execution tool 'task' called without requesting approval"
-          },
-          {
-            "type": "wrong-context-file",
-            "severity": "error",
-            "message": "Task type 'delegation' requires context file(s): .opencode/context/core/workflows/delegation.md or workflows/delegation.md or delegation.md. Loaded: /Users/darrenhinde/Documents/GitHub/Claude-agents/.opencode/context/core/standards/code-quality.md, /Users/darrenhinde/Documents/GitHub/Claude-agents/.opencode/context/development/clean-code.md, /Users/darrenhinde/Documents/GitHub/Claude-agents/.opencode/context/core/standards/test-coverage.md"
-          },
-          {
-            "type": "execution-before-read",
-            "severity": "error",
-            "message": "A modification tool was executed without prior read operations"
-          },
-          {
-            "type": "missing-approval-request",
-            "severity": "error",
-            "message": "Agent did not request approval before executing"
-          }
-        ]
+        "total": 0,
+        "errors": 0,
+        "warnings": 0
       }
     }
   ]

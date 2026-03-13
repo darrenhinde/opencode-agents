@@ -225,5 +225,4 @@ tasks/
 
 # Claude Code integration generated files
 integrations/claude-code/converter/generated/
-.cursorrules
-bun.lock
+kimidev/

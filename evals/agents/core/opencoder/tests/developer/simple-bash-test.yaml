@@ -1,0 +1,34 @@
+id: simple-bash-test-001
+name: Simple Bash Test
+description: |
+  Tests basic file creation and bash commands
+  This test ensures the agent can:
+  - Create a simple file
+  - Run basic bash commands
+  - Verify file creation
+
+agent: opencoder
+model: opencode/grok-code-fast
+category: developer
+
+prompt: "Create a simple file called test.txt with the content 'Hello from OpenAgentsControl!' and verify it was created successfully."
+
+# Expected behavior - should use tools
+behavior:
+  requiresApproval: true       # Approval needed for file operations
+  minToolCalls: 2              # Should use bash tool at least twice
+
+# Expected violations (none expected for this simple task)
+expectedViolations: []
+
+# Approval strategy
+approvalStrategy:
+  type: auto-approve
+
+timeout: 30000
+
+tags:
+  - smoke-test
+  - file-operations
+  - bash
+  - developer

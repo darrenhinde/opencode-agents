@@ -32,6 +32,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@opencode-ai/plugin": "^1.1.53",
     "@opencode-ai/sdk": "^1.0.90",
     "glob": "^13.0.0",
     "yaml": "^2.3.4",

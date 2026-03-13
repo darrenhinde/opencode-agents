@@ -32,12 +32,11 @@ export class ServerManager {
     // - SDK mode causes "No data in response" errors during session creation
     // - Manual spawn works reliably but requires opencode CLI to be installed
     // 
-    // Current workflow (.github/workflows/test-agents.yml) installs CLI via:
-    //   npm install -g opencode-ai
-    // 
-    // TODO: Investigate and fix SDK mode session creation issue
-    // TODO: Once fixed, use SDK mode in CI: this.useSDK = !!config.agent && isCI
-    this.useSDK = false;
+     // Current workflow (.github/workflows/test-agents.yml) installs CLI via:
+     //   npm install -g opencode-ai
+     // 
+     // FIXED: Enable SDK mode with proper API key configuration
+     this.useSDK = !!config.agent;
   }
 
   /**
@@ -73,6 +72,17 @@ export class ServerManager {
         sdkConfig.config = {
           agent: this.config.agent,
         };
+      }
+
+      // Add API keys from environment
+      if (process.env.GROQ_API_KEY) {
+        sdkConfig.config.groqApiKey = process.env.GROQ_API_KEY;
+      }
+      if (process.env.GEMINI_API_KEY) {
+        sdkConfig.config.geminiApiKey = process.env.GEMINI_API_KEY;
+      }
+      if (process.env.OPENAI_API_KEY) {
+        sdkConfig.config.openaiApiKey = process.env.OPENAI_API_KEY;
       }
 
       // Change to the specified directory before starting
