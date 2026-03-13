@@ -264,7 +264,7 @@ export function mapToolAccessToOAC(
  * Check if a tool name is a valid OAC tool.
  */
 function isValidOACTool(name: string): name is keyof ToolAccess {
-  const validTools = ["read", "write", "edit", "bash", "task", "grep", "glob", "patch"];
+  const validTools = ["read", "write", "edit", "bash", "task", "grep", "glob", "patch", "question"];
   return validTools.includes(name);
 }
 
