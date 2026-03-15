@@ -64,6 +64,7 @@ const TOOL_MAPPINGS: Record<Exclude<ToolPlatform, "oac">, ToolMappingConfig> = {
       grep: "Grep",
       task: "Task",
       patch: "Edit", // Claude uses Edit for patching
+      question: "Question",
     },
     toOAC: {
       Bash: "bash",
@@ -73,6 +74,7 @@ const TOOL_MAPPINGS: Record<Exclude<ToolPlatform, "oac">, ToolMappingConfig> = {
       Glob: "glob",
       Grep: "grep",
       Task: "task",
+      Question: "question",
       // Claude-specific tools that map to OAC equivalents
       WebSearch: "bash", // Approximation
       WebFetch: "bash", // Approximation
@@ -99,7 +101,7 @@ const TOOL_MAPPINGS: Record<Exclude<ToolPlatform, "oac">, ToolMappingConfig> = {
       file_search: "glob",
       content_search: "grep",
     },
-    unsupported: ["task"], // Cursor doesn't support delegation
+    unsupported: ["task", "question"], // Cursor doesn't support delegation or user questions
   },
 
   windsurf: {
@@ -122,7 +124,7 @@ const TOOL_MAPPINGS: Record<Exclude<ToolPlatform, "oac">, ToolMappingConfig> = {
       search_content: "grep",
       delegate: "task",
     },
-    unsupported: [], // Windsurf has equivalents for most
+    unsupported: ["question"], // Windsurf has no equivalent for user questions
   },
 };
 
@@ -264,7 +266,7 @@ export function mapToolAccessToOAC(
  * Check if a tool name is a valid OAC tool.
  */
 function isValidOACTool(name: string): name is keyof ToolAccess {
-  const validTools = ["read", "write", "edit", "bash", "task", "grep", "glob", "patch"];
+  const validTools = ["read", "write", "edit", "bash", "task", "grep", "glob", "patch", "question"];
   return validTools.includes(name);
 }
 

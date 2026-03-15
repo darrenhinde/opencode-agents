@@ -17,6 +17,7 @@ export const ToolAccessSchema = z.object({
   grep: z.boolean().optional(),
   glob: z.boolean().optional(),
   patch: z.boolean().optional(),
+  question: z.boolean().optional(),
 });
 
 // ============================================================================

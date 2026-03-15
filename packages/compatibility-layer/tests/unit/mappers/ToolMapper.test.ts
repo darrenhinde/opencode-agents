@@ -57,6 +57,12 @@ describe("ToolMapper", () => {
         expect(result.name).toBe("Edit");
         expect(result.exact).toBe(true);
       });
+
+      it("maps question to Question", () => {
+        const result = mapToolFromOAC("question", "claude");
+        expect(result.name).toBe("Question");
+        expect(result.exact).toBe(true);
+      });
     });
 
     describe("Cursor platform", () => {
@@ -83,6 +89,12 @@ describe("ToolMapper", () => {
         expect(result.exact).toBe(false);
         expect(result.warning).toContain("not supported");
       });
+
+      it("warns about unsupported question tool", () => {
+        const result = mapToolFromOAC("question", "cursor");
+        expect(result.exact).toBe(false);
+        expect(result.warning).toContain("not supported");
+      });
     });
 
     describe("Windsurf platform", () => {
@@ -102,6 +114,12 @@ describe("ToolMapper", () => {
         const result = mapToolFromOAC("glob", "windsurf");
         expect(result.name).toBe("find_files");
         expect(result.exact).toBe(true);
+      });
+
+      it("warns about unsupported question tool", () => {
+        const result = mapToolFromOAC("question", "windsurf");
+        expect(result.exact).toBe(false);
+        expect(result.warning).toContain("not supported");
       });
     });
 
@@ -135,6 +153,12 @@ describe("ToolMapper", () => {
       it("maps WebSearch to bash (approximation)", () => {
         const result = mapToolToOAC("WebSearch", "claude");
         expect(result.name).toBe("bash");
+        expect(result.exact).toBe(true);
+      });
+
+      it("maps Question to question", () => {
+        const result = mapToolToOAC("Question", "claude");
+        expect(result.name).toBe("question");
         expect(result.exact).toBe(true);
       });
     });
@@ -259,9 +283,15 @@ describe("ToolMapper", () => {
       expect(tools).toHaveLength(0);
     });
 
-    it("returns task for Cursor (no delegation support)", () => {
+    it("returns task and question for Cursor (no delegation or question support)", () => {
       const tools = getUnsupportedTools("cursor");
       expect(tools).toContain("task");
+      expect(tools).toContain("question");
+    });
+
+    it("returns question for Windsurf (no question support)", () => {
+      const tools = getUnsupportedTools("windsurf");
+      expect(tools).toContain("question");
     });
   });
 
@@ -269,10 +299,13 @@ describe("ToolMapper", () => {
     it("returns true for supported tools", () => {
       expect(isToolSupported("bash", "claude")).toBe(true);
       expect(isToolSupported("read", "cursor")).toBe(true);
+      expect(isToolSupported("question", "claude")).toBe(true);
     });
 
     it("returns false for unsupported tools", () => {
       expect(isToolSupported("task", "cursor")).toBe(false);
+      expect(isToolSupported("question", "cursor")).toBe(false);
+      expect(isToolSupported("question", "windsurf")).toBe(false);
     });
   });
 });
