@@ -14,7 +14,7 @@
 📝 **Editable Agents** - Full control over AI behavior  
 👥 **Team-Ready** - Everyone uses the same patterns
 
-**Multi-language:** TypeScript • Python • Go • Rust • Any language*  
+**Multi-language:** TypeScript • Python • Go • Rust • C# • Any language*  
 **Model Agnostic:** Claude • GPT • Gemini • Local models
 
 
@@ -684,7 +684,7 @@ Build complete custom AI systems tailored to your domain in minutes. Interactive
 A: Yes! Use Git Bash (recommended) or WSL.
 
 **Q: What languages are supported?**  
-A: Agents are language-agnostic and adapt based on your project files. Primarily tested with TypeScript/Node.js. Python, Go, Rust, and other languages are supported but less battle-tested. The context system works with any language.
+A: Agents are language-agnostic and adapt based on your project files. Primarily tested with TypeScript/Node.js. C# / .NET is now supported with dedicated context files. Python, Go, Rust, and other languages are supported but less battle-tested. The context system works with any language.
 
 **Q: Do I need to add context?**  
 A: No, but it's highly recommended. Without context, agents write generic code. With context, they write YOUR code.
@@ -767,7 +767,7 @@ Check out our [**Project Board**](https://github.com/darrenhinde/OpenAgentsContr
 - **Plugin System** - npm-based plugin architecture for easy distribution
 - **Performance Improvements** - Faster agent execution and context loading
 - **Enhanced Context Discovery** - Smarter pattern recognition
-- **Multi-language Support** - Better Python, Go, Rust support
+- **Multi-language Support** - Better Python, Go, Rust, C# / .NET support
 - **Team Collaboration** - Shared context and team workflows
 - **Documentation** - More examples, tutorials, and guides
 

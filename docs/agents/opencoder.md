@@ -25,7 +25,7 @@ OpenCoder is a **specialized development agent** focused on complex coding tasks
 
 **Key Characteristics:**
 - 🎯 **Specialized** - Deep focus on code quality and architecture
-- 🔧 **Multi-language** - Adapts to TypeScript, Python, Go, Rust, and more
+- 🔧 **Multi-language** - Adapts to TypeScript, Python, Go, Rust, C#, and more
 - 📐 **Plan-first** - Always proposes plans before implementation
 - 🏗️ **Modular** - Emphasizes clean architecture and separation of concerns
 - ✅ **Quality-focused** - Includes testing, type checking, and validation
@@ -101,7 +101,7 @@ Use **openagent** for:
 - Technical debt reduction
 
 ### Quality Assurance
-- Type checking (TypeScript, Python, Go, Rust)
+- Type checking (TypeScript, Python, Go, Rust, C#)
 - Linting (ESLint, Pylint, etc.)
 - Build validation
 - Test execution
@@ -189,6 +189,12 @@ OpenCoder adapts to the project's language automatically:
 - Build: `cargo check`, `cargo build`
 - Linting: `clippy`
 - Testing: `cargo test`
+
+### C# / .NET
+- Runtime: `dotnet run`
+- Type checking: built-in (Roslyn compiler)
+- Linting: `dotnet format`, Roslyn analyzers
+- Testing: `dotnet test` (xUnit + Shouldly + NSubstitute)
 
 ---
 
@@ -384,6 +390,7 @@ OpenCoder adapts to your language:
 - For Python: Pythonic patterns, type hints
 - For Go: Idiomatic Go, interfaces
 - For Rust: Ownership, traits, Result types
+- For C#: Minimal APIs, CQRS (MediatR), records, async/await, nullable reference types
 
 ---
 
