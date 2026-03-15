@@ -4,7 +4,7 @@ name: C# Project Structure
 description: "ASP.NET Core project structure with Minimal APIs, CQRS, EF Core, and PostgreSQL patterns"
 category: core
 type: standard
-version: 1.3.0
+version: 1.4.0
 author: community
 ---
 
@@ -29,17 +29,41 @@ author: community
 
 ## Table of Contents
 
-1. [Project Layout](#1-project-layout)
-2. [Program.cs](#2-programcs)
-3. [Features — Vertical Slices](#3-features--vertical-slices)
-4. [Infrastructure](#4-infrastructure)
-5. [EF Core & PostgreSQL](#5-ef-core--postgresql)
-6. [Migrations](#6-migrations)
-7. [NuGet Packages](#7-nuget-packages)
+1. [Project Initialization](#1-project-initialization)
+2. [Project Layout](#2-project-layout)
+3. [Program.cs](#3-programcs)
+4. [Features — Vertical Slices](#4-features--vertical-slices)
+5. [Infrastructure](#5-infrastructure)
+6. [EF Core & PostgreSQL](#6-ef-core--postgresql)
+7. [Migrations](#7-migrations)
+8. [NuGet Packages](#8-nuget-packages)
 
 ---
 
-## 1. Project Layout
+## 1. Project Initialization
+
+**Always run these commands FIRST when creating a new ASP.NET Core project:**
+
+```bash
+# Create .gitignore (C# patterns)
+dotnet new gitignore
+
+# Create .gitattributes (normalize line endings)
+dotnet new gitattributes
+
+# Create the project
+dotnet new web -n MyApi
+cd MyApi
+```
+
+**Why this order?**
+- `.gitignore` must exist before any build artifacts are created (prevents committing `bin/`, `obj/`, etc.)
+- `.gitattributes` ensures consistent line endings across team members
+- Projects created after these are in place benefit from proper version control setup
+
+---
+
+## 2. Project Layout
 
 ```
 MyApi/
@@ -95,7 +119,7 @@ MyApi/
 
 ---
 
-## 2. Program.cs
+## 3. Program.cs
 
 `Program.cs` contains **only** DI registration and endpoint mapping. No business logic.
 
@@ -148,7 +172,7 @@ public partial class Program { }   // allows WebApplicationFactory in integratio
 
 ---
 
-## 3. Features — Vertical Slices
+## 4. Features — Vertical Slices
 
 Each use case lives in its own file: **Command or Query record + Validator + Handler — nothing else**.  
 The Command/Query record is the API contract — it is bound directly from the HTTP request body/route.  
@@ -321,7 +345,7 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
 
 ---
 
-## 4. Infrastructure & API Endpoints
+## 5. Infrastructure & API Endpoints
 
 ### 4.1 API Endpoints (Entry Points)
 
@@ -475,7 +499,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
 
 ---
 
-## 5. EF Core & PostgreSQL
+## 6. EF Core & PostgreSQL
 
 ### 5.1 Connection String (appsettings.json)
 
@@ -538,7 +562,7 @@ await db.SaveChangesAsync(ct);
 
 ---
 
-## 6. Migrations
+## 7. Migrations
 
 ### Common Commands
 
@@ -576,7 +600,7 @@ dotnet ef migrations bundle --output migrations-bundle
 
 ---
 
-## 7. NuGet Packages
+## 8. NuGet Packages
 
 ```xml
 <ItemGroup>
