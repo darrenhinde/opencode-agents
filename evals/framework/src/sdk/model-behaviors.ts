@@ -73,6 +73,18 @@ export const MODEL_BEHAVIORS: Record<string, ModelBehavior> = {
     typicalResponseTime: 6000,
     toolCompletionGrace: 3000,
   },
+  'MiniMax-M2.7-highspeed': {
+    sendsCompletionText: true,
+    mayEndWithToolCalls: false,
+    typicalResponseTime: 5000,
+    toolCompletionGrace: 3000,
+  },
+  'MiniMax-M2.7': {
+    sendsCompletionText: true,
+    mayEndWithToolCalls: false,
+    typicalResponseTime: 8000,
+    toolCompletionGrace: 4000,
+  },
   // Default for unknown models
   'default': {
     sendsCompletionText: true,

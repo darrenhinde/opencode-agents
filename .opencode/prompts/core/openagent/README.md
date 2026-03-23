@@ -29,6 +29,7 @@ open ../results/index.html
 | `gemini` | Gemini | ✅ | ✅ | ✅ | ✅ | ✅ | 7/7 (100%) | ✅ Stable |
 | `grok` | Grok | ✅ | ✅ | ✅ | ✅ | ✅ | 7/7 (100%) | ✅ Stable |
 | `llama` | Llama/OSS | ✅ | ✅ | ✅ | ✅ | ✅ | 7/7 (100%) | ✅ Stable |
+| `minimax` | MiniMax | - | - | - | - | - | - | 🚧 Needs Testing |
 
 **Legend:**
 - ✅ Works reliably (passes tests)
@@ -186,6 +187,39 @@ open ../results/index.html
 **Known Issues:** None
 
 **Use When:** Using open-source models (Llama, Qwen, DeepSeek, etc.)
+
+---
+
+### `minimax.md` - MiniMax Optimized
+
+**Target Models:**
+- `minimax/MiniMax-M2.7` (latest, 1M context window)
+- `minimax/MiniMax-M2.7-highspeed` (same performance, faster)
+
+**Optimizations:**
+- Structured with clear sections and explicit instructions
+- Optimized for MiniMax's OpenAI-compatible API
+- Handles MiniMax-specific constraints (temperature range, no response_format)
+
+**Test Results:**
+```json
+{
+  "total_tests": 0,
+  "passed": 0,
+  "failed": 0,
+  "pass_rate": "Not tested yet",
+  "avg_duration": "N/A"
+}
+```
+
+**Known Issues:** None documented yet
+
+**Use When:** Using MiniMax models (M2.7 family)
+
+**Setup:**
+1. Get your API key from [MiniMax Platform](https://platform.minimax.io)
+2. Set `MINIMAX_API_KEY` in your environment
+3. Configure model: `minimax/MiniMax-M2.7` or `minimax/MiniMax-M2.7-highspeed`
 
 ---
 
