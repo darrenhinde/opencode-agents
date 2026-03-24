@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-03-24
+
+### Changes
+- fix(install): include agent metadata config in profile installs (#280)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
