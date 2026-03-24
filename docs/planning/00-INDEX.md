@@ -7,7 +7,15 @@
 
 ---
 
-## 📁 Planning Documents
+## 🎯 MVP Plan (START HERE)
+
+**`mvp/00-MVP-PLAN.md`** — The 20% that delivers 80% of the value.
+5 commands, 6 weeks, focused on what users actually care about.
+This is what we build first. Everything else is v1.1+.
+
+---
+
+## 📁 Full Planning Documents (Reference)
 
 ### Core Planning
 

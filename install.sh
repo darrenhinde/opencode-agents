@@ -330,9 +330,19 @@ resolve_component_path() {
 # Helper function to get the correct registry key for a component type
 get_registry_key() {
     local type=$1
-    # Most types are pluralized, but 'config' stays singular
+    # Handle both singular and plural forms
+    # Registry uses plural keys: agents, contexts, skills
     case "$type" in
         config) echo "config" ;;
+        # Already plural forms - use as-is
+        agents|contexts|skills) echo "$type" ;;
+        # Singular forms - pluralize them
+        agent) echo "agents" ;;
+        context) echo "contexts" ;;
+        skill) echo "skills" ;;
+        # Fallback: if already ends with 's', assume plural
+        *s) echo "$type" ;;
+        # Default: add 's' to make plural
         *) echo "${type}s" ;;
     esac
 }

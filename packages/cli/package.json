@@ -1,0 +1,37 @@
+{
+  "name": "@nextsystems/oac-cli",
+  "version": "1.0.0",
+  "description": "OAC CLI — install, manage, and update AI agents and context files",
+  "type": "module",
+  "bin": {
+    "oac": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "rm -rf dist && bun build src/index.ts --outdir dist --target bun --splitting",
+    "build:watch": "bun build src/index.ts --outdir dist --target bun --splitting --watch",
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openagents-control/compatibility-layer": "*",
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.0",
+    "semver": "^7.6.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0",
+    "@types/semver": "^7.5.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
