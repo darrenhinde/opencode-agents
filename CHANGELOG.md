@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.8.0] - 2026-03-24
+
+### Changes
+- feat(cli): Bun-first CLI migration with 7 commands and comprehensive test suite (#259)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
