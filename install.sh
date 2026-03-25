@@ -297,13 +297,20 @@ get_profile_components() {
 get_component_info() {
     local component_id=$1
     local component_type=$2
-    
+    local registry_key
+    registry_key=$(get_registry_key "$component_type")
+
     if [ "$component_type" = "context" ] && [[ "$component_id" == */* ]]; then
-        jq_exec "first(.components.contexts[]? | select(.path == \".opencode/context/${component_id}.md\"))" "$TEMP_DIR/registry.json"
+        local result
+        result=$(jq_exec "first(.components.contexts[]? | select(.path == \".opencode/context/${component_id}.md\"))" "$TEMP_DIR/registry.json")
+        if [ -z "$result" ] || [ "$result" = "null" ]; then
+            result=$(jq_exec "first(.components.contexts[]? | select(.path == \".opencode/context/${component_id}\"))" "$TEMP_DIR/registry.json")
+        fi
+        echo "$result"
         return
     fi
 
-    jq_exec ".components.${component_type}[]? | select(.id == \"${component_id}\" or (.aliases // [] | index(\"${component_id}\")))" "$TEMP_DIR/registry.json"
+    jq_exec ".components.${registry_key}[]? | select(.id == \"${component_id}\" or (.aliases // [] | index(\"${component_id}\")))" "$TEMP_DIR/registry.json"
 }
 
 resolve_component_path() {
@@ -554,9 +561,7 @@ show_install_location_menu() {
             fi
             
             local normalized_path
-            normalized_path=$(normalize_and_validate_path "$custom_path")
-            
-            if ! normalize_and_validate_path "$custom_path" > /dev/null; then
+            if ! normalized_path=$(normalize_and_validate_path "$custom_path"); then
                 print_error "Invalid path"
                 sleep 2
                 show_install_location_menu
@@ -753,6 +758,9 @@ show_custom_menu() {
     read -r -p "Enter category numbers (space-separated) or option: " -a selections
     
     for sel in "${selections[@]}"; do
+        if [[ ! "$sel" =~ ^[0-9]+$ ]]; then
+            continue
+        fi
         if [ "$sel" -eq $((${#categories[@]}+1)) ]; then
             selected_categories=("${categories[@]}")
             break
@@ -804,7 +812,19 @@ show_component_selection() {
             echo "  ${idx}) ${comp_name}"
             echo "     ${comp_desc}"
             
-            all_components+=("${category}:${comp_id}")
+            local singular_type
+            case "$category" in
+                agents)    singular_type="agent" ;;
+                subagents) singular_type="subagent" ;;
+                commands)  singular_type="command" ;;
+                tools)     singular_type="tool" ;;
+                plugins)   singular_type="plugin" ;;
+                skills)    singular_type="skill" ;;
+                contexts)  singular_type="context" ;;
+                config)    singular_type="config" ;;
+                *)         singular_type="${category%s}" ;;
+            esac
+            all_components+=("${singular_type}:${comp_id}")
             component_details+=("${comp_name}|${comp_desc}")
             
             idx=$((idx+1))
@@ -822,7 +842,7 @@ show_component_selection() {
             break
         elif [ "$sel" = "done" ]; then
             break
-        elif [ "$sel" -ge 1 ] && [ "$sel" -le ${#all_components[@]} ]; then
+        elif [[ "$sel" =~ ^[0-9]+$ ]] && [ "$sel" -ge 1 ] && [ "$sel" -le ${#all_components[@]} ]; then
             SELECTED_COMPONENTS+=("${all_components[$((sel-1))]}")
         fi
     done
@@ -1023,11 +1043,9 @@ perform_installation() {
     for comp in "${SELECTED_COMPONENTS[@]}"; do
         local type="${comp%%:*}"
         local id="${comp##*:}"
-        local registry_key
-        registry_key=$(get_registry_key "$type")
         local path
         path=$(resolve_component_path "$type" "$id")
-        
+
         if [ -n "$path" ] && [ "$path" != "null" ]; then
             local install_path
             install_path=$(get_install_path "$path")
@@ -1097,13 +1115,13 @@ perform_installation() {
         local type="${comp%%:*}"
         local id="${comp##*:}"
         
-        # Get the correct registry key (handles singular/plural)
-        local registry_key
-        registry_key=$(get_registry_key "$type")
-        
-        # Get component path
+        # Get component path (registry key resolved internally)
         local path
         path=$(resolve_component_path "$type" "$id")
+
+        # Registry key needed for multi-file (skills) lookup
+        local registry_key
+        registry_key=$(get_registry_key "$type")
         
         if [ -z "$path" ] || [ "$path" = "null" ]; then
             print_warning "Could not find path for ${comp}"
@@ -1288,7 +1306,7 @@ list_components() {
     
     echo -e "${BOLD}Available Components${NC}\n"
     
-    local categories=("agents" "subagents" "commands" "tools" "plugins" "skills" "contexts")
+    local categories=("agents" "subagents" "commands" "tools" "plugins" "skills" "contexts" "config")
     
     for category in "${categories[@]}"; do
         local cat_display
@@ -1443,8 +1461,7 @@ main() {
     # Apply custom install directory if specified (CLI arg overrides env var)
     if [ -n "$CUSTOM_INSTALL_DIR" ]; then
         local normalized_path
-        if normalize_and_validate_path "$CUSTOM_INSTALL_DIR" > /dev/null; then
-            normalized_path=$(normalize_and_validate_path "$CUSTOM_INSTALL_DIR")
+        if normalized_path=$(normalize_and_validate_path "$CUSTOM_INSTALL_DIR"); then
             INSTALL_DIR="$normalized_path"
             if ! validate_install_path "$INSTALL_DIR"; then
                 print_warning "Installation path may have issues, but continuing..."
