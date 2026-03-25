@@ -128,8 +128,16 @@ async function runUpdate(projectRoot: string, opts: UpdateOptions): Promise<Inst
 
   // Write updated manifest for all successfully processed files (not dry-run)
   if (!opts.dryRun) {
-    await writeManifest(projectRoot, updatedManifest);
-    verbose('Manifest written.');
+    try {
+      await writeManifest(projectRoot, updatedManifest);
+      verbose('Manifest written.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      error(`Failed to write manifest: ${msg}`);
+      error('Fix: check write permissions for the .oac/ directory.');
+      process.exitCode = 1;
+      return result;
+    }
     if (result.errors.length > 0) {
       warn('Some files failed — manifest updated for successful files. Re-run to retry failures.');
     }

@@ -80,14 +80,21 @@ export const addFileToManifest = (
   manifest: ManifestFile,
   filePath: string,
   entry: FileEntry,
-): ManifestFile => ({
-  ...manifest,
-  updatedAt: new Date().toISOString(),
-  files: {
-    ...manifest.files,
-    [filePath]: entry,
-  },
-});
+): ManifestFile => {
+  // Normalize to forward-slash POSIX paths and reject traversal
+  const normalized = filePath.split(path.sep).join('/');
+  if (normalized.includes('..')) {
+    throw new Error(`Refusing to add path with traversal segments: ${filePath}`);
+  }
+  return {
+    ...manifest,
+    updatedAt: new Date().toISOString(),
+    files: {
+      ...manifest.files,
+      [normalized]: entry,
+    },
+  };
+};
 
 /**
  * Returns a new manifest with the given file entry removed.

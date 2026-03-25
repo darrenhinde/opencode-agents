@@ -123,7 +123,7 @@ const printStatus = (
   ides: DetectedIde[],
 ): void => {
   const homeDir = process.env['HOME'] ?? process.env['USERPROFILE'] ?? '';
-  const displayPath = projectRoot.startsWith(homeDir)
+  const displayPath = homeDir && projectRoot.startsWith(homeDir)
     ? `~${projectRoot.slice(homeDir.length)}`
     : projectRoot;
 

@@ -17,10 +17,13 @@ type UpdateCache = {
 /** Reads the cached update check result. Returns null if cache is missing or stale. */
 async function readCache(): Promise<UpdateCache | null> {
   try {
-    const raw = (await Bun.file(CACHE_FILE).json()) as UpdateCache
-    const age = Date.now() - new Date(raw.checkedAt).getTime()
+    const raw = await Bun.file(CACHE_FILE).json() as unknown
+    if (!raw || typeof raw !== 'object' || typeof (raw as Record<string, unknown>).checkedAt !== 'string') return null
+    const typed = raw as UpdateCache
+    const age = Date.now() - new Date(typed.checkedAt).getTime()
+    if (Number.isNaN(age)) return null
     if (age > CHECK_INTERVAL_MS) return null // stale
-    return raw
+    return typed
   } catch {
     return null
   }

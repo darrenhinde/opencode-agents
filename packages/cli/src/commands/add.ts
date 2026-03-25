@@ -144,6 +144,12 @@ const performInstall = async (
   const destPath = path.join(projectRoot, destRelativePath);
   const destDir = path.dirname(destRelativePath);
 
+  // Guard: ensure destination stays inside the project root
+  const resolvedDest = path.resolve(projectRoot, destRelativePath);
+  if (!resolvedDest.startsWith(path.resolve(projectRoot) + path.sep)) {
+    throw new Error(`Refusing to install outside project root: ${resolvedDest}`);
+  }
+
   info(`Installing ${component.type}:${component.id} → ${destDir}/`);
 
   if (opts.verbose) {

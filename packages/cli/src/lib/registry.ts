@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -36,7 +36,10 @@ export const RegistryComponentSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: ComponentTypeSchema,
-  path: z.string(),
+  path: z.string().refine(
+    (p) => !isAbsolute(p) && !p.includes('..'),
+    { message: 'Component path must be relative and must not contain ..' }
+  ),
   description: z.string(),
   tags: z.array(z.string()).default([]),
   dependencies: z.array(z.string()).default([]),

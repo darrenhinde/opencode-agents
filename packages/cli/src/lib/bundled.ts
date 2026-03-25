@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { isAbsolute, join, relative } from "node:path";
 
 // --- Types ---
 
@@ -31,6 +31,9 @@ export function getPackageRoot(): string {
   // In dev, set OAC_PACKAGE_ROOT=/path/to/repo to bypass the walk entirely.
   const envOverride = process.env['OAC_PACKAGE_ROOT'];
   if (envOverride) {
+    if (!isAbsolute(envOverride)) {
+      throw new Error(`OAC_PACKAGE_ROOT must be an absolute path, got: ${envOverride}`);
+    }
     return envOverride;
   }
   // import.meta.dir is Bun's native equivalent of __dirname — points to packages/cli/dist/ at runtime
@@ -54,8 +57,16 @@ export function getPackageRoot(): string {
  */
 export function findPackageRoot(dir: string): string {
   let current = dir;
+  let depth = 0;
+  const MAX_DEPTH = 10;
 
   while (true) {
+    if (++depth > MAX_DEPTH) {
+      throw new Error(
+        `getPackageRoot: exceeded ${MAX_DEPTH} directory levels walking up from "${dir}". ` +
+          `Set OAC_PACKAGE_ROOT env var to bypass the walk.`,
+      );
+    }
     const hasOpencode = existsSync(join(current, ".opencode"));
     const hasPackageJson = existsSync(join(current, "package.json"));
 
