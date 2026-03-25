@@ -72,7 +72,8 @@ check_dependencies() {
 }
 
 download_context() {
-  local categories=($1)
+  local categories
+  read -ra categories <<< "$1"
   local temp_dir
   temp_dir="$(mktemp -d)"
   # shellcheck disable=SC2064
@@ -113,7 +114,8 @@ download_context() {
 
 write_manifest() {
   local profile="$1"
-  local categories=($2)
+  local categories
+  read -ra categories <<< "$2"
   local commit="$3"
   local timestamp
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")

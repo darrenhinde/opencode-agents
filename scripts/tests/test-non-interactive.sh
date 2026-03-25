@@ -81,6 +81,11 @@ test_fresh_install_piped() {
     if echo "" | bash "$REPO_ROOT/install.sh" essential --install-dir="$install_dir" 2>&1 | grep -q "Installation complete"; then
         if [ -d "$install_dir" ]; then
             pass "Fresh install completed successfully via pipe"
+            if [ -f "$install_dir/config/agent-metadata.json" ]; then
+                pass "Fresh piped install included agent metadata config"
+            else
+                fail "Fresh piped install missing agent metadata config"
+            fi
         else
             fail "Install reported success but directory not created"
         fi

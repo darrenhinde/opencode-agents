@@ -3090,6 +3090,20 @@
         "category": "essential"
       },
       {
+        "id": "agent-metadata",
+        "name": "Agent Metadata",
+        "type": "config",
+        "path": ".opencode/config/agent-metadata.json",
+        "description": "Centralized agent metadata used for runtime resolution, registry management, and dependency discovery",
+        "tags": [
+          "config",
+          "agents",
+          "metadata"
+        ],
+        "dependencies": [],
+        "category": "essential"
+      },
+      {
         "id": "readme",
         "name": "README",
         "type": "config",
@@ -3133,7 +3147,8 @@
         "context:workflows-review",
         "context:system-context-guide",
         "context:adding-skill-basics",
-        "config:env-example"
+        "config:env-example",
+        "config:agent-metadata"
       ]
     },
     "developer": {
@@ -3179,6 +3194,7 @@
         "context:clean-code",
         "context:api-design",
         "config:env-example",
+        "config:agent-metadata",
         "config:readme",
         "context:openagents-repo/*"
       ]
@@ -3210,6 +3226,7 @@
         "context:project-intelligence/*",
         "context:adding-skill-basics",
         "config:env-example",
+        "config:agent-metadata",
         "config:readme"
       ]
     },
@@ -3264,6 +3281,7 @@
         "context:clean-code",
         "context:api-design",
         "config:env-example",
+        "config:agent-metadata",
         "config:readme",
         "context:openagents-repo/*"
       ]
@@ -3338,6 +3356,7 @@
         "context:frontmatter",
         "context:codebase-references",
         "config:env-example",
+        "config:agent-metadata",
         "config:readme"
       ],
       "additionalPaths": [
@@ -3347,7 +3366,7 @@
     }
   },
   "metadata": {
-    "lastUpdated": "2026-01-31",
+    "lastUpdated": "2026-03-21",
     "schemaVersion": "1.0.0"
   },
   "subagents": {

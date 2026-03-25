@@ -62,6 +62,7 @@ test_essential_profile() {
         "agent/subagents/core/documentation.md"
         "command/context.md"
         "command/clean.md"
+        "config/agent-metadata.json"
         "context/core/essential-patterns.md"
         "context/project/project-context.md"
     )
@@ -96,6 +97,7 @@ test_developer_profile() {
         "agent/subagents/code/build-agent.md"
         "command/commit.md"
         "command/test.md"
+        "config/agent-metadata.json"
         "context/core/standards/code.md"
     )
     
@@ -110,6 +112,29 @@ test_developer_profile() {
         pass "Developer profile: $found/${#expected_files[@]} key files present"
     else
         fail "Developer profile: only $found/${#expected_files[@]} key files found"
+    fi
+}
+
+test_agent_metadata_installed() {
+    echo -e "\n${BOLD}Test: Agent Metadata Config Installation${NC}"
+
+    local install_dir="$TEST_DIR/metadata-test/.opencode"
+
+    bash "$REPO_ROOT/install.sh" developer --install-dir="$install_dir" > "$TEST_DIR/metadata.log" 2>&1
+
+    local metadata_file="$install_dir/config/agent-metadata.json"
+
+    if [ -f "$metadata_file" ]; then
+        pass "Installed agent metadata config"
+    else
+        fail "Missing agent metadata config"
+        return
+    fi
+
+    if command -v jq &> /dev/null && jq -e '.agents.openagent.name == "OpenAgent"' "$metadata_file" > /dev/null; then
+        pass "Agent metadata file contains expected agent entries"
+    else
+        fail "Agent metadata file missing expected OpenAgent entry"
     fi
 }
 
@@ -264,6 +289,7 @@ main() {
     test_help_and_list
     test_essential_profile
     test_developer_profile
+    test_agent_metadata_installed
     test_custom_install_dir
     test_skip_existing_files
     test_file_content_validity

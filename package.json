@@ -3,7 +3,9 @@
   "version": "0.7.1",
   "description": "AI agent framework for plan-first development workflows with approval-based execution. Multi-language support for TypeScript, Python, Go, Rust and more.",
   "workspaces": [
-    "evals/framework"
+    "evals/framework",
+    "packages/cli",
+    "packages/compatibility-layer"
   ],
   "bin": {
     "oac": "./bin/oac.js"
@@ -31,10 +33,11 @@
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
-    "CONTEXT_SYSTEM_GUIDE.md"
+    "CONTEXT_SYSTEM_GUIDE.md",
+    "packages/cli/dist/"
   ],
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "test": "npm run test:all",
