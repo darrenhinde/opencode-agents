@@ -24,6 +24,11 @@ export { loadAbilities, loadAbility } from './loader/index.js'
 
 // Validator
 export { validateAbility, validateInputs } from './validator/index.js'
+export { PermissionValidator } from './validator/permissions.js'
+
+// Context Discovery
+export { ContextDiscovery } from './context/discovery.js'
+export type { ContextDefinition, LoadedContext, AgentPermissions } from './context/types.js'
 
 // Executor
 export { executeAbility, formatExecutionResult } from './executor/index.js'

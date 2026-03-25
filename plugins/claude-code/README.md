@@ -320,7 +320,21 @@ Stage 4: Execute with loaded context → No nested discovery needed
 
 ## 🔧 Configuration
 
-The plugin uses context files from the main OpenAgents Control repository.
+### Model: opusplan
+
+The plugin ships with `settings.json` at the plugin root:
+
+```json
+{
+  "model": "opusplan"
+}
+```
+
+`opusplan` uses **Opus for planning/orchestration** (the main agent) and **Sonnet for execution** (subagents). This matches OAC's plan-first workflow and gives you Opus-quality reasoning without paying Opus rates for every tool call.
+
+Subagents that need a lighter model override this at the agent level (e.g. `external-scout` uses `haiku`). The root setting only affects the main orchestrating agent.
+
+To reload after any settings change: `/reload-plugins` (no restart needed).
 
 ### Context Structure
 
@@ -328,6 +342,7 @@ The plugin uses context files from the main OpenAgents Control repository.
 plugins/claude-code/
 ├── .claude-plugin/
 │   └── plugin.json              # Plugin metadata
+├── settings.json                # Model config: opusplan
 ├── agents/                      # Custom subagents (7 files)
 │   ├── task-manager.md
 │   ├── context-scout.md

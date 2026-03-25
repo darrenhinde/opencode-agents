@@ -313,7 +313,14 @@ resolve_component_path() {
     registry_key=$(get_registry_key "$component_type")
 
     if [ "$component_type" = "context" ] && [[ "$component_id" == */* ]]; then
-        jq_exec "first(.components.contexts[]? | select(.path == \".opencode/context/${component_id}.md\") | .path)" "$TEMP_DIR/registry.json"
+        # Try .md extension first (most context files), then fall back to the
+        # path as-is for non-markdown files (e.g. paths.json). Fixes #251.
+        local result
+        result=$(jq_exec "first(.components.contexts[]? | select(.path == \".opencode/context/${component_id}.md\") | .path)" "$TEMP_DIR/registry.json")
+        if [ -z "$result" ] || [ "$result" = "null" ]; then
+            result=$(jq_exec "first(.components.contexts[]? | select(.path == \".opencode/context/${component_id}\") | .path)" "$TEMP_DIR/registry.json")
+        fi
+        echo "$result"
         return
     fi
 
