@@ -1,0 +1,230 @@
+ISSUE: findPackageRoot fails in production + bin/oac.js should inject OAC_PACKAGE_ROOT
+SEVERITY: Critical
+FILE(S): packages/cli/src/lib/bundled.ts, bin/oac.js
+
+═══════════════════════════════════════════════════════════════
+ISSUE C3: findPackageRoot() excludes directories with registry.json
+═══════════════════════════════════════════════════════════════
+
+CURRENT STATE (packages/cli/src/lib/bundled.ts, lines 53-80):
+
+  export function findPackageRoot(dir: string): string {
+    let current = dir;
+
+    while (true) {
+      const hasOpencode = existsSync(join(current, ".opencode"));
+      const hasPackageJson = existsSync(join(current, "package.json"));
+      // registry.json exists at the monorepo root but NOT at the CLI package root.
+      // Excluding directories that have it prevents the walk from stopping at the
+      // repo root instead of the actual CLI package root.
+      const hasRegistryJson = existsSync(join(current, "registry.json"));
+
+      if (hasOpencode && hasPackageJson && !hasRegistryJson) {
+        return current;
+      }
+      ...
+    }
+  }
+
+The comment says "registry.json exists at the monorepo root but NOT at the CLI
+package root." This is true in development. But look at root package.json `files`
+array (line 30):
+
+  "registry.json",
+
+`registry.json` IS included in the published npm package. When a user installs
+`@nextsystems/oac` globally, the installed package directory will contain:
+  - .opencode/          ← present (from files array)
+  - package.json        ← present (always included by npm)
+  - registry.json       ← present (explicitly in files array)
+
+So `hasOpencode && hasPackageJson && !hasRegistryJson` evaluates to:
+  true && true && false → false
+
+The walk SKIPS the actual package root and continues up the directory tree until
+it hits the filesystem root, then throws:
+  "getPackageRoot: could not find a directory with .opencode/ and package.json
+   (without a registry.json at the same level) walking up from ..."
+
+Every globally installed user hits this error on `oac init` and `oac update`.
+
+ROOT CAUSE:
+The `!hasRegistryJson` guard was designed to distinguish the monorepo root from
+the CLI sub-package root during development. It was not updated to account for
+`registry.json` being in the `files` array and therefore present in production.
+
+═══════════════════════════════════════════════════════════════
+ISSUE C4: bin/oac.js should inject OAC_PACKAGE_ROOT
+═══════════════════════════════════════════════════════════════
+
+CURRENT STATE (bin/oac.js, lines 1-23):
+
+  #!/usr/bin/env node
+  'use strict';
+
+  const { execFileSync } = require('child_process');
+  const path = require('path');
+  const fs = require('fs');
+
+  const cliDist = path.join(__dirname, '..', 'packages', 'cli', 'dist', 'index.js');
+
+  if (!fs.existsSync(cliDist)) {
+    console.error('Error: OAC CLI not built yet. Run: npm run build -w packages/cli');
+    process.exit(1);
+  }
+
+  try {
+    execFileSync('bun', [cliDist, ...process.argv.slice(2)], { stdio: 'inherit' });
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.error('Error: Bun is required to run OAC CLI. Install from https://bun.sh');
+      process.exit(1);
+    }
+    process.exitCode = err.status ?? 1;
+  }
+
+`bin/oac.js` already knows the package root: `path.join(__dirname, '..')` is
+exactly the npm package root (the directory containing package.json, .opencode/,
+registry.json, etc.). It should inject this as `OAC_PACKAGE_ROOT` so the Bun
+process never needs to walk the filesystem.
+
+This is the clean fix: the Node.js wrapper has reliable `__dirname` knowledge;
+the Bun binary should consume it rather than re-derive it.
+
+═══════════════════════════════════════════════════════════════
+FIX
+═══════════════════════════════════════════════════════════════
+
+--- Fix 1: bin/oac.js — inject OAC_PACKAGE_ROOT ---
+
+BEFORE:
+  try {
+    execFileSync('bun', [cliDist, ...process.argv.slice(2)], { stdio: 'inherit' });
+  } catch (err) {
+
+AFTER:
+  const packageRoot = path.join(__dirname, '..');
+
+  try {
+    execFileSync('bun', [cliDist, ...process.argv.slice(2)], {
+      stdio: 'inherit',
+      env: { ...process.env, OAC_PACKAGE_ROOT: packageRoot },
+    });
+  } catch (err) {
+
+--- Fix 2: packages/cli/src/lib/bundled.ts — remove the !hasRegistryJson guard ---
+
+The `OAC_PACKAGE_ROOT` env var is now always set by bin/oac.js in production,
+so `findPackageRoot()` is only called in dev/test scenarios where the env var
+is not set. The `!hasRegistryJson` guard can be removed entirely — in dev the
+monorepo root has both .opencode/ and package.json, and that is the correct
+root to use.
+
+BEFORE (lines 53-80):
+  export function findPackageRoot(dir: string): string {
+    let current = dir;
+
+    while (true) {
+      const hasOpencode = existsSync(join(current, ".opencode"));
+      const hasPackageJson = existsSync(join(current, "package.json"));
+      // registry.json exists at the monorepo root but NOT at the CLI package root.
+      // Excluding directories that have it prevents the walk from stopping at the
+      // repo root instead of the actual CLI package root.
+      const hasRegistryJson = existsSync(join(current, "registry.json"));
+
+      if (hasOpencode && hasPackageJson && !hasRegistryJson) {
+        return current;
+      }
+
+      const parent = join(current, "..");
+      // Reached filesystem root — no package root found
+      if (parent === current) {
+        throw new Error(
+          `getPackageRoot: could not find a directory with ".opencode/" and "package.json" ` +
+            `(without a "registry.json" at the same level) walking up from "${dir}". ` +
+            `Is @nextsystems/oac installed correctly? ` +
+            `In dev/monorepo mode, set OAC_PACKAGE_ROOT env var to the repo root.`,
+        );
+      }
+      current = parent;
+    }
+  }
+
+AFTER:
+  export function findPackageRoot(dir: string): string {
+    let current = dir;
+
+    while (true) {
+      const hasOpencode = existsSync(join(current, ".opencode"));
+      const hasPackageJson = existsSync(join(current, "package.json"));
+
+      if (hasOpencode && hasPackageJson) {
+        return current;
+      }
+
+      const parent = join(current, "..");
+      // Reached filesystem root — no package root found
+      if (parent === current) {
+        throw new Error(
+          `getPackageRoot: could not find a directory with ".opencode/" and "package.json" ` +
+            `walking up from "${dir}". ` +
+            `Is @nextsystems/oac installed correctly? ` +
+            `In dev/monorepo mode, set OAC_PACKAGE_ROOT env var to the repo root.`,
+        );
+      }
+      current = parent;
+    }
+  }
+
+Also update the comment block above findPackageRoot (lines 41-52) to remove the
+outdated reference to registry.json:
+
+BEFORE:
+  /**
+   * Synchronously walks up from `dir` until finding a directory that has
+   * all three anchors:
+   *   1. `.opencode/`   — OAC configuration directory
+   *   2. `package.json` — npm package manifest
+   *   3. No `registry.json` at the same level — `registry.json` is present at
+   *      the monorepo root but NOT at the CLI package root, so its absence
+   *      distinguishes the CLI package from the repo root in a monorepo layout.
+   *
+   * Throws if the filesystem root is reached without finding a match.
+   *
+   * Pure in intent — no side effects beyond filesystem reads.
+   */
+
+AFTER:
+  /**
+   * Synchronously walks up from `dir` until finding a directory that has
+   * both anchors:
+   *   1. `.opencode/`   — OAC configuration directory
+   *   2. `package.json` — npm package manifest
+   *
+   * In production, this function is bypassed entirely because bin/oac.js
+   * injects OAC_PACKAGE_ROOT before invoking the Bun binary.
+   * This fallback is used only in dev/test environments where OAC_PACKAGE_ROOT
+   * is not set.
+   *
+   * Throws if the filesystem root is reached without finding a match.
+   *
+   * Pure in intent — no side effects beyond filesystem reads.
+   */
+
+VALIDATION:
+1. Simulate a production install:
+   a. Create a temp directory: mkdir /tmp/oac-test && cd /tmp/oac-test
+   b. Copy the package root into it (with registry.json present)
+   c. Set OAC_PACKAGE_ROOT to the temp dir
+   d. Run: node bin/oac.js --version
+   e. Confirm it does NOT throw "could not find a directory"
+
+2. Verify env injection:
+   a. Add a temporary console.log(process.env.OAC_PACKAGE_ROOT) to bundled.ts
+   b. Run oac --version and confirm the path is printed correctly
+   c. Remove the debug log
+
+3. Unit test findPackageRoot with a directory that contains registry.json:
+   - Should now RETURN that directory (not skip it)
+
+DEPENDENCIES: C1 (registry.json must be in the published package for this to matter)

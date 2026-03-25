@@ -1,0 +1,95 @@
+ISSUE: No SIGINT/SIGTERM handlers — terminal may be left in broken state
+SEVERITY: Important
+FILE(S): packages/cli/src/index.ts
+
+CURRENT STATE:
+packages/cli/src/index.ts (full file, 70 lines) — no signal handlers registered:
+
+  #!/usr/bin/env node
+
+  import { Command } from 'commander'
+  import { readCliVersion } from './lib/version.js'
+
+  const program = new Command()
+
+  program
+    .name('oac')
+    .description('OpenAgents Control — install, manage, and update AI agents and context files')
+    .version(readCliVersion(), '-v, --version', 'Print version and exit')
+
+  async function main(): Promise<void> {
+    ...
+    await program.parseAsync(process.argv)
+    ...
+  }
+
+  main().catch((err: unknown) => {
+    console.error('Fatal error:', err instanceof Error ? err.message : String(err))
+    process.exitCode = 1
+  })
+
+The `ora` spinner (used via `createSpinner` in spinner.ts) writes ANSI escape
+sequences to the terminal to animate. If the process is killed mid-spin (Ctrl-C
+= SIGINT, or SIGTERM from a process manager), the spinner's cursor-hide and
+color sequences are left active. The terminal cursor may remain hidden and the
+terminal color may be stuck on the spinner's color.
+
+ROOT CAUSE:
+No `process.on('SIGINT')` or `process.on('SIGTERM')` handler is registered.
+The ora library does not automatically clean up on unhandled signals in all
+environments.
+
+FIX:
+Add two signal handler lines to `index.ts`, immediately after the `const program`
+declaration and before the `main()` function definition. This placement ensures
+they are registered before any async work begins.
+
+BEFORE (index.ts lines 6-14):
+  const program = new Command()
+
+  program
+    .name('oac')
+    .description('OpenAgents Control — install, manage, and update AI agents and context files')
+    .version(readCliVersion(), '-v, --version', 'Print version and exit')
+
+  // Lazy-load command modules in parallel — keeps startup < 100ms
+  async function main(): Promise<void> {
+
+AFTER:
+  const program = new Command()
+
+  program
+    .name('oac')
+    .description('OpenAgents Control — install, manage, and update AI agents and context files')
+    .version(readCliVersion(), '-v, --version', 'Print version and exit')
+
+  // Restore terminal state on Ctrl-C or kill signal
+  process.on('SIGINT', () => process.exit(130))
+  process.on('SIGTERM', () => process.exit(143))
+
+  // Lazy-load command modules in parallel — keeps startup < 100ms
+  async function main(): Promise<void> {
+
+Explanation of exit codes:
+  - 130 = 128 + 2 (SIGINT signal number) — Unix convention for Ctrl-C termination
+  - 143 = 128 + 15 (SIGTERM signal number) — Unix convention for SIGTERM termination
+
+Calling `process.exit()` triggers the `exit` event, which ora hooks into to
+restore the terminal cursor and clear the spinner line. This is the standard
+pattern used by ora's own documentation.
+
+IMPORTANT: Do NOT use `process.exit(0)` for signals — that would mask the
+signal to parent processes (e.g. shell scripts checking exit codes).
+
+VALIDATION:
+1. Run: oac init (in a project with many files)
+2. While the spinner is running, press Ctrl-C
+3. Verify:
+   a. The terminal cursor is visible after exit
+   b. The terminal color is reset (no stuck yellow/red)
+   c. The shell prompt appears on a new line
+   d. echo $? returns 130
+4. Run: oac update & sleep 0.5 && kill $! (sends SIGTERM)
+5. Verify echo $? returns 143
+
+DEPENDENCIES: none

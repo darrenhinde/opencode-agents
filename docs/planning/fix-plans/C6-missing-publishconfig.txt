@@ -1,0 +1,87 @@
+ISSUE: Missing publishConfig.access for scoped npm package
+SEVERITY: Critical
+FILE(S): package.json (root), packages/cli/package.json
+
+CURRENT STATE:
+
+Root package.json — no `publishConfig` field anywhere in the file (119 lines total).
+packages/cli/package.json — no `publishConfig` field anywhere in the file (37 lines total).
+
+Both packages are scoped:
+  - root:        "name": "@nextsystems/oac"
+  - sub-package: "name": "@nextsystems/oac-cli"
+
+ROOT CAUSE:
+npm scoped packages (`@scope/name`) default to `"access": "restricted"` (private)
+when published. Without `"publishConfig": {"access": "public"}`, running
+`npm publish` will either:
+  a) Fail with: "You must sign up for private packages"
+     (if the npm account does not have a paid plan)
+  b) Publish as a private package that only the owner can install
+     (if the account has a paid plan)
+
+In either case, `npm install -g @nextsystems/oac` will fail for all users with:
+  "npm ERR! 404 Not Found - GET https://registry.npmjs.org/@nextsystems%2Foac"
+  or
+  "npm ERR! 403 Forbidden - You do not have permission to access this package"
+
+FIX:
+
+--- Root package.json ---
+Add `publishConfig` as a top-level field. Recommended placement: after `"license"`.
+
+BEFORE (root package.json, lines 105-110):
+  "author": "Darren Hinde",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darrenhinde/OpenAgentsControl.git"
+  },
+
+AFTER:
+  "author": "Darren Hinde",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darrenhinde/OpenAgentsControl.git"
+  },
+
+--- packages/cli/package.json ---
+Add `publishConfig` after `"type": "module"`.
+
+BEFORE (packages/cli/package.json, lines 1-8):
+  {
+    "name": "@nextsystems/oac-cli",
+    "version": "1.0.0",
+    "description": "OAC CLI — install, manage, and update AI agents and context files",
+    "type": "module",
+    "bin": {
+      "oac": "./dist/index.js"
+    },
+
+AFTER:
+  {
+    "name": "@nextsystems/oac-cli",
+    "version": "1.0.0",
+    "description": "OAC CLI — install, manage, and update AI agents and context files",
+    "type": "module",
+    "publishConfig": {
+      "access": "public"
+    },
+    "bin": {
+      "oac": "./dist/index.js"
+    },
+
+VALIDATION:
+1. Run: npm publish --dry-run
+   Should NOT show "This package is private" or access errors
+2. Run: node -e "const p = require('./package.json'); console.log(p.publishConfig)"
+   Should output: { access: 'public' }
+3. After actual publish: verify the package is publicly accessible at
+   https://www.npmjs.com/package/@nextsystems/oac
+4. Verify: npm install -g @nextsystems/oac works from a clean environment
+
+DEPENDENCIES: C1, C2 (fix packaging issues before attempting publish)

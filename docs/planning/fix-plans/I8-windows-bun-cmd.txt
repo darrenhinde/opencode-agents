@@ -1,0 +1,134 @@
+ISSUE: bin/oac.js uses execFileSync('bun') which fails on Windows where bun is bun.cmd
+SEVERITY: Important
+FILE(S): bin/oac.js
+
+CURRENT STATE:
+bin/oac.js (lines 15-23):
+
+  try {
+    execFileSync('bun', [cliDist, ...process.argv.slice(2)], { stdio: 'inherit' });
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.error('Error: Bun is required to run OAC CLI. Install from https://bun.sh');
+      process.exit(1);
+    }
+    process.exitCode = err.status ?? 1;
+  }
+
+On Windows, npm global installs create `.cmd` wrapper files in the PATH. When
+Bun is installed on Windows, the executable available in PATH is `bun.cmd` (a
+batch file wrapper), not `bun` (a bare executable). `execFileSync('bun', ...)`
+uses the exact name provided — it does NOT search for `bun.cmd` automatically.
+
+Result on Windows:
+  Error: spawn bun ENOENT
+  Error: Bun is required to run OAC CLI. Install from https://bun.sh
+
+This happens even when Bun IS installed and working correctly on Windows.
+
+Note: `child_process.execSync('bun ...')` (without File) DOES resolve .cmd
+wrappers because it goes through the shell. But `execFileSync` bypasses the
+shell for security and performance, so it requires the exact executable name.
+
+ROOT CAUSE:
+`execFileSync` was used (correctly, for security) but without the Windows
+`.cmd` extension handling that is required for npm-installed executables on
+Windows.
+
+FIX:
+Detect the platform and use `bun.cmd` on Windows. Also pass `shell: false`
+explicitly to document the intent.
+
+BEFORE (bin/oac.js lines 1-23):
+  #!/usr/bin/env node
+  'use strict';
+
+  const { execFileSync } = require('child_process');
+  const path = require('path');
+  const fs = require('fs');
+
+  const cliDist = path.join(__dirname, '..', 'packages', 'cli', 'dist', 'index.js');
+
+  if (!fs.existsSync(cliDist)) {
+    console.error('Error: OAC CLI not built yet. Run: npm run build -w packages/cli');
+    process.exit(1);
+  }
+
+  try {
+    execFileSync('bun', [cliDist, ...process.argv.slice(2)], { stdio: 'inherit' });
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.error('Error: Bun is required to run OAC CLI. Install from https://bun.sh');
+      process.exit(1);
+    }
+    process.exitCode = err.status ?? 1;
+  }
+
+AFTER (incorporating both C4 OAC_PACKAGE_ROOT injection and this Windows fix):
+  #!/usr/bin/env node
+  'use strict';
+
+  const { execFileSync } = require('child_process');
+  const path = require('path');
+  const fs = require('fs');
+
+  const cliDist = path.join(__dirname, '..', 'packages', 'cli', 'dist', 'index.js');
+  const packageRoot = path.join(__dirname, '..');
+
+  if (!fs.existsSync(cliDist)) {
+    console.error('Error: OAC CLI not built yet. Run: npm run build -w packages/cli');
+    process.exit(1);
+  }
+
+  // On Windows, npm-installed executables are .cmd wrappers — use shell to resolve them
+  const isWindows = process.platform === 'win32';
+  const bunExecutable = isWindows ? 'bun.cmd' : 'bun';
+
+  try {
+    execFileSync(bunExecutable, [cliDist, ...process.argv.slice(2)], {
+      stdio: 'inherit',
+      env: { ...process.env, OAC_PACKAGE_ROOT: packageRoot },
+      // shell: false is the default for execFileSync — explicit for clarity
+      shell: false,
+    });
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.error('Error: Bun is required to run OAC CLI. Install from https://bun.sh');
+      process.exit(1);
+    }
+    process.exitCode = err.status ?? 1;
+  }
+
+ALTERNATIVE APPROACH (if .cmd detection is fragile):
+Use `execSync` (with shell) instead of `execFileSync`. This is simpler but
+slightly less secure (shell injection is possible if args are not sanitized).
+Since `process.argv.slice(2)` comes from the user's own shell, this is
+acceptable:
+
+  const { execSync } = require('child_process');
+  const args = process.argv.slice(2).map(a => JSON.stringify(a)).join(' ');
+  execSync(`bun ${JSON.stringify(cliDist)} ${args}`, {
+    stdio: 'inherit',
+    env: { ...process.env, OAC_PACKAGE_ROOT: packageRoot },
+  });
+
+The `execFileSync` approach with `bun.cmd` detection is preferred as it is
+more explicit and avoids shell quoting complexity.
+
+VALIDATION:
+1. On Windows (or Windows CI):
+   a. Install Bun for Windows from https://bun.sh
+   b. Install the package: npm install -g @nextsystems/oac
+   c. Run: oac --version
+   d. Should print the version, NOT "Bun is required"
+2. On macOS/Linux:
+   a. Run: oac --version
+   b. Should still work (isWindows = false, uses 'bun')
+3. Test ENOENT path on Windows:
+   a. Temporarily rename bun.cmd to bun.cmd.bak
+   b. Run: oac --version
+   c. Should show "Bun is required" error
+   d. Restore bun.cmd
+
+DEPENDENCIES: C4 (this fix should be applied together with the OAC_PACKAGE_ROOT
+injection from C3-C4 since both modify bin/oac.js)

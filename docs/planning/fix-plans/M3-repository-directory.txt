@@ -1,0 +1,76 @@
+ISSUE: Missing repository.directory field in both package.json files
+SEVERITY: Minor
+FILE(S): package.json (root), packages/cli/package.json
+
+CURRENT STATE:
+
+Root package.json (lines 107-110):
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darrenhinde/OpenAgentsControl.git"
+  },
+
+packages/cli/package.json — no `repository` field at all (37 lines total,
+no repository key present).
+
+ROOT CAUSE:
+The `repository.directory` field is the monorepo best practice documented at
+https://docs.npmjs.com/cli/v10/configuring-npm/package-json#repository
+
+Without it:
+  1. npm's package page shows a generic "View on GitHub" link pointing to the
+     repo root, not to the specific package directory
+  2. Tools like `npm repo` open the repo root instead of the package subdirectory
+  3. The npm registry cannot display the correct "Source" link for the sub-package
+
+FIX:
+
+--- Root package.json ---
+The root package IS at the repo root, so `directory` is `.` (or can be omitted,
+but explicit is better for monorepo tooling):
+
+BEFORE (lines 107-110):
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darrenhinde/OpenAgentsControl.git"
+  },
+
+AFTER:
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darrenhinde/OpenAgentsControl.git",
+    "directory": "."
+  },
+
+--- packages/cli/package.json ---
+Add a complete `repository` field pointing to the sub-package directory.
+Insert after the `"engines"` block (after line 36):
+
+BEFORE (packages/cli/package.json ends at line 37 with `}`):
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
+
+AFTER:
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darrenhinde/OpenAgentsControl.git",
+    "directory": "packages/cli"
+  }
+}
+
+VALIDATION:
+1. Run: npm pack --dry-run (from root)
+   The output should show repository information
+2. Run: node -e "const p = require('./package.json'); console.log(p.repository)"
+   Should output: { type: 'git', url: '...', directory: '.' }
+3. Run: node -e "const p = require('./packages/cli/package.json'); console.log(p.repository)"
+   Should output: { type: 'git', url: '...', directory: 'packages/cli' }
+4. After publishing: verify the npm package page shows the correct GitHub link
+   pointing to packages/cli/ not the repo root
+
+DEPENDENCIES: none

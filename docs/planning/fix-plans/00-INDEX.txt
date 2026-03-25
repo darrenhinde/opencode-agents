@@ -1,0 +1,165 @@
+OAC CLI Fix Plans — Package Standards Review
+============================================
+Generated: 2026-03-11
+Source files read: package.json, .npmignore, bin/oac.js, packages/cli/package.json,
+  packages/cli/src/index.ts, packages/cli/src/lib/bundled.ts,
+  packages/cli/src/lib/installer.ts, packages/cli/src/lib/manifest.ts,
+  packages/cli/src/lib/config.ts, packages/cli/src/commands/init.ts,
+  packages/cli/src/commands/update.ts, packages/cli/src/commands/doctor.ts,
+  packages/cli/src/ui/logger.ts, packages/cli/src/ui/spinner.ts,
+  packages/cli/src/lib/version.ts, README.md
+
+CRITICAL (must fix before publish):
+  C1   .npmignore excludes built CLI from published package
+         File: .npmignore
+         The `packages/` and `dist/` patterns in .npmignore exclude
+         packages/cli/dist/ — the compiled Bun binary. The package ships empty.
+
+  C2   No prepublishOnly build guard
+         Files: package.json (root), packages/cli/package.json
+         Neither file has a prepublishOnly script. Running npm publish without
+         building first silently ships an empty or stale dist/.
+
+  C3+C4  findPackageRoot fails in production + bin/oac.js fix
+         Files: packages/cli/src/lib/bundled.ts, bin/oac.js
+         C3: findPackageRoot() excludes dirs with registry.json, but registry.json
+             IS in the published package (root package.json files array, line 30).
+             Every globally installed user gets "could not find package root" on
+             oac init and oac update.
+         C4: bin/oac.js knows the package root via __dirname — it should inject
+             OAC_PACKAGE_ROOT as an env var so the Bun binary never needs to walk.
+
+  C5   engines field claims Node.js but CLI requires Bun
+         File: package.json (root)
+         Root package declares "node": ">=18.0.0" only. The CLI binary uses
+         Bun.file(), Bun.write(), Bun.version, import.meta.dir — none of which
+         exist in Node.js. Should declare both node and bun engines.
+
+  C6   Missing publishConfig.access for scoped package
+         Files: package.json (root), packages/cli/package.json
+         Both @nextsystems/oac and @nextsystems/oac-cli are scoped packages.
+         Without "publishConfig": {"access": "public"}, npm publish fails or
+         publishes as private. Users cannot install the package.
+
+IMPORTANT (fix before v1.0):
+  I1   No oac clean command
+         Files: packages/cli/src/commands/clean.ts (new), packages/cli/src/index.ts
+         No way to remove .opencode/ and .oac/ after uninstalling the npm package.
+         Plan includes full implementation with --force, --dry-run, --ide flags.
+
+  I2   README missing npm install instructions
+         File: README.md
+         Quick Start shows only curl | bash. Zero mention of npm install -g,
+         npx, or Bun as a prerequisite. npm is the primary install path.
+
+  I3   No SIGINT/SIGTERM signal handlers
+         File: packages/cli/src/index.ts
+         Ctrl-C during a spinner operation leaves the terminal cursor hidden and
+         color codes active. Two lines needed: process.on('SIGINT'/'SIGTERM').
+
+  I4   No inline update notification
+         Files: packages/cli/src/lib/update-check.ts (new), packages/cli/src/index.ts,
+                packages/cli/src/commands/doctor.ts (refactor)
+         fetchLatestNpmVersion() exists in doctor.ts but is private. Plan extracts
+         it to a shared module, adds 24h caching in ~/.config/oac/, and calls it
+         non-blocking after program.parseAsync() in index.ts.
+
+  I5   writeManifest() missing mkdir
+         File: packages/cli/src/lib/manifest.ts
+         writeManifest() calls Bun.write() without ensuring .oac/ exists first.
+         config.ts correctly calls mkdir() first. First oac init on a clean
+         project will throw ENOENT. One-line fix: add mkdir(path.dirname(...)).
+
+  I6   No examples in --help output
+         Files: packages/cli/src/index.ts, packages/cli/src/commands/init.ts,
+                packages/cli/src/commands/update.ts
+         clig.dev standard: "lead with examples." addHelpText('after', ...) needed
+         on the main program, init command, and update command.
+
+  I7   packages/cli has conflicting bin field
+         File: packages/cli/package.json
+         "bin": {"oac": "./dist/index.js"} points to a Bun binary. If anyone
+         installs @nextsystems/oac-cli directly, it fails under Node.js.
+         The sub-package is not meant to be installed directly. Remove bin field.
+
+  I8   Windows bun.cmd compatibility
+         File: bin/oac.js
+         execFileSync('bun', ...) fails on Windows where npm installs create
+         bun.cmd wrappers. Fix: detect process.platform === 'win32' and use
+         'bun.cmd' as the executable name.
+
+MINOR (polish):
+  M1   Version mismatch between root and CLI package
+         Files: package.json (root), packages/cli/package.json,
+                packages/cli/src/lib/version.ts
+         Root is "0.7.1", CLI sub-package is "1.0.0". readCliVersion() reads
+         from sub-package, so oac --version shows "1.0.0" but npm registry has
+         "0.7.1". doctor version check is broken. Root package.json is canonical.
+
+  M2   warn() writes to stdout instead of stderr
+         File: packages/cli/src/ui/logger.ts
+         warn() uses console.log (stdout). error() correctly uses console.error
+         (stderr). Warnings pollute piped output. One-line fix: console.error.
+
+  M3   Missing repository.directory in package.json files
+         Files: package.json (root), packages/cli/package.json
+         Neither file has repository.directory. npm package pages show wrong
+         GitHub links. packages/cli/package.json has no repository field at all.
+
+RECOMMENDED FIX ORDER:
+  1. C6  — publishConfig (unblocks all publish attempts)
+  2. C1  — .npmignore (unblocks npm pack verification)
+  3. C2  — prepublishOnly (build guard)
+  4. C3+C4 — package root resolution (unblocks all users)
+  5. C5  — engines field
+  6. I5  — writeManifest mkdir (unblocks oac init on clean projects)
+  7. I7  — remove bin from sub-package
+  8. M2  — warn() stderr (trivial, do alongside I7)
+  9. M3  — repository.directory (trivial)
+  10. M1 — version sync
+  11. I3  — signal handlers
+  12. I8  — Windows bun.cmd
+  13. I1  — clean command
+  14. I4  — update notification
+  15. I6  — help examples
+  16. I2  — README npm install section (do last, after package is verified working)
+
+DISCREPANCIES FOUND vs. REVIEW DESCRIPTION:
+  See "NOTES ON ACTUAL VS. DESCRIBED STATE" section below.
+
+NOTES ON ACTUAL VS. DESCRIBED STATE:
+  1. C3 description said "registry.json IS in the root package.json files array"
+     — CONFIRMED. Line 30 of root package.json: "registry.json". The review
+     description was accurate.
+
+  2. C4 description said "bin/oac.js knows exactly where it is (__dirname/..)"
+     — CONFIRMED. bin/oac.js line 8: path.join(__dirname, '..', 'packages', 'cli', 'dist', 'index.js')
+     so __dirname is the bin/ directory and __dirname/.. is the package root.
+
+  3. M1 description said root is "0.7.1" and CLI is "1.0.0" — CONFIRMED.
+     Additionally: readCliVersion() in version.ts imports from '../../package.json'
+     which resolves to packages/cli/package.json (not root). So oac --version
+     returns "1.0.0" while the npm package is "0.7.1".
+
+  4. M2 description said "warn() uses console.log" — CONFIRMED. Line 28 of
+     logger.ts: `export const warn = (msg: string): void => console.log(...)`.
+
+  5. I5 description said "config.ts correctly calls mkdir first" — CONFIRMED.
+     config.ts line 48: `await mkdir(dirname(configPath), { recursive: true })`.
+     manifest.ts writeManifest() has NO mkdir call.
+
+  6. I7 description said packages/cli has bin field — CONFIRMED. Lines 6-8 of
+     packages/cli/package.json: "bin": {"oac": "./dist/index.js"}.
+
+  7. The review mentioned "import.meta.dir" in bundled.ts — CONFIRMED. Line 37:
+     `return findPackageRoot(import.meta.dir)`. This is Bun-specific.
+
+  8. packages/cli/package.json already has "engines": {"bun": ">=1.0.0"} (lines
+     34-36). Only the ROOT package.json is missing the bun engine declaration.
+     The review description was accurate.
+
+  9. index.ts has 7 commands registered (init, update, add, apply, doctor, list,
+     status). The review's I1 plan correctly identifies that 'clean' is missing.
+
+  10. The README Quick Start section (lines 116-139) shows ONLY curl-based install.
+      No npm install instructions anywhere in the first 140 lines. Review accurate.

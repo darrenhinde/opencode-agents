@@ -1,0 +1,219 @@
+ISSUE: No inline update notification — users only see version info if they run oac doctor
+SEVERITY: Important
+FILE(S): packages/cli/src/commands/doctor.ts (extract function),
+         packages/cli/src/lib/update-check.ts (new file),
+         packages/cli/src/index.ts (call after parseAsync)
+
+CURRENT STATE:
+doctor.ts already has `fetchLatestNpmVersion()` (lines 37-48):
+
+  const fetchLatestNpmVersion = async (packageName: string): Promise<string | null> => {
+    try {
+      const url = `https://registry.npmjs.org/${packageName}/latest`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { version?: string };
+      return data.version ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+This function is private to doctor.ts. It is only called when the user explicitly
+runs `oac doctor`. Users who never run doctor never see update notifications.
+
+index.ts (lines 58-63) — after parseAsync, no update check:
+  await program.parseAsync(process.argv)
+
+  // Print help when no command is given
+  if (args.length === 0) {
+    program.help()
+  }
+
+ROOT CAUSE:
+The update check was implemented as part of the doctor command rather than as a
+shared utility called on every invocation. The industry standard (used by npm,
+yarn, create-react-app, etc.) is a non-blocking background check that shows a
+small notice after the command completes.
+
+FIX:
+
+═══════════════════════════════════════════════════════════════
+Step 1: Create packages/cli/src/lib/update-check.ts
+═══════════════════════════════════════════════════════════════
+
+```typescript
+import { join } from 'node:path'
+import { homedir } from 'node:os'
+import { mkdir } from 'node:fs/promises'
+import semver from 'semver'
+import { readCliVersion } from './version.js'
+
+const CACHE_DIR = join(homedir(), '.config', 'oac')
+const CACHE_FILE = join(CACHE_DIR, 'update-check.json')
+const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
+const PACKAGE_NAME = '@nextsystems/oac'
+
+type UpdateCache = {
+  checkedAt: string   // ISO timestamp
+  latestVersion: string | null
+}
+
+/** Reads the cached update check result. Returns null if cache is missing or stale. */
+async function readCache(): Promise<UpdateCache | null> {
+  try {
+    const raw = await Bun.file(CACHE_FILE).json() as UpdateCache
+    const age = Date.now() - new Date(raw.checkedAt).getTime()
+    if (age > CHECK_INTERVAL_MS) return null  // stale
+    return raw
+  } catch {
+    return null
+  }
+}
+
+/** Writes the update check result to the cache file. */
+async function writeCache(latestVersion: string | null): Promise<void> {
+  try {
+    await mkdir(CACHE_DIR, { recursive: true })
+    const cache: UpdateCache = {
+      checkedAt: new Date().toISOString(),
+      latestVersion,
+    }
+    await Bun.write(CACHE_FILE, JSON.stringify(cache, null, 2))
+  } catch {
+    // Cache write failure is non-fatal — silently ignore
+  }
+}
+
+/** Fetches the latest version from npm registry. Returns null if offline. */
+async function fetchLatestNpmVersion(): Promise<string | null> {
+  try {
+    const url = `https://registry.npmjs.org/${PACKAGE_NAME}/latest`
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
+    if (!res.ok) return null
+    const data = (await res.json()) as { version?: string }
+    return data.version ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Non-blocking update check. Runs after the main command completes.
+ * Checks at most once per 24 hours (cached in ~/.config/oac/update-check.json).
+ * Prints a 3-line notice to stderr if an update is available.
+ */
+export async function checkForUpdate(): Promise<void> {
+  try {
+    // Try cache first
+    let cached = await readCache()
+    let latestVersion: string | null
+
+    if (cached !== null) {
+      latestVersion = cached.latestVersion
+    } else {
+      // Cache miss or stale — fetch from registry
+      latestVersion = await fetchLatestNpmVersion()
+      await writeCache(latestVersion)
+    }
+
+    if (latestVersion === null) return  // offline or fetch failed
+
+    const current = readCliVersion()
+    if (!semver.lt(current, latestVersion)) return  // already up to date
+
+    // Print 3-line notice to stderr (does not pollute piped stdout)
+    process.stderr.write('\n')
+    process.stderr.write(`  ╭─────────────────────────────────────────────╮\n`)
+    process.stderr.write(`  │  Update available: ${current} → ${latestVersion.padEnd(10)}         │\n`)
+    process.stderr.write(`  │  Run: npm install -g @nextsystems/oac       │\n`)
+    process.stderr.write(`  ╰─────────────────────────────────────────────╯\n`)
+    process.stderr.write('\n')
+  } catch {
+    // Update check failure is always non-fatal
+  }
+}
+```
+
+═══════════════════════════════════════════════════════════════
+Step 2: Update packages/cli/src/index.ts
+═══════════════════════════════════════════════════════════════
+
+Add import at top of file:
+
+BEFORE (index.ts lines 1-4):
+  #!/usr/bin/env node
+
+  import { Command } from 'commander'
+  import { readCliVersion } from './lib/version.js'
+
+AFTER:
+  #!/usr/bin/env node
+
+  import { Command } from 'commander'
+  import { readCliVersion } from './lib/version.js'
+  import { checkForUpdate } from './lib/update-check.js'
+
+Add non-blocking call after parseAsync in main():
+
+BEFORE (index.ts lines 58-63):
+  await program.parseAsync(process.argv)
+
+  // Print help when no command is given
+  if (args.length === 0) {
+    program.help()
+  }
+
+AFTER:
+  await program.parseAsync(process.argv)
+
+  // Non-blocking update check — runs after command completes, max once per 24h
+  // void: intentionally not awaited — failure must never affect exit code
+  void checkForUpdate()
+
+  // Print help when no command is given
+  if (args.length === 0) {
+    program.help()
+  }
+
+═══════════════════════════════════════════════════════════════
+Step 3: Remove duplicate from doctor.ts
+═══════════════════════════════════════════════════════════════
+
+Replace the private `fetchLatestNpmVersion` in doctor.ts with an import from
+the shared module:
+
+BEFORE (doctor.ts lines 1-3 imports and lines 37-48):
+  import { join } from 'node:path';
+  import { type Command } from 'commander';
+  import semver from 'semver';
+  ...
+  const fetchLatestNpmVersion = async (packageName: string): Promise<string | null> => {
+    try {
+      const url = `https://registry.npmjs.org/${packageName}/latest`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { version?: string };
+      return data.version ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+AFTER — remove the private function and import the shared one:
+  (The doctor.ts checkOacVersion function should call the shared fetch directly,
+  or update-check.ts should export fetchLatestNpmVersion as a named export for
+  doctor.ts to reuse.)
+
+VALIDATION:
+1. Run any oac command (e.g. oac doctor)
+2. Temporarily set the current version lower than latest in packages/cli/package.json
+3. Delete ~/.config/oac/update-check.json to clear cache
+4. Run: oac doctor
+5. Verify the 3-line update notice appears on stderr after the command output
+6. Run: oac doctor again immediately
+7. Verify the notice does NOT appear again (cache hit, 24h not elapsed)
+8. Verify: oac doctor 2>/dev/null shows no update notice (stderr suppressed)
+9. Restore the correct version in package.json
+
+DEPENDENCIES: none (but doctor.ts refactor is a nice-to-have cleanup)

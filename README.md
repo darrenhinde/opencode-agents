@@ -151,8 +151,6 @@ oac doctor
 
 **Prerequisites:** [OpenCode CLI](https://opencode.ai/docs) (free, open-source) • Bash 3.2+ • Git
 
-### Step 2: Install via curl
-
 **One command:**
 
 ```bash
@@ -175,7 +173,7 @@ curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/
 
 > Use `--install-dir PATH` if you installed to a custom location (e.g. `~/.config/opencode`).
 
-### Step 2: Start Building
+### Start Building
 
 ```bash
 opencode --agent OpenAgent

@@ -1,0 +1,120 @@
+ISSUE: writeManifest() calls Bun.write() without ensuring .oac/ directory exists
+SEVERITY: Important
+FILE(S): packages/cli/src/lib/manifest.ts
+
+CURRENT STATE:
+manifest.ts writeManifest() function (lines 172-178):
+
+  export const writeManifest = async (
+    projectRoot: string,
+    manifest: ManifestFile,
+  ): Promise<void> => {
+    const manifestPath = getManifestPath(projectRoot);
+    await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
+  };
+
+`getManifestPath` returns `{projectRoot}/.oac/manifest.json` (line 52-53):
+  export const getManifestPath = (projectRoot: string): string =>
+    path.join(projectRoot, MANIFEST_RELATIVE_PATH);
+
+where `MANIFEST_RELATIVE_PATH = '.oac/manifest.json'` (line 15).
+
+`Bun.write()` will throw if the parent directory `.oac/` does not exist:
+  "ENOENT: No such file or directory"
+
+CONTRAST WITH config.ts (lines 46-49) which correctly creates the directory:
+  export async function writeConfig(projectRoot: string, config: OacConfig): Promise<void> {
+    const configPath = getConfigPath(projectRoot);
+    await mkdir(dirname(configPath), { recursive: true });  // ← creates .oac/ first
+    await Bun.write(configPath, JSON.stringify(config, null, 2));
+  }
+
+ROOT CAUSE:
+`writeManifest` was written without the `mkdir` guard that `writeConfig` has.
+In the `oac init` flow, `writeConfig` is called after `writeManifest` (init.ts
+lines 214-229), so `.oac/` is created by `writeConfig` — but only if
+`writeManifest` succeeds first. If `.oac/` doesn't exist yet, `writeManifest`
+throws before `writeConfig` ever runs.
+
+In practice, `installFile` in installer.ts calls `Bun.write(destPath, ...)` which
+also creates parent directories automatically for the `.opencode/` files. But
+`.oac/` is not created by any file installation step — it only exists if
+`writeManifest` or `writeConfig` creates it. Since `writeManifest` runs first
+and doesn't create it, the first `oac init` on a clean project will fail.
+
+FIX:
+Add `mkdir` before `Bun.write` in `writeManifest`, matching the pattern in
+`writeConfig` exactly.
+
+BEFORE (manifest.ts lines 172-178):
+  export const writeManifest = async (
+    projectRoot: string,
+    manifest: ManifestFile,
+  ): Promise<void> => {
+    const manifestPath = getManifestPath(projectRoot);
+    await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
+  };
+
+AFTER:
+  export const writeManifest = async (
+    projectRoot: string,
+    manifest: ManifestFile,
+  ): Promise<void> => {
+    const manifestPath = getManifestPath(projectRoot);
+    await mkdir(dirname(manifestPath), { recursive: true });
+    await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
+  };
+
+Also add the required imports at the top of manifest.ts. Currently manifest.ts
+imports (lines 1-2):
+  import path from 'node:path';
+  import { z } from 'zod';
+
+AFTER — add mkdir and dirname:
+  import path, { dirname } from 'node:path';
+  import { mkdir } from 'node:fs/promises';
+  import { z } from 'zod';
+
+Note: `path` is already imported as a default import. `dirname` can be added as
+a named import from the same module. Alternatively use `path.dirname()` to avoid
+adding a named import:
+
+  await mkdir(path.dirname(manifestPath), { recursive: true });
+
+Either approach is acceptable. The `path.dirname()` form requires no import
+change and is consistent with how `path` is already used in the file.
+
+MINIMAL DIFF (using path.dirname to avoid import changes):
+
+BEFORE:
+  export const writeManifest = async (
+    projectRoot: string,
+    manifest: ManifestFile,
+  ): Promise<void> => {
+    const manifestPath = getManifestPath(projectRoot);
+    await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
+  };
+
+AFTER:
+  export const writeManifest = async (
+    projectRoot: string,
+    manifest: ManifestFile,
+  ): Promise<void> => {
+    const manifestPath = getManifestPath(projectRoot);
+    await mkdir(path.dirname(manifestPath), { recursive: true });
+    await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
+  };
+
+With import added at top:
+  import { mkdir } from 'node:fs/promises';
+
+VALIDATION:
+1. Create a fresh test project: mkdir /tmp/test-oac && cd /tmp/test-oac && git init
+2. Confirm .oac/ does NOT exist: ls -la | grep .oac (should show nothing)
+3. Run: oac init
+4. Confirm .oac/manifest.json was created successfully
+5. Confirm .oac/config.json was also created
+6. Run: oac doctor — should show manifest as valid
+7. Repeat test with a project that has no .oac/ directory at all
+
+DEPENDENCIES: none

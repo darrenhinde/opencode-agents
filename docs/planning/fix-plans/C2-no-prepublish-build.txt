@@ -1,0 +1,74 @@
+ISSUE: No prepublishOnly build guard — package can ship empty
+SEVERITY: Critical
+FILE(S): package.json (root), packages/cli/package.json
+
+CURRENT STATE:
+Root package.json scripts (lines 42-88) — no prepublishOnly key present.
+The only build-adjacent script is in packages/cli/package.json:
+  "build": "rm -rf dist && bun build src/index.ts --outdir dist --target bun --splitting"
+
+There is no `prepublishOnly` in either file. Running `npm publish` from the root
+will publish whatever is currently in `packages/cli/dist/` — or nothing at all
+if the developer forgot to build first.
+
+ROOT CAUSE:
+The `prepublishOnly` lifecycle hook runs automatically before `npm publish` and
+`npm pack`. Without it, there is no guarantee the compiled binary exists or is
+current. This is a silent failure mode: the package publishes successfully but
+users get an empty or stale `packages/cli/dist/`.
+
+FIX:
+
+--- Root package.json ---
+Add `prepublishOnly` to the `scripts` object. It must:
+1. Build the CLI sub-package (the only publishable artifact)
+2. Verify the output exists before allowing publish to proceed
+
+BEFORE (root package.json scripts section, no prepublishOnly):
+  "scripts": {
+    "test": "npm run test:all",
+    ...
+    "validate:registry:fix": "bun run scripts/registry/validate-registry.ts -f"
+  }
+
+AFTER — add as the FIRST entry in scripts for visibility:
+  "scripts": {
+    "prepublishOnly": "npm run build -w packages/cli && node -e \"require('fs').existsSync('packages/cli/dist/index.js') || (console.error('Build output missing: packages/cli/dist/index.js'), process.exit(1))\"",
+    "test": "npm run test:all",
+    ...
+  }
+
+--- packages/cli/package.json ---
+Add a `prepublishOnly` that runs the build and typechecks. This protects against
+someone publishing the sub-package directly (even though plan I7 recommends
+removing the bin field, the sub-package could still be published accidentally).
+
+BEFORE (packages/cli/package.json scripts):
+  "scripts": {
+    "build": "rm -rf dist && bun build src/index.ts --outdir dist --target bun --splitting",
+    "build:watch": "bun build src/index.ts --outdir dist --target bun --splitting --watch",
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "typecheck": "tsc --noEmit"
+  }
+
+AFTER:
+  "scripts": {
+    "prepublishOnly": "npm run typecheck && npm run build",
+    "build": "rm -rf dist && bun build src/index.ts --outdir dist --target bun --splitting",
+    "build:watch": "bun build src/index.ts --outdir dist --target bun --splitting --watch",
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "typecheck": "tsc --noEmit"
+  }
+
+VALIDATION:
+1. Delete packages/cli/dist/ entirely
+2. Run: npm publish --dry-run (from repo root)
+3. Confirm the build runs automatically and dist/ is recreated
+4. Confirm the dry-run output lists packages/cli/dist/index.js in the file list
+5. Confirm that if the build fails, npm publish aborts with a non-zero exit code
+
+DEPENDENCIES: C1 (fix .npmignore first so the built dist is actually included)

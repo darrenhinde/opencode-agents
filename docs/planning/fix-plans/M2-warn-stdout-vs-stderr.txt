@@ -1,0 +1,68 @@
+ISSUE: warn() writes to stdout instead of stderr
+SEVERITY: Minor
+FILE(S): packages/cli/src/ui/logger.ts
+
+CURRENT STATE:
+packages/cli/src/ui/logger.ts (lines 26-33):
+
+  export const log     = (msg: string): void => console.log(msg);
+  export const info    = (msg: string): void => console.log(chalk.blue(`  ℹ ${msg}`));
+  export const warn    = (msg: string): void => console.log(chalk.yellow(`  ⚠ ${msg}`));
+  export const error   = (msg: string): void => console.error(chalk.red(`  ✗ ${msg}`));
+  export const success = (msg: string): void => console.log(chalk.green(`  ✓ ${msg}`));
+  export const dim     = (msg: string): void => console.log(chalk.gray(msg));
+  export const bold    = (msg: string): void => console.log(chalk.bold(msg));
+  export const verbose = (msg: string): void => { if (verboseEnabled) console.log(chalk.gray(`  … ${msg}`)); };
+
+`error()` correctly uses `console.error` (which writes to stderr, fd 2).
+`warn()` uses `console.log` (which writes to stdout, fd 1).
+
+ROOT CAUSE:
+`warn()` was written with `console.log` instead of `console.error`. This is a
+common oversight. The Unix convention is:
+  - stdout (fd 1): program output — data that can be piped or redirected
+  - stderr (fd 2): diagnostic messages — warnings, errors, progress info
+
+When a user pipes oac output:
+  oac list | grep agent
+
+...any `warn()` messages will appear in the pipe and corrupt the output. They
+should go to stderr so they are visible in the terminal but do not pollute the
+pipe.
+
+FIX:
+One-line change in logger.ts:
+
+BEFORE (line 28):
+  export const warn    = (msg: string): void => console.log(chalk.yellow(`  ⚠ ${msg}`));
+
+AFTER:
+  export const warn    = (msg: string): void => console.error(chalk.yellow(`  ⚠ ${msg}`));
+
+ADDITIONAL CONSIDERATION:
+While fixing this, consider whether `info`, `success`, `dim`, `bold`, and
+`verbose` should also go to stderr. The argument:
+  - If these are diagnostic/status messages (not data output), they belong on stderr
+  - If the CLI never produces machine-parseable stdout output, it doesn't matter
+
+For a CLI like oac that primarily installs files and shows status, ALL output
+is diagnostic. The only exception would be `oac doctor --json` which explicitly
+produces machine-readable JSON on stdout (and correctly uses `log()` for that).
+
+Recommendation: change `warn` only (as described above) since it is the most
+clearly wrong. Leave `info`, `success`, etc. on stdout for now — they are
+human-readable status messages that users expect to see in normal terminal output.
+
+VALIDATION:
+1. Run: oac update 2>/dev/null
+   Any warning messages (e.g. "skipped N files") should NOT appear
+   (they are now on stderr, which is suppressed by 2>/dev/null)
+2. Run: oac update 1>/dev/null
+   Warning messages SHOULD appear (stderr is not suppressed)
+3. Run: oac init (in a project with modified files)
+   The "Completed with N errors" warning should appear in the terminal
+   but not in: oac init 2>/dev/null
+4. Verify the Logger interface in logger.ts still compiles:
+   Run: cd packages/cli && bun run typecheck
+
+DEPENDENCIES: none

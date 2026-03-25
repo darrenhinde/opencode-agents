@@ -1,0 +1,93 @@
+ISSUE: packages/cli has a bin field pointing to a Bun binary that cannot run under Node.js
+SEVERITY: Important
+FILE(S): packages/cli/package.json
+
+CURRENT STATE:
+packages/cli/package.json (lines 6-8):
+
+  "bin": {
+    "oac": "./dist/index.js"
+  },
+
+The `dist/index.js` file is produced by:
+  bun build src/index.ts --outdir dist --target bun --splitting
+
+`--target bun` produces a Bun-specific binary. It uses:
+  - `Bun.file()`, `Bun.write()`, `Bun.version` — Bun globals
+  - `import.meta.dir` — Bun-specific (not available in Node.js)
+
+If anyone installs `@nextsystems/oac-cli` directly:
+  npm install -g @nextsystems/oac-cli
+
+npm will register `oac` → `./dist/index.js` as a Node.js executable (because
+the shebang in the compiled output is `#!/usr/bin/env bun` or the file is
+treated as a Node.js module). Running `oac` will fail with:
+  "ReferenceError: Bun is not defined"
+  or
+  "SyntaxError: Cannot use import statement in a module"
+
+The sub-package `@nextsystems/oac-cli` is an internal build artifact. It is
+NOT intended to be installed directly by users. Only the root `@nextsystems/oac`
+package (which uses `bin/oac.js` as the Node.js wrapper) is the public interface.
+
+ROOT CAUSE:
+The `bin` field was added to `packages/cli/package.json` during development,
+possibly for local testing. It was not removed before the package was prepared
+for publication.
+
+FIX:
+Remove the `bin` field from `packages/cli/package.json` entirely.
+
+BEFORE (packages/cli/package.json lines 1-12):
+  {
+    "name": "@nextsystems/oac-cli",
+    "version": "1.0.0",
+    "description": "OAC CLI — install, manage, and update AI agents and context files",
+    "type": "module",
+    "bin": {
+      "oac": "./dist/index.js"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": ["dist"],
+    "scripts": {
+
+AFTER:
+  {
+    "name": "@nextsystems/oac-cli",
+    "version": "1.0.0",
+    "description": "OAC CLI — install, manage, and update AI agents and context files",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": ["dist"],
+    "scripts": {
+
+ADDITIONAL CONSIDERATION:
+If the sub-package should never be published to npm at all (it is only used as
+an internal workspace package), consider also adding:
+
+  "private": true
+
+to `packages/cli/package.json`. This prevents accidental `npm publish` of the
+sub-package. However, if there is a use case for publishing `@nextsystems/oac-cli`
+as a library (for programmatic use), keep it publishable but without the `bin`
+field.
+
+Given the current architecture (the sub-package is a Bun binary, not a library),
+`"private": true` is the safer choice. This is a separate decision from removing
+`bin` — both can be done independently.
+
+VALIDATION:
+1. Run: node -e "const p = require('./packages/cli/package.json'); console.log(p.bin)"
+   Should output: undefined
+2. Run: npm pack --dry-run (from packages/cli/)
+   Should NOT show any bin registration
+3. Verify the root package still works:
+   Run: oac --version (via root bin/oac.js)
+   Should still work correctly
+4. If "private": true is added:
+   Run: npm publish (from packages/cli/)
+   Should fail with "This package has been marked as private"
+
+DEPENDENCIES: none

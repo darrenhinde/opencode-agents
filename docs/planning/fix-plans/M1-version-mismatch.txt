@@ -1,0 +1,120 @@
+ISSUE: Version mismatch between root package and CLI sub-package
+SEVERITY: Minor
+FILE(S): package.json (root), packages/cli/package.json, packages/cli/src/lib/version.ts
+
+CURRENT STATE:
+
+Root package.json (line 3):
+  "version": "0.7.1"
+
+packages/cli/package.json (line 3):
+  "version": "1.0.0"
+
+packages/cli/src/lib/version.ts (lines 1-6):
+  import pkgJson from '../../package.json' with { type: 'json' }
+
+  /** Returns the CLI version from package.json. Synchronous — no I/O. */
+  export function readCliVersion(): string {
+    return pkgJson.version ?? '0.0.0'
+  }
+
+`readCliVersion()` reads from `packages/cli/package.json` (the relative import
+`../../package.json` from `packages/cli/src/lib/` resolves to
+`packages/cli/package.json`). So `readCliVersion()` returns `"1.0.0"`.
+
+doctor.ts `checkOacVersion()` (line 55) calls:
+  const latest = await fetchLatestNpmVersion('@nextsystems/oac');
+
+This fetches the latest version of `@nextsystems/oac` (the root package, version
+`0.7.1`). It then compares `current` (from `readCliVersion()` = `"1.0.0"`) with
+`latest` (from npm registry, which would be `"0.7.1"` or whatever was last
+published).
+
+Result: `semver.lt("1.0.0", "0.7.1")` = false, so doctor always reports
+"OAC version: 1.0.0 (latest)" even when the root package is outdated. The
+version check is broken.
+
+ROOT CAUSE:
+The two packages have diverged in version numbers. The CLI sub-package was
+bumped to 1.0.0 independently of the root package. There is no synchronization
+mechanism.
+
+FIX:
+
+Decision: The ROOT package.json is the canonical version source. It is the
+package users install (`@nextsystems/oac`). The CLI sub-package version should
+always match the root.
+
+--- Option A (recommended): Single source of truth via root package.json ---
+
+1. Synchronize versions: set `packages/cli/package.json` version to match root:
+
+BEFORE (packages/cli/package.json line 3):
+  "version": "1.0.0"
+
+AFTER:
+  "version": "0.7.1"
+
+2. Update `readCliVersion()` to read from the ROOT package.json instead of the
+   sub-package's package.json:
+
+BEFORE (packages/cli/src/lib/version.ts):
+  import pkgJson from '../../package.json' with { type: 'json' }
+
+  export function readCliVersion(): string {
+    return pkgJson.version ?? '0.0.0'
+  }
+
+AFTER:
+  import pkgJson from '../../../../package.json' with { type: 'json' }
+
+  /** Returns the CLI version from the root @nextsystems/oac package.json. */
+  export function readCliVersion(): string {
+    return pkgJson.version ?? '0.0.0'
+  }
+
+The path `../../../../package.json` from `packages/cli/src/lib/` resolves to
+the repo root `package.json`. Verify: packages/cli/src/lib/ → ../../.. = packages/cli/
+→ ../../.. = repo root. Count: src/lib → src → packages/cli → packages → root.
+That is 4 levels up: `../../../../package.json`. ✓
+
+3. Add a version sync script to root package.json scripts to keep them in sync
+   during version bumps:
+
+BEFORE (root package.json scripts, version bump scripts lines 75-80):
+  "version:bump:patch": "npm version patch --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
+  "version:bump:minor": "npm version minor --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
+  "version:bump:major": "npm version major --no-git-tag-version && node -p \"require('./package.json').version\" > VERSION",
+
+AFTER — add a sync step after each bump:
+  "version:bump:patch": "npm version patch --no-git-tag-version && node scripts/sync-version.js && node -p \"require('./package.json').version\" > VERSION",
+  "version:bump:minor": "npm version minor --no-git-tag-version && node scripts/sync-version.js && node -p \"require('./package.json').version\" > VERSION",
+  "version:bump:major": "npm version major --no-git-tag-version && node scripts/sync-version.js && node -p \"require('./package.json').version\" > VERSION",
+
+Where `scripts/sync-version.js` is a small Node.js script:
+  const fs = require('fs');
+  const root = require('./package.json');
+  const cliPkg = require('./packages/cli/package.json');
+  cliPkg.version = root.version;
+  fs.writeFileSync('./packages/cli/package.json', JSON.stringify(cliPkg, null, 2) + '\n');
+  console.log(`Synced packages/cli version to ${root.version}`);
+
+--- Option B (alternative): Keep sub-package version independent ---
+
+If the sub-package intentionally has a different version lifecycle, update
+`readCliVersion()` to read from the root package.json (step 2 above) but leave
+the sub-package version as-is. The doctor check will then correctly compare
+the root package version against npm.
+
+VALIDATION:
+1. Run: oac --version
+   Should print "0.7.1" (matching root package.json)
+2. Run: oac doctor
+   The "OAC version" check should compare "0.7.1" against npm registry
+3. Run: node -e "const p = require('./packages/cli/package.json'); console.log(p.version)"
+   Should print "0.7.1"
+4. Bump the root version: npm version patch --no-git-tag-version
+5. Run: node scripts/sync-version.js
+6. Verify packages/cli/package.json version matches the new root version
+
+DEPENDENCIES: none

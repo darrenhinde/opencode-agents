@@ -1,0 +1,176 @@
+ISSUE: No usage examples in --help output
+SEVERITY: Important
+FILE(S): packages/cli/src/index.ts, packages/cli/src/commands/init.ts,
+         packages/cli/src/commands/update.ts
+
+CURRENT STATE:
+
+Running `oac --help` shows command descriptions but no examples. The clig.dev
+standard says "lead with examples" — users should see concrete usage immediately.
+
+Current help output (inferred from Commander registration in index.ts and command files):
+
+  Usage: oac [options] [command]
+
+  OpenAgents Control — install, manage, and update AI agents and context files
+
+  Options:
+    -v, --version  Print version and exit
+    -h, --help     display help for command
+
+  Commands:
+    init           Set up OAC agents and context files in the current project
+    update         Update installed OAC files, skipping any you have modified
+    add            ...
+    apply          ...
+    doctor         Check your OAC setup and report any issues
+    list           ...
+    status         ...
+    help [command] display help for command
+
+No examples section. No "after init, run..." guidance.
+
+ROOT CAUSE:
+Commander's `.addHelpText('after', ...)` method was not used. This is the
+standard Commander pattern for appending examples to help output.
+
+FIX:
+
+═══════════════════════════════════════════════════════════════
+1. Main program — packages/cli/src/index.ts
+═══════════════════════════════════════════════════════════════
+
+BEFORE (index.ts lines 8-12):
+  program
+    .name('oac')
+    .description('OpenAgents Control — install, manage, and update AI agents and context files')
+    .version(readCliVersion(), '-v, --version', 'Print version and exit')
+
+AFTER:
+  program
+    .name('oac')
+    .description('OpenAgents Control — install, manage, and update AI agents and context files')
+    .version(readCliVersion(), '-v, --version', 'Print version and exit')
+    .addHelpText('after', `
+Examples:
+  $ oac init                    Set up OAC in the current project
+  $ oac update                  Update OAC files (skips files you modified)
+  $ oac update --dry-run        Preview what would be updated
+  $ oac doctor                  Check your setup and report issues
+  $ oac add openagent           Add a specific agent from the registry
+  $ oac apply cursor            Generate Cursor IDE rules file
+
+Docs: https://github.com/darrenhinde/OpenAgentsControl#readme
+`)
+
+═══════════════════════════════════════════════════════════════
+2. init command — packages/cli/src/commands/init.ts
+═══════════════════════════════════════════════════════════════
+
+BEFORE (init.ts lines 249-263):
+  export function registerInitCommand(program: Command): void {
+    program
+      .command('init')
+      .description('Set up OAC agents and context files in the current project')
+      .option('--yolo', 'Skip conflict checks and overwrite user-modified files', false)
+      .option('--dry-run', 'Print what would happen without making any changes', false)
+      .option('--verbose', 'Show each file being copied', false)
+      .action(async (opts: { yolo: boolean; dryRun: boolean; verbose: boolean }) => {
+        await initCommand({
+          yolo: opts.yolo,
+          dryRun: opts.dryRun,
+          verbose: opts.verbose,
+        });
+      });
+  }
+
+AFTER:
+  export function registerInitCommand(program: Command): void {
+    program
+      .command('init')
+      .description('Set up OAC agents and context files in the current project')
+      .option('--yolo', 'Skip conflict checks and overwrite user-modified files', false)
+      .option('--dry-run', 'Print what would happen without making any changes', false)
+      .option('--verbose', 'Show each file being copied', false)
+      .addHelpText('after', `
+Examples:
+  $ oac init                    Install all OAC agents and context files
+  $ oac init --dry-run          Preview what would be installed
+  $ oac init --verbose          Show each file as it is copied
+  $ oac init --yolo             Overwrite files you have modified (backs them up first)
+
+After init, run 'oac doctor' to verify your setup.
+`)
+      .action(async (opts: { yolo: boolean; dryRun: boolean; verbose: boolean }) => {
+        await initCommand({
+          yolo: opts.yolo,
+          dryRun: opts.dryRun,
+          verbose: opts.verbose,
+        });
+      });
+  }
+
+═══════════════════════════════════════════════════════════════
+3. update command — packages/cli/src/commands/update.ts
+═══════════════════════════════════════════════════════════════
+
+BEFORE (update.ts lines 181-197):
+  export function registerUpdateCommand(program: Command): void {
+    program
+      .command('update')
+      .description('Update installed OAC files, skipping any you have modified')
+      .option('--dry-run', 'Show what would be updated without making changes')
+      .option('--check', 'Alias for --dry-run: show what would change')
+      .option('--yolo', 'Back up user-modified files and overwrite them anyway')
+      .option('--verbose', 'Show SHA256 comparison details per file')
+      .action(async (cmdOpts: { dryRun?: boolean; check?: boolean; yolo?: boolean; verbose?: boolean }) => {
+        await handleUpdate({
+          dryRun: cmdOpts.dryRun ?? false,
+          check: cmdOpts.check ?? false,
+          yolo: cmdOpts.yolo ?? false,
+          verbose: cmdOpts.verbose ?? false,
+        });
+      });
+  }
+
+AFTER:
+  export function registerUpdateCommand(program: Command): void {
+    program
+      .command('update')
+      .description('Update installed OAC files, skipping any you have modified')
+      .option('--dry-run', 'Show what would be updated without making changes')
+      .option('--check', 'Alias for --dry-run: show what would change')
+      .option('--yolo', 'Back up user-modified files and overwrite them anyway')
+      .option('--verbose', 'Show SHA256 comparison details per file')
+      .addHelpText('after', `
+Examples:
+  $ oac update                  Update all OAC files (skips files you modified)
+  $ oac update --dry-run        Preview what would change without modifying anything
+  $ oac update --check          Same as --dry-run (alias)
+  $ oac update --yolo           Back up modified files and overwrite them
+  $ oac update --verbose        Show SHA256 hash comparison for each file
+
+Files you have modified since 'oac init' are skipped by default.
+Use --yolo to overwrite them (your changes are backed up to .oac/backups/).
+`)
+      .action(async (cmdOpts: { dryRun?: boolean; check?: boolean; yolo?: boolean; verbose?: boolean }) => {
+        await handleUpdate({
+          dryRun: cmdOpts.dryRun ?? false,
+          check: cmdOpts.check ?? false,
+          yolo: cmdOpts.yolo ?? false,
+          verbose: cmdOpts.verbose ?? false,
+        });
+      });
+  }
+
+VALIDATION:
+1. Run: oac --help
+   Should show the Examples section at the bottom
+2. Run: oac init --help
+   Should show init-specific examples
+3. Run: oac update --help
+   Should show update-specific examples with --yolo explanation
+4. Verify no trailing whitespace issues in the help text
+5. Verify the help text renders correctly in a narrow terminal (80 cols)
+
+DEPENDENCIES: none

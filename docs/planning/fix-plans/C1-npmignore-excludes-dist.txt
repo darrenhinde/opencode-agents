@@ -1,0 +1,91 @@
+ISSUE: .npmignore excludes built CLI from published package
+SEVERITY: Critical
+FILE(S): .npmignore
+
+CURRENT STATE:
+Line 31-32 of .npmignore:
+  dist/
+  build/
+
+Line 58 of .npmignore:
+  packages/
+
+These three patterns together are fatal:
+  - `dist/` matches and excludes the root-level `dist/` directory (if it exists)
+  - `packages/` excludes the ENTIRE `packages/` directory tree, which includes
+    `packages/cli/dist/` — the compiled Bun binary that is the actual CLI
+
+The root `package.json` `files` array includes `"packages/cli/dist/"` (line 37),
+but .npmignore takes precedence over `files` for exclusion. Because `packages/`
+is listed in .npmignore, the `packages/cli/dist/` entry in `files` is overridden
+and the built CLI binary is stripped from the published tarball.
+
+ROOT CAUSE:
+.npmignore was written to exclude development-only directories (evals/, packages/
+source code, etc.) but used a blanket `packages/` pattern that also excludes the
+compiled output under `packages/cli/dist/`. The `files` field in package.json
+whitelists `packages/cli/dist/` but npm's resolution order is:
+  1. .npmignore exclusions are applied first
+  2. `files` inclusions cannot re-include something already excluded by .npmignore
+
+So `packages/` in .npmignore wins over `"packages/cli/dist/"` in `files`.
+
+FIX:
+Replace the blanket `packages/` exclusion with specific exclusions that exclude
+source/config but explicitly allow the compiled dist output.
+
+BEFORE (lines 53-58 of .npmignore):
+  # Development and testing
+  evals/
+  dev/
+  tasks/
+  integrations/
+  packages/
+
+AFTER:
+  # Development and testing
+  evals/
+  dev/
+  tasks/
+  integrations/
+  # Exclude packages source/config but NOT the compiled CLI dist
+  packages/cli/src/
+  packages/cli/node_modules/
+  packages/cli/tsconfig.json
+  packages/cli/bun.lockb
+  packages/compatibility-layer/
+  packages/plugin-abilities/
+
+Also remove the bare `dist/` and `build/` lines (lines 31-32) since they would
+match `packages/cli/dist/` via glob. Replace with more targeted patterns:
+
+BEFORE (lines 30-33 of .npmignore):
+  # Build and test artifacts
+  dist/
+  build/
+  out/
+
+AFTER:
+  # Build and test artifacts — NOTE: packages/cli/dist/ must NOT be excluded
+  # (it is the published CLI binary). Only exclude root-level build dirs.
+  /dist/
+  /build/
+  /out/
+  coverage/
+  .nyc_output/
+  *.tsbuildinfo
+
+Note the leading `/` anchors the pattern to the root of the package, preventing
+it from matching `packages/cli/dist/`.
+
+VALIDATION:
+1. Run: npm pack --dry-run
+2. Verify the output includes:
+     packages/cli/dist/index.js  (or whatever the bun build output is named)
+3. Verify the output does NOT include:
+     packages/cli/src/
+     packages/compatibility-layer/
+4. Run: npm pack && tar -tzf nextsystems-oac-*.tgz | grep packages/cli/dist
+   Should show at least one file.
+
+DEPENDENCIES: C2 (build must run before pack to have a dist/ to check)

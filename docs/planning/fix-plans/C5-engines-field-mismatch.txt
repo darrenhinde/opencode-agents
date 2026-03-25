@@ -1,0 +1,92 @@
+ISSUE: engines field claims Node.js but CLI requires Bun
+SEVERITY: Critical
+FILE(S): package.json (root), packages/cli/package.json
+
+CURRENT STATE:
+
+Root package.json (lines 39-41):
+  "engines": {
+    "node": ">=18.0.0"
+  }
+
+packages/cli/package.json (lines 34-36):
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+
+The root package.json declares Node.js >=18 as the engine. This is the package
+that users install (`npm install -g @nextsystems/oac`). The `engines` field in
+the root package is what npm/yarn/pnpm display to users and what tools like
+`engines-check` validate against.
+
+However, the CLI binary (`packages/cli/dist/index.js`) is compiled with:
+  bun build src/index.ts --outdir dist --target bun --splitting
+
+A `--target bun` Bun build produces output that uses Bun-specific globals:
+  - `Bun.file()` — used in bundled.ts, manifest.ts, config.ts, installer.ts
+  - `Bun.write()` — used in installer.ts, manifest.ts, config.ts
+  - `Bun.version` — used in doctor.ts (line 83)
+  - `import.meta.dir` — used in bundled.ts (line 37)
+
+None of these exist in Node.js. Running the compiled binary under Node.js will
+throw immediately with "Bun is not defined" or similar.
+
+The `bin/oac.js` wrapper correctly calls `execFileSync('bun', ...)` and shows
+an error if bun is not found (line 18-20). But the `engines` field in the root
+package.json contradicts this by claiming Node.js compatibility.
+
+ROOT CAUSE:
+The root package.json `engines` field was likely set before the CLI was
+implemented with Bun-specific APIs, or was copied from a Node.js project
+template. The sub-package correctly declares `"bun": ">=1.0.0"` but the root
+package (the one users actually install) still says Node.js.
+
+FIX:
+
+--- Root package.json ---
+
+BEFORE:
+  "engines": {
+    "node": ">=18.0.0"
+  }
+
+AFTER:
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  }
+
+Rationale: Keep `node` because `bin/oac.js` (the entry point) IS a Node.js
+script — it uses `require('child_process')`, `require('path')`, `require('fs')`.
+Node.js >=18 is needed for the wrapper. Add `bun` because the actual CLI binary
+requires Bun to execute. Both are true and both should be declared.
+
+--- packages/cli/package.json ---
+
+No change needed. It already correctly declares:
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+
+--- Additional: add a note to the description ---
+
+Consider updating the root package.json `description` field to mention Bun:
+
+BEFORE:
+  "description": "AI agent framework for plan-first development workflows with
+   approval-based execution. Multi-language support for TypeScript, Python, Go,
+   Rust and more."
+
+AFTER:
+  "description": "AI agent framework for plan-first development workflows with
+   approval-based execution. Requires Bun runtime (https://bun.sh). Multi-language
+   support for TypeScript, Python, Go, Rust and more."
+
+VALIDATION:
+1. Run: node -e "const p = require('./package.json'); console.log(p.engines)"
+   Should output: { node: '>=18.0.0', bun: '>=1.0.0' }
+2. Run: npm install -g . (in a test environment)
+   npm should display a warning if the user's Bun version is below 1.0.0
+3. Verify that tools like `npm doctor` or `engines-check` report both requirements
+
+DEPENDENCIES: none

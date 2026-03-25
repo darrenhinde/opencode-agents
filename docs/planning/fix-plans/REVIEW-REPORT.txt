@@ -1,0 +1,203 @@
+OAC CLI Fix Plans — Review Report
+==================================
+Reviewer: CodeReviewer subagent
+Date: 2026-03-11
+
+VERDICT SUMMARY
+---------------
+Plans approved as-written:        9  — C2, C5, C6, I2, I3, I6, I7, M2, M3
+Plans approved with amendments:   8  — C1, C3+C4, I1, I4, I5, I8, M1, I6
+Plans rejected (need rewrite):    0
+Missing plans identified:         4  — MP1–MP4
+
+PLAN-BY-PLAN REVIEW
+--------------------
+
+[C1] .npmignore excludes dist
+  Status: APPROVED WITH AMENDMENTS
+  Issues found:
+    - "packages/cli/bun.lockb" is a typo — actual file is bun.lock (no trailing b).
+      This pattern will never match anything.
+    - Consider packages/cli/tsconfig*.json (glob) instead of single tsconfig.json
+  Required amendments:
+    - Change bun.lockb → bun.lock in the .npmignore plan
+
+[C2] prepublishOnly build guard
+  Status: APPROVED
+  Issues found: none
+  Required amendments: none
+
+[C3+C4] Package root resolution + bin/oac.js env injection
+  Status: APPROVED WITH AMENDMENTS
+  Issues found:
+    - getPackageRoot() in bundled.ts ALREADY checks process.env['OAC_PACKAGE_ROOT']
+      (lines 32–35). The env var support exists — bin/oac.js just doesn't inject it yet.
+      The fix is simpler than the plan implies.
+    - Validation step 1 says "manually set OAC_PACKAGE_ROOT" — but the whole point of
+      C4 is that bin/oac.js injects it automatically. Validation should test WITHOUT
+      manually setting it.
+    - Both comment blocks in bundled.ts need updating (getPackageRoot() at lines 21–27
+      AND findPackageRoot() at lines 41–52).
+  Required amendments:
+    - Simplify rationale: OAC_PACKAGE_ROOT already exists, just needs injection in bin/oac.js
+    - Fix validation to test without manual env var
+    - Update both comment blocks in bundled.ts
+
+[C5] engines field mismatch
+  Status: APPROVED
+  Issues found: none
+  Required amendments: none
+
+[C6] Missing publishConfig
+  Status: APPROVED
+  Issues found: none
+  Coordination note: C6 and I7 both modify packages/cli/package.json — apply as single diff
+
+[I1] oac clean command
+  Status: APPROVED WITH AMENDMENTS
+  Issues found:
+    - Plan removes entire .opencode/ directory but user-customized files inside it
+      would be silently deleted without per-file warning, even without --force.
+  Required amendments:
+    - Add explicit destructive-action warning before removal listing what will be deleted
+    - Consider --keep-opencode flag to only remove .oac/ (manifest + config) while
+      leaving .opencode/ intact for users who want to keep their agents/context
+
+[I2] README missing npm install instructions
+  Status: APPROVED
+  Issues found:
+    - After insertion there will be two "Step 1" headings — rename curl section heading
+  Required amendments: minor heading rename only
+
+[I3] No signal handlers
+  Status: APPROVED
+  Issues found: none
+  Required amendments: none
+
+[I4] No inline update notification
+  Status: APPROVED WITH AMENDMENTS
+  Issues found:
+    - Step 3 offers two options with no decision — underspecified
+    - Update notice box uses fixed-width padding that misaligns for longer version strings
+    - Does not note that update check is skipped on --version fast path
+  Required amendments:
+    - Commit to one approach: export fetchLatestNpmVersion(packageName: string) from
+      update-check.ts as a named export and import it in doctor.ts
+    - Use dynamic width or simpler formatting for the update notice box
+    - Add note that update check is intentionally skipped on --version fast path
+
+[I5] writeManifest missing mkdir
+  Status: APPROVED WITH AMENDMENTS
+  Issues found:
+    - Plan says "Bun.write() creates parent directories automatically for .opencode/ files"
+      — this is imprecise. Bun.write() with a BunFile source does create parent dirs
+      (Bun-specific behavior). Bun.write() with string content does NOT. The conclusion
+      (fix is needed) is correct but the reasoning should be clarified.
+  Required amendments:
+    - Clarify the Bun.write() behavior distinction in the plan rationale
+
+[I6] No examples in --help output
+  Status: APPROVED WITH AMENDMENTS
+  Issues found:
+    - Main program help example "oac add openagent" is wrong — actual CLI syntax is
+      "oac add <type>:<name>". Should be "oac add agent:openagent" or similar.
+  Required amendments:
+    - Fix add example syntax to match actual CLI interface
+
+[I7] packages/cli bin field conflict
+  Status: APPROVED
+  Issues found: none
+  Recommendation: Also add "private": true to packages/cli/package.json to make
+  the intent explicit (not meant for direct npm install)
+
+[I8] Windows bun.cmd compatibility
+  Status: APPROVED WITH AMENDMENTS
+  Issues found: none
+  Coordination note: I8 plan already provides a combined C3+C4+I8 diff for bin/oac.js.
+  Apply all three together as one atomic change.
+
+[M1] Version mismatch
+  Status: APPROVED WITH AMENDMENTS
+  Issues found:
+    - Path math confirmed: ../../../../package.json from packages/cli/src/lib/ IS correct
+    - Version is baked into the Bun bundle at build time — after bumping root version,
+      a rebuild is required for oac --version to reflect the new version
+  Required amendments:
+    - Add note that prepublishOnly (C2) handles this for publish but local dev may
+      have stale versions until rebuild
+    - Verify resolveJsonModule: true in packages/cli/tsconfig.json before applying
+
+[M2] warn() writes to stdout
+  Status: APPROVED
+  Issues found: none
+  Required amendments: none
+
+[M3] Missing repository.directory
+  Status: APPROVED
+  Issues found: none
+  Required amendments: none
+
+
+CONFLICTS BETWEEN PLANS
+------------------------
+
+1. C3+C4 and I8 both modify bin/oac.js
+   Resolution: RESOLVED — I8 plan already provides a combined diff. Apply as one atomic change.
+
+2. C6 and I7 both modify packages/cli/package.json
+   Resolution: Apply as a single coordinated diff to avoid merge conflicts.
+
+3. I4 refactors doctor.ts (extracts fetchLatestNpmVersion)
+   Resolution: Commit to named export approach (see I4 amendment). Ensure doctor.ts
+   imports from update-check.ts after the refactor.
+
+4. I1, I3, I4 all modify packages/cli/src/index.ts
+   Resolution: Apply as a single coordinated diff in this order:
+   signal handlers (I3) → update check call (I4) → register clean command (I1)
+
+
+MISSING PLANS
+-------------
+
+MP1: doctor version check — NOT a bug
+  doctor.ts correctly calls fetchLatestNpmVersion('@nextsystems/oac') (the root package).
+  After M1 syncs versions, this will work correctly. No new plan needed.
+
+MP2: CursorAdapter.mergeAgents() existence
+  apply.ts line 143 calls (adapter as CursorAdapter).mergeAgents(agents).
+  This method must exist on CursorAdapter. Verify mergeAgents() exists in the full
+  CursorAdapter.ts file. If it doesn't, a new plan is needed before I1 (clean) is safe.
+  ACTION: Verify before implementing.
+
+MP3: TypeScript resolveJsonModule for M1
+  After M1 changes version.ts to import ../../../../package.json, TypeScript must have
+  resolveJsonModule: true in packages/cli/tsconfig.json.
+  ACTION: Verify packages/cli/tsconfig.json before applying M1.
+
+MP4: installFile() lacks explicit mkdir
+  installer.ts relies on Bun.write() with a BunFile source auto-creating parent
+  directories (undocumented Bun behavior). If Bun changes this, installFile() breaks
+  silently. Recommend adding explicit mkdir calls defensively.
+  SEVERITY: Minor — current behavior works, but fragile.
+
+
+RECOMMENDED EXECUTION ORDER
+----------------------------
+
+Apply in this order to avoid conflicts and satisfy dependencies:
+
+ 1.  C6        publishConfig (unblocks publish, metadata only)
+ 2.  C1        .npmignore (fix bun.lockb typo in plan first)
+ 3.  C2        prepublishOnly scripts
+ 4.  C5        engines field
+ 5.  M3        repository.directory (metadata only)
+ 6.  M1        version sync (verify resolveJsonModule first)
+ 7.  M2        warn() stderr (one-line fix)
+ 8.  I7+C6     remove bin field + publishConfig (coordinated diff to packages/cli/package.json)
+ 9.  C3+C4+I8  package root + Windows fix (single atomic diff to bin/oac.js + bundled.ts)
+10.  I5        writeManifest mkdir
+11.  I3        signal handlers (index.ts)
+12.  I4        update notification (coordinate with I3 for index.ts; extract to update-check.ts)
+13.  I1        clean command (coordinate with I3/I4 for index.ts; add destructive warning)
+14.  I6        help examples (fix add example syntax)
+15.  I2        README (do last, after package verified working)
