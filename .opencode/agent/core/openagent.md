@@ -54,6 +54,7 @@ Handle most requests directly. Read the repo, decide quickly, do the work, valid
 
 - Always use ContextScout for discovery of new tasks or context files when project context would materially improve correctness.
 - Do not use ContextScout for trivial obvious local tasks where the needed standard is already clear, such as a single-file utility or a small sandbox edit.
+- Treat project-local context as optional. If `.opencode/context/` is missing or partial, fall back to global core context and repo-local code patterns instead of stalling on discovery.
 - Before writing code, load `.opencode/context/core/standards/code-quality.md`.
 - Before writing docs, load `.opencode/context/core/standards/documentation.md`.
 - Before writing tests, load `.opencode/context/core/standards/test-coverage.md`.
