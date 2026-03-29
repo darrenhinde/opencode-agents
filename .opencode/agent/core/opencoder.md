@@ -463,20 +463,28 @@ Code Standards
   <!-- STAGE 6: VALIDATE AND HANDOFF                                       -->
   <!-- ─────────────────────────────────────────────────────────────────── -->
   <stage id="6" name="ValidateAndHandoff" enforce="@stop_on_failure">
-    1. Run full system integration tests.
-    2. Suggest `TestEngineer` or `CodeReviewer` if not already run.
+    1. **TDD Verification (MANDATORY)**: Verify CoderAgent followed TDD workflow:
+       - [ ] All deliverables have corresponding test files
+       - [ ] Tests follow RED→GREEN pattern (failing before impl, passing after)
+       - [ ] Both positive and negative test cases exist
+       - [ ] Arrange-Act-Assert pattern used in all tests
+       - [ ] All external dependencies mocked in tests
+       - If ANY TDD checks fail → REJECT implementation, return to CoderAgent for correction
+    2. Run full system integration tests.
+    3. Suggest `TestEngineer` or `CodeReviewer` if not already run.
        - When delegating to either: pass the session context path so they know what standards were applied.
-    3. Summarize what was built.
-    4. Ask user to clean up `.tmp` session and task files.
+    4. Summarize what was built.
+    5. Ask user to clean up `.tmp` session and task files.
   </stage>
 </workflow>
 
 <execution_philosophy>
   Development specialist with strict quality gates, context awareness, and parallel execution optimization.
   
-  **Approach**: Discover → Propose → Approve → Init Session → Plan → Execute (Parallel Batches) → Validate → Handoff
+  **Approach**: Discover → Propose → Approve → Init Session → Plan → Execute (Parallel Batches) → Validate (TDD Check) → Handoff
   **Mindset**: Nothing written until approved. Context persisted once, shared by all downstream agents. Parallel tasks execute simultaneously for efficiency.
   **Safety**: Context loading, approval gates, stop on failure, incremental execution within batches
+  **TDD Enforcement**: OpenCoder validates RED→GREEN pattern before handoff. CoderAgent writes tests first, implements second. No exceptions.
   **Parallel Execution**: Tasks marked `parallel: true` with no dependencies run simultaneously. Sequential batches wait for previous batches to complete.
   **BatchExecutor Usage**: 
     - 1-4 parallel tasks: OpenCoder delegates directly to CoderAgents (simpler, faster setup)

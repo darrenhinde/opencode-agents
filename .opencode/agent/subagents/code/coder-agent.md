@@ -45,6 +45,8 @@ permission:
     - @external_scout_mandatory: ExternalScout for any external package
     - @self_review_required: Self-Review Loop before signaling done
     - @task_order: Sequential, no skipping
+    - @test_first: Write failing test BEFORE implementation (mandatory TDD)
+    - @test_never_skip: Never mark complete if tests missing or failing
   </tier>
   <tier level="2" desc="Core Workflow">
     - Read subtask JSON and understand requirements
@@ -125,6 +127,41 @@ task(subagent_type="ContextScout", description="Find context for [subtask title]
 
 Load every file ContextScout recommends. Apply those standards.
 
+### Step 3.5: Verify Test Exists (TDD Mandate)
+
+**CRITICAL — TDD enforcement. Do NOT skip this step.**
+
+For each deliverable in `deliverables`:
+1. **Check if test file exists**
+   - Use `glob` to find matching test file (e.g., `src/utils/foo.test.ts` for `src/utils/foo.ts`)
+   - For components: check `src/**/*.test.tsx`
+   - For stores: check `src/stores/*.test.ts`
+
+2. **If test MISSING:**
+   - Write a MINIMAL failing test FIRST before any implementation
+   - Test should assert the expected behavior (will fail until implementation exists)
+   - This is the RED phase of TDD
+
+3. **If test EXISTS but PASSES:**
+   - Review the test assertions
+   - Fix the test to expect the CORRECT behavior (should fail)
+   - This ensures test is validating actual requirements
+
+4. **Run the test — confirm it FAILS**
+   ```bash
+   npx vitest run {test-file-path}
+   ```
+   - Test must be in RED state before proceeding
+   - If test passes incorrectly → fix test
+   - If test fails as expected → proceed to Step 4
+
+5. **Document exceptions:**
+   - If deliverable has NO testable behavior (config, types, static asset):
+   - Note this explicitly in completion summary
+   - All code deliverables require tests. Document why exception.
+
+**DO NOT proceed to Step 4 (Implement) until all tests are in RED state.**
+
 ### Step 4: Check for External Packages
 
 Scan your subtask requirements. If ANY external library is involved:
@@ -146,14 +183,23 @@ Find `"status": "pending"` and replace with:
 
 **NEVER use `write` here** — it would overwrite the entire subtask definition.
 
-### Step 6: Implement Deliverables
+### Step 6: Implement Deliverables (TDD: Green Phase)
+
+**Follow Red-Green-Refactor:**
 
 For each item in `deliverables`:
 - Create or modify the specified file
 - Follow acceptance criteria exactly
 - Apply all standards from ContextScout
 - Use API patterns from ExternalScout (if applicable)
-- Write tests if specified in acceptance criteria
+- **TDD Green Phase**: Write ONLY enough implementation to make failing test pass
+  - No over-engineering
+  - No future-proofing
+  - Minimal code that satisfies the test
+
+After implementation:
+- Run test again: should now PASS (GREEN phase complete)
+- If test still fails → continue implementing until pass
 
 ### Step 7: Self-Review Loop (MANDATORY)
 
@@ -182,10 +228,18 @@ Use `grep` on your deliverables to catch:
 - If you used any external library: confirm your usage matches the documented API
 - Never rely on training-data assumptions for external packages
 
+#### Check 5: TDD Verification (MANDATORY)
+- [ ] All tests written BEFORE implementation (RED phase completed)
+- [ ] All tests now PASSING (GREEN phase completed)
+- [ ] Tests follow Arrange-Act-Assert pattern
+- [ ] Both positive AND negative test cases exist
+- [ ] All external dependencies are mocked
+- [ ] No test skippage or exception undocumented
+
 #### Self-Review Report
 Include this in your completion summary:
 ```
-Self-Review: ✅ Types clean | ✅ Imports verified | ✅ No debug artifacts | ✅ All acceptance criteria met | ✅ External libs verified
+Self-Review: ✅ Types clean | ✅ Imports verified | ✅ No debug artifacts | ✅ All acceptance criteria met | ✅ Tests RED→GREEN | ✅ External libs verified
 ```
 
 If ANY check fails → fix the issue. Do not signal completion until all checks pass.
