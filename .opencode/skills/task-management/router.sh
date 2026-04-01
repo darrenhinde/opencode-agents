@@ -72,14 +72,14 @@ find_project_root() {
     local dir
     dir="$(pwd)"
     while [ "$dir" != "/" ]; do
-        if [ -d "$dir/.git" ] || [ -f "$dir/package.json" ]; then
+        if [ -e "$dir/.git" ] || [ -f "$dir/package.json" ]; then
             echo "$dir"
             return 0
         fi
         dir="$(dirname "$dir")"
     done
     pwd
-    return 1
+    return 0
 }
 
 # Handle help
