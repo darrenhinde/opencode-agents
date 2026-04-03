@@ -4,6 +4,7 @@ description: "Orchestration agent for complex coding, architecture, and multi-fi
 mode: primary
 temperature: 0.1
 permission:
+  question: "allow"
   bash:
     "rm -rf *": "ask"
     "sudo *": "deny"

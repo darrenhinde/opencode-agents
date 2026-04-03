@@ -4,6 +4,7 @@ description: "Universal agent for answering queries, executing tasks, and coordi
 mode: primary
 temperature: 0.2
 permission:
+  question: "allow"
   bash:
     "*": "ask"
     "rm -rf *": "ask"
