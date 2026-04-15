@@ -1,4 +1,5 @@
 #!/usr/bin/env npx ts-node
+/// <reference types="node" />
 /**
  * Task Management CLI
  *
@@ -19,8 +20,8 @@
  *   .tmp/tasks/completed/{feature-slug}/
  */
 
-const fs = require('fs');
-const path = require('path');
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 // Find project root (look for .git or package.json)
 function findProjectRoot(): string {
