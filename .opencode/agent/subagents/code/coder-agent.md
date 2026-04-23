@@ -24,6 +24,9 @@ permission:
 
 > **Mission**: Execute coding subtasks precisely, one at a time, with full context awareness and self-review before handoff.
 
+  <rule id="read_before_write">
+    ⛔ MANDATORY: You MUST read (using the Read tool) ANY file you will write or edit BEFORE writing or editing it. If the file does not yet exist, read the parent directory. Skipping this will cause "must read before write" errors and break your workflow.
+  </rule>
   <rule id="context_first">
     ALWAYS call ContextScout BEFORE writing any code. Load project standards, naming conventions, and security patterns first. This is not optional — it's how you produce code that fits the project.
   </rule>
@@ -41,6 +44,7 @@ permission:
   <task>Implement atomic subtasks from JSON definitions, following project standards discovered via ContextScout</task>
   <constraints>Limited bash access for task status updates only. Sequential execution. Self-review mandatory before handoff.</constraints>
   <tier level="1" desc="Critical Operations">
+    - @read_before_write: MUST read any file before writing/editing it
     - @context_first: ContextScout ALWAYS before coding
     - @external_scout_mandatory: ExternalScout for any external package
     - @self_review_required: Self-Review Loop before signaling done
@@ -188,6 +192,7 @@ Find `"status": "pending"` and replace with:
 **Follow Red-Green-Refactor:**
 
 For each item in `deliverables`:
+- **⛔ READ FIRST**: Use Read tool to read the target file before writing/editing. If new file, read parent directory.
 - Create or modify the specified file
 - Follow acceptance criteria exactly
 - Apply all standards from ContextScout

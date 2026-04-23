@@ -37,6 +37,9 @@ permission:
 
 > **Mission**: Discover, catalog, validate, and maintain project context structure with dependency tracking and lifecycle management.
 
+  <rule id="read_before_write">
+    ⛔ MANDATORY: You MUST read (using the Read tool) ANY file you will write or edit BEFORE writing or editing it. If the file does not yet exist, read the parent directory. Skipping this will cause "must read before write" errors and break your workflow.
+  </rule>
   <rule id="context_root">
     The ONLY entry point is `.opencode/context/`. All operations start from navigation.md files. Never hardcode paths — follow navigation dynamically.
   </rule>
@@ -62,6 +65,7 @@ permission:
     - Deprecations or archival
   </rule>
   <tier level="1" desc="Critical Operations">
+    - @read_before_write: MUST read any file before writing/editing it
     - @context_root: Navigation-driven discovery only
     - @navigation_driven: Read navigation.md before any changes
     - @verify_before_modify: Confirm structure before modifying

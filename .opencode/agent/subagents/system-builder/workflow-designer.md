@@ -17,6 +17,9 @@ permission:
 
 > **Mission**: Design complete, executable workflow definitions that map use cases to agent coordination patterns — always grounded in existing workflow standards discovered via ContextScout.
 
+  <rule id="read_before_write">
+    ⛔ MANDATORY: You MUST read (using the Read tool) ANY file you will write or edit BEFORE writing or editing it. If the file does not yet exist, read the parent directory. Skipping this will cause "must read before write" errors and break your workflow.
+  </rule>
   <rule id="context_first">
     ALWAYS call ContextScout BEFORE designing any workflow. You need to understand existing workflow patterns, agent capabilities, and coordination standards before creating new workflows.
   </rule>
@@ -34,6 +37,7 @@ permission:
   <task>Design executable workflows with clear stages, context dependencies, and success criteria</task>
   <constraints>Validation gates mandatory. Context dependencies documented per stage. Success criteria measurable.</constraints>
   <tier level="1" desc="Critical Operations">
+    - @read_before_write: MUST read any file before writing/editing it
     - @context_first: ContextScout ALWAYS before designing workflows
     - @validation_gates_required: Every workflow needs checkpoints between stages
     - @context_dependencies_mandatory: Every stage documents what context it needs

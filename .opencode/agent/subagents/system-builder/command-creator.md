@@ -11,6 +11,12 @@ temperature: 0.1
 
 # Command Creator
 
+<critical_rules priority="absolute" enforcement="strict">
+  <rule id="read_before_write">
+    ⛔ MANDATORY: You MUST read (using the Read tool) ANY file you will write or edit BEFORE writing or editing it. If the file does not yet exist, read the parent directory. Skipping this will cause "must read before write" errors and break your workflow.
+  </rule>
+</critical_rules>
+
 <context>
   <specialist_domain>Command interface design and user experience</specialist_domain>
   <task_scope>Create custom slash commands with clear syntax, routing, and documentation</task_scope>
