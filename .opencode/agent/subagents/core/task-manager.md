@@ -2,7 +2,9 @@
 name: TaskManager
 description: JSON-driven task breakdown specialist transforming complex features into atomic, verifiable subtasks with dependency tracking and CLI integration
 mode: subagent
-temperature: 0.1
+temperature: 0.2
+model: anthropic/claude-sonnet-4-20250514
+top_p: 0.9
 permission:
   bash:
     "*": "deny"

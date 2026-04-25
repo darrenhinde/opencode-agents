@@ -3,6 +3,8 @@ name: OpenDevopsSpecialist
 description: DevOps specialist subagent - CI/CD, infrastructure as code, deployment automation
 mode: subagent
 temperature: 0.1
+model: lmstudio/qwen3-coder-30b
+top_p: 0.8
 permission:
   task:
     "*": "deny"

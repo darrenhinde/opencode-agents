@@ -2,7 +2,9 @@
 name: ContextOrganizer
 description: Organizes and generates context files (domain, processes, standards, templates) for optimal knowledge management
 mode: subagent
-temperature: 0.1
+temperature: 0.2
+model: anthropic/claude-sonnet-4-20250514
+top_p: 0.9
 permission:
   task:
     contextscout: "allow"

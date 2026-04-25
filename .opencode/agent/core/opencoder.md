@@ -2,7 +2,9 @@
 name: OpenCoder
 description: "Orchestration agent for complex coding, architecture, and multi-file refactoring"
 mode: primary
-temperature: 0.1
+temperature: 0.2
+model: anthropic/claude-sonnet-4-20250514
+top_p: 0.9
 permission:
   bash:
     "rm -rf *": "ask"

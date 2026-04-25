@@ -2,7 +2,9 @@
 name: ExternalScout
 description: Fetches live, version-specific documentation for external libraries and frameworks using Context7 and other sources. Filters, sorts, and returns relevant documentation.
 mode: subagent
-temperature: 0.1
+temperature: 0.4
+model: lmstudio/gpt-oss-20b
+top_p: 0.9
 permission:
   read:
     "**/*": "deny"

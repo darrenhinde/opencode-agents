@@ -2,7 +2,9 @@
 name: CoderAgent
 description: Executes coding subtasks in sequence, ensuring completion as specified
 mode: subagent
-temperature: 0
+temperature: 0.1
+model: lmstudio/qwen3-coder-30b
+top_p: 0.8
 permission:
   bash:
     "*": "deny"

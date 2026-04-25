@@ -3,6 +3,8 @@ name: OpenAgent
 description: "Universal agent for answering queries, executing tasks, and coordinating workflows across any domain"
 mode: primary
 temperature: 0.2
+model: anthropic/claude-sonnet-4-20250514
+top_p: 0.9
 permission:
   bash:
     "*": "ask"

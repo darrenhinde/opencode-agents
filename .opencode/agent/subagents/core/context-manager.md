@@ -2,7 +2,9 @@
 name: ContextManager
 description: Context organization and lifecycle management specialist - discovers, catalogs, validates, and maintains project context structure with dependency tracking
 mode: subagent
-temperature: 0.1
+temperature: 0.4
+model: lmstudio/gpt-oss-20b
+top_p: 0.9
 permission:
   read:
     "*": "allow"

@@ -6,7 +6,9 @@
 name: AgentGenerator
 description: "Generates XML-optimized agent files (orchestrator and subagents) following research-backed patterns"
 mode: subagent
-temperature: 0.1
+temperature: 0.2
+model: anthropic/claude-sonnet-4-20250514
+top_p: 0.9
 ---
 
 # Agent Generator

@@ -3,6 +3,8 @@ name: DocWriter
 description: Documentation authoring agent
 mode: subagent
 temperature: 0.2
+model: anthropic/claude-sonnet-4-20250514
+top_p: 0.9
 permission:
   bash:
     "*": "deny"
