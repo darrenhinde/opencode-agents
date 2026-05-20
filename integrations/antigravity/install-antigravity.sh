@@ -63,19 +63,29 @@ run_converter() {
 
 # Install plugin
 install_plugin() {
-    # 1. Global Installation
-    echo -e "${YELLOW}📦 Installing global plugin...${NC}"
+    # 1. Global Installation (antigravity-cli)
+    echo -e "${YELLOW}📦 Installing global CLI plugin...${NC}"
     mkdir -p "$HOME/.gemini/antigravity-cli/plugins"
     
     if [ -d "$PLUGIN_DEST" ]; then
-        echo "🗑️  Removing old global installation..."
+        echo "🗑️  Removing old global CLI installation..."
         rm -rf "$PLUGIN_DEST"
     fi
     
     cp -r "$CONVERTER_DIR/generated" "$PLUGIN_DEST"
-    echo -e "${GREEN}✅ Global installation complete${NC}"
+    echo -e "${GREEN}✅ Global CLI installation complete${NC}"
 
-    # 2. Local/Workspace Installation
+    # 2. Global Configuration Plugins (Desktop & CLI Auto-Load)
+    echo -e "${YELLOW}📦 Installing global config plugin...${NC}"
+    local config_plugin_dest="/Users/benpriebe/.gemini/config/plugins/openagents-control-bridge"
+    mkdir -p "/Users/benpriebe/.gemini/config/plugins"
+    if [ -d "$config_plugin_dest" ]; then
+        rm -rf "$config_plugin_dest"
+    fi
+    cp -r "$CONVERTER_DIR/generated" "$config_plugin_dest"
+    echo -e "${GREEN}✅ Global config installation complete${NC}"
+
+    # 3. Local/Workspace Installation (.agents/plugins)
     echo -e "${YELLOW}📦 Installing workspace plugin...${NC}"
     mkdir -p "$REPO_ROOT/.agents/plugins"
     
@@ -86,13 +96,26 @@ install_plugin() {
     
     cp -r "$CONVERTER_DIR/generated" "$LOCAL_PLUGIN_DEST"
     echo -e "${GREEN}✅ Workspace installation complete${NC}"
+
+    # 4. Standard Workspace Paths (.agents/skills and .agents/agents)
+    echo -e "${YELLOW}📦 Installing to standard workspace paths (.agents/skills/ and .agents/agents/)...${NC}"
+    mkdir -p "$REPO_ROOT/.agents/skills"
+    mkdir -p "$REPO_ROOT/.agents/agents"
+
+    # Clean old workspace skills/agents directories
+    rm -rf "$REPO_ROOT/.agents/skills"/*
+    rm -rf "$REPO_ROOT/.agents/agents"/*
+
+    cp -r "$CONVERTER_DIR/generated/skills"/* "$REPO_ROOT/.agents/skills/"
+    cp -r "$CONVERTER_DIR/generated/agents"/* "$REPO_ROOT/.agents/agents/"
+    echo -e "${GREEN}✅ Standard workspace paths installation complete${NC}"
 }
 
 # Verify installation
 verify() {
-    if [ ! -f "$PLUGIN_DEST/agents/core/openagent.md" ]; then
+    if [ ! -f "$PLUGIN_DEST/agents/openagent.md" ]; then
         echo -e "${RED}✗ Installation verification failed${NC}" >&2
-        echo "  Expected: $PLUGIN_DEST/agents/core/openagent.md" >&2
+        echo "  Expected: $PLUGIN_DEST/agents/openagent.md" >&2
         exit 1
     fi
 

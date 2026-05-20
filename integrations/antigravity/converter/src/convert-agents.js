@@ -164,15 +164,38 @@ function processAgent(filePath) {
   const antigravityFrontmatter = convertFrontmatter(frontmatter);
   const antigravityMarkdown = generateAntigravityMarkdown(antigravityFrontmatter, body);
   
-  // Determine output path
-  const relativePath = path.relative(SOURCE_DIR, filePath);
-  const outputPath = path.join(ANTIGRAVITY_AGENTS_DIR, relativePath);
+  // Determine output path (FLATTENED to level 1 for discovery)
+  const filename = path.basename(filePath);
+  const outputPath = path.join(ANTIGRAVITY_AGENTS_DIR, filename);
   
   // Ensure output directory exists
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   
   fs.writeFileSync(outputPath, antigravityMarkdown);
-  console.log(`✅ Converted: ${relativePath}`);
+  console.log(`✅ Converted agent: ${filename}`);
+}
+
+/**
+ * Processes and copies a skill folder
+ */
+function processSkill(skillMdPath) {
+  const skillDir = path.dirname(skillMdPath);
+  const skillFolderName = path.basename(skillDir);
+  
+  const outputSkillDir = path.join(ANTIGRAVITY_SKILLS_DIR, skillFolderName);
+  fs.mkdirSync(outputSkillDir, { recursive: true });
+  
+  // Copy all files in the skill directory
+  const files = fs.readdirSync(skillDir);
+  files.forEach(file => {
+    const srcPath = path.join(skillDir, file);
+    const destPath = path.join(outputSkillDir, file);
+    if (fs.statSync(srcPath).isFile()) {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  });
+  
+  console.log(`✅ Processed skill: ${skillFolderName}`);
 }
 
 /**
@@ -183,7 +206,7 @@ function convert() {
   if (fs.existsSync(OUTPUT_DIR)) fs.rmSync(OUTPUT_DIR, { recursive: true });
   
   fs.mkdirSync(ANTIGRAVITY_AGENTS_DIR, { recursive: true });
-  fs.mkdirSync(path.join(ANTIGRAVITY_SKILLS_DIR, 'openagents-control-standards'), { recursive: true });
+  fs.mkdirSync(ANTIGRAVITY_SKILLS_DIR, { recursive: true });
   
   // Create plugin.json at the plugin root
   const pluginJson = {
@@ -227,7 +250,33 @@ You discover and recommend relevant OpenAgents Control context files from \`.ope
   );
   console.log('✅ Created context-scout subagent');
   
-  // Create openagents-control-standards skill
+  console.log('\n📦 Processing skills...\n');
+  
+  // Find all skill files in .opencode/skills/ and .opencode/skill/
+  const skillsDir1 = path.join(REPO_ROOT, '.opencode/skills');
+  const skillsDir2 = path.join(REPO_ROOT, '.opencode/skill');
+  
+  const skillFiles = [];
+  
+  function findSkillMdFiles(dir) {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        findSkillMdFiles(fullPath);
+      } else if (entry.name === 'SKILL.md') {
+        skillFiles.push(fullPath);
+      }
+    }
+  }
+  
+  findSkillMdFiles(skillsDir1);
+  findSkillMdFiles(skillsDir2);
+  
+  skillFiles.forEach(processSkill);
+  
+  // Create default openagents-control-standards skill
   const skillContent = `---
 name: openagents-control-standards
 description: Automatically triggers before any task to ensure OpenAgents Control standards and context are loaded. Use when the user asks to create, modify, or analyze anything in this repository.
@@ -242,8 +291,10 @@ Before proceeding with the user's request:
 3. Apply the OpenAgents Control standards found to your work.
 `;
 
+  const stdSkillDir = path.join(ANTIGRAVITY_SKILLS_DIR, 'openagents-control-standards');
+  fs.mkdirSync(stdSkillDir, { recursive: true });
   fs.writeFileSync(
-    path.join(ANTIGRAVITY_SKILLS_DIR, 'openagents-control-standards/SKILL.md'),
+    path.join(stdSkillDir, 'SKILL.md'),
     skillContent
   );
   console.log('✅ Created openagents-control-standards skill');
