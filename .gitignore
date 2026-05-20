@@ -225,5 +225,6 @@ tasks/
 
 # Claude Code integration generated files
 integrations/claude-code/converter/generated/
+integrations/antigravity/converter/generated/
 .cursorrules
 bun.lock
