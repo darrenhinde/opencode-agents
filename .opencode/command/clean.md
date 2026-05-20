@@ -1,4 +1,5 @@
 ---
+name: clean
 description: Clean the codebase or current working task in focus via Prettier, Import Sorter, ESLint, and TypeScript Compiler
 ---
 

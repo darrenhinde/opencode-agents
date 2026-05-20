@@ -7,6 +7,8 @@ name: OpenCopywriter
 description: "Expert in persuasive writing, marketing copy, and brand messaging"
 mode: primary
 temperature: 0.3
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir
 ---
 
 # Copywriter

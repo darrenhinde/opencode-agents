@@ -1,4 +1,5 @@
 ---
+name: prompt-enhancer
 description: "Research-backed prompt optimizer applying Stanford/Anthropic patterns with model- and task-specific effectiveness improvements"
 ---
 

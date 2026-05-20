@@ -11,6 +11,8 @@ permission:
     "**/*.env*": "deny"
     "**/*.key": "deny"
     "**/*.secret": "deny"
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir, replace_file_content
 ---
 
 # Context Organizer

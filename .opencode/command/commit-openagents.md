@@ -1,4 +1,5 @@
 ---
+name: commit-openagents
 description: Smart commit command for opencode-agents repository with automatic validation and conventional commits
 ---
 

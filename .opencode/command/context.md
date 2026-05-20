@@ -1,4 +1,5 @@
 ---
+name: context
 description: Context system manager - harvest summaries, extract knowledge, organize context
 tags:
   - context

@@ -25,6 +25,8 @@ permission:
   task:
     contextscout: "allow"
     externalscout: "allow"
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir, run_command, replace_file_content
 ---
 
 # TestEngineer

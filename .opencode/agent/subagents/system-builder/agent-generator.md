@@ -7,6 +7,8 @@ name: AgentGenerator
 description: "Generates XML-optimized agent files (orchestrator and subagents) following research-backed patterns"
 mode: subagent
 temperature: 0.1
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir
 ---
 
 # Agent Generator

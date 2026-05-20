@@ -22,6 +22,8 @@ permission:
   skill:
     "*": "deny"
     "task-management": "allow"
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir, replace_file_content
 ---
 
 <context>

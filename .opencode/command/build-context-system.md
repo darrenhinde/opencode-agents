@@ -1,4 +1,5 @@
 ---
+name: build-context-system
 description: "Interactive system builder that creates complete context-aware AI architectures tailored to user domains"
 ---
 

@@ -1,4 +1,5 @@
 ---
+name: test-new-command
 description: "Test command to verify auto-detection and registry updates work correctly"
 ---
 

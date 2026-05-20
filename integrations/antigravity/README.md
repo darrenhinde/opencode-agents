@@ -1,31 +1,34 @@
 # OpenAgents Control ↔ Gemini Antigravity CLI Integration
 
-A bridge that allows Gemini Antigravity 2.0 (Antigravity CLI 1.0) to use OpenAgents Control standards, subagents, and context files.
+A pristine, high-performance bridge that allows Gemini Antigravity (`gemini` / `agy`) to seamlessly execute OpenAgents Control (OAC) commands, skills, and subagents.
 
-## Overview
+---
 
-This integration provides a seamless bridge between OpenAgents Control and Gemini Antigravity CLI (`agy`):
+## ⚡ Overview
 
-1. **Auto-Convert**: Compiles OpenAgents Control's agent specifications into Antigravity CLI-native plugins
-2. **Global & Local Workspaces**: Deploys plugins globally for all projects or locally under repository workspaces
+This integration provides a seamless bridge between OpenAgents Control and Google Antigravity:
 
-## Directory Structure
+1. **Zero Redundancy**: Utilizes Git-portable **relative symbolic links** rather than copying files, ensuring that updates to `.opencode/` are instantly and automatically active in Antigravity.
+2. **Pristine Backwards-Compatibility**: Automatically injects mandatory Antigravity YAML properties (e.g. `name`, `model`, `tools`) into your original `.opencode/` command and agent markdown files in-place, keeping the repository 100% compatible with both native OpenCode and Antigravity environments.
+3. **Dual Global & Local Mapping**: Configures local workspace paths (.agents/) and deploys global plugins to `~/.gemini/` home directory paths simultaneously.
+
+---
+
+## 📂 Directory Structure
 
 ```
 integrations/antigravity/
 ├── README.md               # This guide
-├── install-antigravity.sh  # Build & installation script (Global & Local)
-└── converter/              # Conversion subsystem
-    ├── package.json        # Dependencies
-    └── src/
-        └── convert-agents.js # Node-based compiler and YAML mapper
+└── install-antigravity.sh  # Bridge installer script (Local & Global)
 ```
 
-## Quick Start
+---
 
-### 1. Compile & Install the Plugin
+## 🚀 Quick Start
 
-To compile OAC agents and install the plugin to your Antigravity environments, run:
+### 1. Run the Installer
+
+To establish the bridge mappings, run:
 
 ```bash
 cd integrations/antigravity
@@ -33,14 +36,14 @@ cd integrations/antigravity
 ```
 
 This will automatically:
-1. Translate `.opencode/agent/*.md` specifications to Antigravity format in `integrations/antigravity/generated/`.
-2. Generate the necessary `plugin.json` manifest.
-3. Install the plugin globally to `~/.gemini/antigravity-cli/plugins/openagents-control-bridge`.
-4. Install the plugin locally to `.agents/plugins/openagents-control-bridge` for workspace-specific runs.
+1. Scan your native OAC skills, commands, and subagents.
+2. Translate and inject YAML properties into original `.opencode/` markdown files in-place (safely and backwards-compatibly).
+3. Establish relative symlinks under `.agents/skills/` and `.agents/agents/`.
+4. Deploy the unified OAC bridge plugin globally under `~/.gemini/config/plugins/` and `~/.gemini/antigravity-cli/plugins/` to enable OAC support across *all* project workspaces.
 
-### 2. Verify in Antigravity CLI
+### 2. Verify in Antigravity
 
-Start your Antigravity session and verify that the plugin has loaded correctly:
+Start an Antigravity session and verify that the plugin has loaded correctly:
 
 ```bash
 # Start your CLI session
@@ -55,53 +58,15 @@ You should see `openagents-control-standards` and `context-scout` registered and
 
 ---
 
-## How It Works
+## 🔮 How It Works
 
 ### Context Discovery & Pre-loading
-
-1. **Skill Triggers**: The `openagents-control-standards` Skill triggers automatically before any development or architectural task.
+1. **Skill Triggers**: The `openagents-control-standards` skill triggers automatically before any development or architectural task.
 2. **Subagent Invocation**: The skill delegates to `context-scout` to search `.opencode/context/` for relevant conventions, naming standards, and workflows.
 3. **Upfront Loading**: Discovered files are read and pre-loaded into the prompt context to keep subsequent task execution fast, consistent, and highly token-efficient.
 
-### Agent Specification Mapping
-
-The converter translates OAC agent frontmatter properties to Antigravity CLI specifications:
-
-| OpenAgents Control Field | Gemini Antigravity Field | Notes / Conversions |
-|--------------------------|--------------------------|---------------------|
-| `id`                     | `name`                   | Uniquely names the subagent |
-| `description`            | `description`            | Description used for auto-routing |
-| `permissions`            | `tools`                  | Maps `read` ➔ `read_file`, `write` ➔ `write_file`, `edit` ➔ `edit_file`, `bash` ➔ `run_command`, `grep` ➔ `grep_search`, `glob` ➔ `list_dir` |
-| `model`                  | `model`                  | Translates models to user-approved designations: Grok/Sonnet ➔ `gemini-3.1-pro`, Haiku ➔ `gemini-3.5-flash` |
-| `mode: subagent`         | `permissionMode: plan`   | Restricts executing subagents to planned/approved paths |
-
----
-
-## Adding Custom Agents & Workflows
-
-### For Local Workspace Use
-Add your customized agent definitions under `.agents/agents/` and skills under `.agents/skills/`. The Antigravity Agent will auto-load them upon starting a session inside the workspace root.
-
-### For Global Distribution
-1. Place the new OAC agent configuration in `.opencode/agent/{category}/{agent}.md`.
-2. Run the compiler installer: `./install-antigravity.sh`
-3. Your updated agent will instantly be active across all your CLI sessions.
-
-## Requirements
-
-- Node.js 18+
-- Gemini Antigravity CLI 1.0+ (with local plugin-loading enabled for repo-level runs)
-
----
-
-## Command Reference
-
-| Action | Claude Code CLI | Gemini Antigravity CLI |
-|--------|-----------------|------------------------|
-| Start interactive run | `claude` | `agy` |
-| Browse Active Skills | `/print-plugins` | `/skills` |
-| Browse Active Subagents| `/print-plugins` | `/agents` |
-| Settings & Config | `~/.claude/settings.json` | `/config` or `/settings` |
-| Keybindings Map | `/keybindings` | `/keybindings` |
-| Directory Search | `/glob` / `/grep` | `@` (autocomplete) or `/skills` search |
-| Run single bash command| `!command` | `!command` |
+### In-Place Agent Frontmatter Mapping
+The setup utility dynamically translates OAC agent specifications to Antigravity configurations:
+- **`name`**: Map names directly.
+- **`model`**: Defaults to `gemini-3.1-pro` for high-performance agentic coding.
+- **`tools`**: Intelligently infers necessary tools (e.g., `run_command`, `replace_file_content`, `write_to_file`, `read_file`, `grep_search`, `list_dir`) by parsing the OAC permission structures in-place.

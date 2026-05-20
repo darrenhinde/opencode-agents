@@ -7,6 +7,8 @@ name: CommandCreator
 description: "Creates custom slash commands that route to appropriate agents with clear syntax and examples"
 mode: subagent
 temperature: 0.1
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir
 ---
 
 # Command Creator

@@ -1,4 +1,5 @@
 ---
+name: create-agent
 description: "Create new OpenCode agents following research-backed best practices (Anthropic 2025)"
 ---
 

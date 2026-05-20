@@ -7,6 +7,8 @@ name: OpenTechnicalWriter
 description: "Expert in documentation, API docs, and technical communication"
 mode: primary
 temperature: 0.2
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir
 ---
 
 # Technical Writer

@@ -7,6 +7,8 @@ name: Simple Responder
 description: "Test agent that responds with 'AWESOME TESTING' - for eval framework testing"
 mode: subagent
 temperature: 0.0
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir
 ---
 
 # Simple Responder - Test Agent

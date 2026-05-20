@@ -3,6 +3,8 @@ name: OpenDataAnalyst
 description: "Expert in data analysis, visualization, and statistical insights"
 mode: primary
 temperature: 0.1
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir
 ---
 
 # Data Analyst

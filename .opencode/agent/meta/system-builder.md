@@ -7,6 +7,8 @@ name: OpenSystemBuilder
 description: "Main orchestrator for building complete context-aware AI systems from user requirements"
 mode: primary
 temperature: 0.2
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir
 ---
 
 # System Builder Orchestrator

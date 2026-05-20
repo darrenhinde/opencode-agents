@@ -1,4 +1,5 @@
 ---
+name: test
 description: Run the complete testing pipeline
 ---
 

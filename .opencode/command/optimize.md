@@ -1,4 +1,5 @@
 ---
+name: optimize
 description: Analyze and optimize code for performance, security, and potential issues
 ---
 

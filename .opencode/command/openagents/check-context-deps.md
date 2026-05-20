@@ -1,4 +1,5 @@
 ---
+name: check-context-deps
 description: Validate context file dependencies across agents and registry
 tags:
   - registry

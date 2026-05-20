@@ -1,4 +1,5 @@
 ---
+name: agent-template
 description: "{one-line purpose of this agent}"
 mode: primary
 temperature: 0.1

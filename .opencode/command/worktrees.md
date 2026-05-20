@@ -1,4 +1,5 @@
 ---
+name: worktrees
 description: Manage git worktrees for parallel development workflows
 ---
 

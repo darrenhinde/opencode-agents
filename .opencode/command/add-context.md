@@ -1,4 +1,5 @@
 ---
+name: add-context
 description: Interactive wizard to add project patterns using Project Intelligence standard
 tags: [context, onboarding, project-intelligence, wizard]
 dependencies:

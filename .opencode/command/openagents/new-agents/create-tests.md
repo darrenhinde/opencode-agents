@@ -1,4 +1,5 @@
 ---
+name: create-tests
 description: "Generate comprehensive test suites for OpenCode agents with 8 essential test types"
 ---
 

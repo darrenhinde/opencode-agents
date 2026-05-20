@@ -1,3 +1,8 @@
+---
+name: context-template
+description: OAC command converted to Antigravity skill
+---
+
 # {Agent Name} Context
 
 ## Key Commands

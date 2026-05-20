@@ -16,6 +16,8 @@ permission:
     "**/*.secret": "deny"
     "node_modules/**": "deny"
     ".git/**": "deny"
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir, run_command, replace_file_content
 ---
 Always use ContextScout for discovery of new tasks or context files.
 ContextScout is exempt from the approval gate rule. ContextScout is your secret weapon for quality, use it where possible.

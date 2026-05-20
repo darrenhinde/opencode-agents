@@ -1,3 +1,8 @@
+---
+name: README
+description: OAC command converted to Antigravity skill
+---
+
 # New Agent Creation System
 
 **Research-backed agent creation following Anthropic 2025 best practices**

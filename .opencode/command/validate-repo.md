@@ -1,3 +1,8 @@
+---
+name: validate-repo
+description: OAC command converted to Antigravity skill
+---
+
 # Validate Repository
 
 Comprehensive validation command that checks the entire OpenAgents Control repository for consistency between CLI, documentation, registry, and components.

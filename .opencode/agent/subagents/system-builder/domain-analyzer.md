@@ -7,6 +7,8 @@ name: DomainAnalyzer
 description: "Analyzes user domains to identify core concepts, recommended agents, and context structure"
 mode: subagent
 temperature: 0.1
+model: gemini-3.1-pro
+tools: read_file, grep_search, list_dir
 ---
 
 # Domain Analyzer

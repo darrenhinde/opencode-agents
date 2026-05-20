@@ -1,4 +1,5 @@
 ---
+name: prompt-optimizer
 description: "Advanced prompt optimizer: Research patterns + token efficiency + semantic preservation. Achieves 30-50% token reduction with 100% meaning preserved."
 ---
 
