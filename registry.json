@@ -1650,6 +1650,46 @@
         "category": "standard"
       },
       {
+        "id": "typescript",
+        "name": "TypeScript",
+        "type": "context",
+        "path": ".opencode/context/core/standards/typescript.md",
+        "description": "Universal TypeScript language and engineering standards",
+        "tags": [
+          "typescript",
+          "standards"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "csharp",
+        "name": "C#",
+        "type": "context",
+        "path": ".opencode/context/core/standards/csharp.md",
+        "description": "Universal C# standards",
+        "tags": [
+          "csharp",
+          "standards"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "csharp-project-structure",
+        "name": "C# Project Structure",
+        "type": "context",
+        "path": ".opencode/context/core/standards/csharp-project-structure.md",
+        "description": "ASP.NET Core project structure and implementation patterns",
+        "tags": [
+          "csharp",
+          "standards",
+          "project-structure"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
         "id": "documentation",
         "name": "Documentation",
         "type": "context",

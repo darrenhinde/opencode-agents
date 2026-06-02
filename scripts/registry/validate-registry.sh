@@ -163,6 +163,7 @@ validate_component_paths() {
             fi
         fi
     done <<< "$components"
+    return 0
 }
 
 suggest_fix() {
@@ -287,6 +288,9 @@ check_dependency_exists() {
         plugin)
             registry_category="plugins"
             ;;
+        skill)
+            registry_category="skills"
+            ;;
         context)
             registry_category="contexts"
             ;;
@@ -380,7 +384,7 @@ validate_component_dependencies() {
                 fi
                 
                 local result
-                result=$(check_dependency_exists "$dep")
+                result=$(check_dependency_exists "$dep" || true)
                 
                 case "$result" in
                     found)
