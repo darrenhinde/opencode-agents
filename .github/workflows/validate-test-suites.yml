@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -43,18 +45,13 @@ jobs:
           cd evals/framework
           npm run validate:suites:all
       
-      - name: Comment on PR (if validation failed)
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ **Test Suite Validation Failed**\n\nPlease check the test suite JSON files for errors. Run `npm run validate:suites` locally to see details.'
-            })
-      
+      # NOTE: A "Comment on PR (if validation failed)" step was removed here.
+      # It called github.rest.issues.createComment, which needs `issues: write`.
+      # This workflow is fork-reachable (pull_request) and intentionally runs with
+      # a read-only token, so the step would 403; and for fork PRs GitHub forces a
+      # read-only token regardless, so it could never work there. A validation
+      # failure is already surfaced as a failed check plus the uploaded report.
+
       - name: Upload validation report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
