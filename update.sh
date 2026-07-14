@@ -54,16 +54,13 @@ REPO_URL="https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/${BRAN
 # CLI argument for custom install dir (overrides env var)
 CUSTOM_INSTALL_DIR=""
 
-# Track backup files for cleanup on exit
-BACKUP_FILES=()
+# Temp file for downloads — shared across update_component calls
+TMP_FILE=""
 
-# Clean up any leftover backup files on exit/interrupt
-cleanup_backups() {
-    for f in "${BACKUP_FILES[@]}"; do
-        [ -f "$f" ] && rm -f "$f"
-    done
+cleanup_tmp() {
+    [ -n "$TMP_FILE" ] && [ -f "$TMP_FILE" ] && rm -f "$TMP_FILE"
 }
-trap cleanup_backups EXIT INT TERM
+trap cleanup_tmp EXIT INT TERM
 
 #############################################################################
 # Utility Functions
@@ -79,7 +76,7 @@ print_header() {
     echo -e "${CYAN}${BOLD}"
     echo "╔════════════════════════════════════════════════════════════════╗"
     echo "║                                                                ║"
-    echo "║           OpenAgents Control Updater v1.1.0                   ║"
+    echo "║           OpenAgents Control Updater v1.2.0                   ║"
     echo "║                                                                ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
@@ -197,6 +194,8 @@ resolve_install_dir() {
 # Update Logic
 #############################################################################
 
+COUNT_LOCAL_ONLY=0
+
 update_component() {
     local path="$1"
     local install_dir="$2"
@@ -209,23 +208,17 @@ update_component() {
     fi
 
     local url="${REPO_URL}/.opencode/${relative_path}"
-    local backup="${path}.backup"
 
-    cp "$path" "$backup"
-    BACKUP_FILES+=("$backup")
+    # Download to temp — silently skip files not present in the remote
+    if ! curl -fsSL "$url" -o "$TMP_FILE" 2>/dev/null; then
+        COUNT_LOCAL_ONLY=$((COUNT_LOCAL_ONLY + 1))
+        return 0
+    fi
 
-    if curl -fsSL "$url" -o "$path" 2>/dev/null; then
-        print_success "Updated $path"
-        rm -f "$backup"
-        # Remove from tracking array (bash 3.2 compatible)
-        local new_backups=()
-        for f in "${BACKUP_FILES[@]}"; do
-            [ "$f" != "$backup" ] && new_backups+=("$f")
-        done
-        BACKUP_FILES=("${new_backups[@]+"${new_backups[@]}"}")
+    if cp "$TMP_FILE" "$path"; then
+        print_success "Updated ${relative_path}"
     else
-        print_warning "Could not update $path — restoring backup"
-        mv "$backup" "$path"
+        print_warning "Could not write ${relative_path}"
         return 1
     fi
 }
@@ -235,34 +228,20 @@ update_all_components() {
     local updated=0
     local failed=0
 
-    # Update markdown files
+    TMP_FILE="$(mktemp)"
+
     while IFS= read -r -d '' file; do
         if update_component "$file" "$install_dir"; then
             updated=$((updated + 1))
         else
             failed=$((failed + 1))
         fi
-    done < <(find "$install_dir" -name "*.md" -type f -print0)
+    done < <(find "$install_dir" \
+        -type f \( -name "*.md" -o -name "*.ts" -o -name "*.sh" \) \
+        -not -path "*/node_modules/*" \
+        -print0)
 
-    # Update TypeScript files
-    while IFS= read -r -d '' file; do
-        if update_component "$file" "$install_dir"; then
-            updated=$((updated + 1))
-        else
-            failed=$((failed + 1))
-        fi
-    done < <(find "$install_dir" -name "*.ts" -type f -not -path "*/node_modules/*" -print0)
-
-    # Update shell scripts inside install dir
-    while IFS= read -r -d '' file; do
-        if update_component "$file" "$install_dir"; then
-            updated=$((updated + 1))
-        else
-            failed=$((failed + 1))
-        fi
-    done < <(find "$install_dir" -name "*.sh" -type f -print0)
-
-    print_info "Updated: $updated file(s), failed: $failed file(s)"
+    print_info "Updated: $updated | Skipped (local-only): $COUNT_LOCAL_ONLY | Failed: $failed"
 }
 
 #############################################################################
