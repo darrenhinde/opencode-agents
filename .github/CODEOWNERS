@@ -1,0 +1,19 @@
+# Code owners for OpenAgentsControl
+#
+# Owners are automatically requested for review on PRs that touch matching
+# paths. Security-sensitive paths are listed explicitly so they always require
+# a maintainer review.
+
+# Default owner for everything in the repo.
+*                                   @darrenhinde
+
+# CI/CD workflows — untrusted-input execution surface.
+/.github/workflows/                 @darrenhinde
+/.github/dependabot.yml             @darrenhinde
+/.github/CODEOWNERS                 @darrenhinde
+
+# Security policy and reporting.
+/SECURITY.md                        @darrenhinde
+
+# PR validation and detection scripts consumed by CI.
+/scripts/validation/                @darrenhinde

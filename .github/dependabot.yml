@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  # GitHub Actions — keeps workflow action versions (and their SHA pins) current.
+  # Scoped to actions only: the repo's primary lockfile is bun.lock, and
+  # Dependabot's npm ecosystem would update package-lock.json without syncing
+  # bun.lock, causing lockfile drift. Dependency (npm) vulnerabilities are
+  # instead caught at PR time by dependency-review.yml.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "ci"
