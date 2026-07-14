@@ -214,7 +214,11 @@ jobs:
       - name: Validate test suites
         working-directory: evals/framework
         run: npm run validate:suites:all
-      
+
+      - name: Run deterministic tests
+        working-directory: evals/framework
+        run: npm run test:ci
+
       - name: Summary
         if: success()
         run: |
@@ -222,9 +226,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ TypeScript compilation successful" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Test suite validation passed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Deterministic tests passed (\`npm run test:ci\`)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Note:** Full agent tests are not run on PRs to save time and costs." >> $GITHUB_STEP_SUMMARY
-          echo "Maintainers can run \`npm run test:ci\` locally if needed." >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** \`test:ci\` runs the offline, deterministic Vitest allowlist only." >> $GITHUB_STEP_SUMMARY
+          echo "Model- or network-dependent agent tests (\`eval:sdk\`, integration suites) are not run on PRs." >> $GITHUB_STEP_SUMMARY
       
       - name: Failure summary
         if: failure()
