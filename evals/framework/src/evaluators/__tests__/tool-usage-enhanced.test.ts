@@ -41,7 +41,7 @@ describe('ToolUsageEvaluator - Enhanced Features', () => {
       const result = await evaluator.evaluate(timeline, mockSessionInfo);
       
       expect(result.violations.length).toBeGreaterThan(0);
-      expect(result.violations[0].type).toBe('suboptimal-tool-usage');
+      expect(result.violations[0].type).toBe('bash-antipattern-edit');
       expect(result.violations[0].evidence.suggestedTool).toBe('edit');
     });
 
@@ -179,7 +179,7 @@ describe('ToolUsageEvaluator - Enhanced Features', () => {
   });
 
   describe('Severity Levels', () => {
-    it('should use warning severity for cat usage', async () => {
+    it('should use error severity for cat usage', async () => {
       const timeline: TimelineEvent[] = [
         {
           timestamp: 1000,
@@ -192,11 +192,13 @@ describe('ToolUsageEvaluator - Enhanced Features', () => {
       ];
 
       const result = await evaluator.evaluate(timeline, mockSessionInfo);
-      
-      expect(result.violations[0].severity).toBe('warning');
+
+      expect(result.violations[0].severity).toBe('error');
+      expect(result.violations[0].type).toBe('bash-antipattern-read');
+      expect(result.passed).toBe(false);
     });
 
-    it('should use info severity for ls usage', async () => {
+    it('should use error severity for ls usage', async () => {
       const timeline: TimelineEvent[] = [
         {
           timestamp: 1000,
@@ -209,8 +211,10 @@ describe('ToolUsageEvaluator - Enhanced Features', () => {
       ];
 
       const result = await evaluator.evaluate(timeline, mockSessionInfo);
-      
-      expect(result.violations[0].severity).toBe('info');
+
+      expect(result.violations[0].severity).toBe('error');
+      expect(result.violations[0].type).toBe('bash-antipattern-list');
+      expect(result.passed).toBe(false);
     });
   });
 
@@ -267,7 +271,7 @@ describe('ToolUsageEvaluator - Enhanced Features', () => {
       expect(result.passed).toBe(true);
     });
 
-    it('should allow ls -la for detailed info', async () => {
+    it('should flag ls -la as a dedicated-listing-tool violation', async () => {
       const timeline: TimelineEvent[] = [
         {
           timestamp: 1000,
@@ -280,8 +284,10 @@ describe('ToolUsageEvaluator - Enhanced Features', () => {
       ];
 
       const result = await evaluator.evaluate(timeline, mockSessionInfo);
-      
-      expect(result.passed).toBe(true);
+
+      expect(result.passed).toBe(false);
+      expect(result.violations.length).toBeGreaterThan(0);
+      expect(result.violations[0].type).toBe('bash-antipattern-list');
     });
 
     it('should allow echo to stdout (no redirection)', async () => {

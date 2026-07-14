@@ -419,6 +419,30 @@ describe('Severity Levels', () => {
       expect(warningViolation!.type).toBe('code-length');
     });
 
+    it('does not report a warning when code length is exactly 1000', () => {
+      // Arrange
+      const code = 'x'.repeat(1000);
+
+      // Act
+      const result = validateCode(code);
+
+      // Assert
+      expect(code).toHaveLength(1000);
+      expect(result.violations.some(v => v.severity === 'warning')).toBe(false);
+    });
+
+    it('reports a warning when code length is exactly 1001', () => {
+      // Arrange
+      const code = 'x'.repeat(1001);
+
+      // Act
+      const result = validateCode(code);
+
+      // Assert
+      expect(code).toHaveLength(1001);
+      expect(result.violations.some(v => v.severity === 'warning')).toBe(true);
+    });
+
     it('passes with info-level violations', () => {
       // Arrange
       const code = 'const x = 10;'; // No strict mode
@@ -435,23 +459,21 @@ describe('Severity Levels', () => {
 
     it('reports multiple violations with different severities', () => {
       // Arrange
-      const code = 'eval("bad");'.repeat(100); // error + warning + info
+      const code = 'eval("bad");' + 'x'.repeat(989);
 
       // Act
       const result = validateCode(code);
 
       // Assert
+      expect(code).toHaveLength(1001);
       expect(result.passed).toBe(false); // Error causes failure
-      expect(result.violations.length).toBeGreaterThanOrEqual(2);
-      
       const severities = result.violations.map(v => v.severity);
-      expect(severities).toContain('error');
-      expect(severities).toContain('warning');
+      expect(severities).toEqual(['error', 'warning', 'info']);
     });
 
     it('distinguishes between severity levels correctly', () => {
       // Arrange
-      const code = 'eval("x");'.repeat(100);
+      const code = 'eval("x");'.repeat(101); // 1010 chars: crosses the >1000 warning boundary
 
       // Act
       const result = validateCode(code);

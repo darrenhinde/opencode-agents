@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { normalizeAgentId } from '../config.js';
 
 /**
  * Zod schema for test definition
@@ -39,7 +40,14 @@ const TestSuiteSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   version: z.string().regex(/^\d+\.\d+\.\d+$/, 'Version must be semver (e.g., 1.0.0)'),
-  agent: z.enum(['openagent', 'opencoder']),
+  // Accept both legacy flat ids (e.g. "openagent") and canonical category-based
+  // ids (e.g. "core/openagent"). A value is valid when it is already
+  // category-based (contains "/") or maps to a known canonical id via
+  // normalizeAgentId. Arbitrary/unknown flat ids are rejected.
+  agent: z.string().min(1).refine(
+    (val) => val.includes('/') || normalizeAgentId(val) !== val,
+    { message: 'Agent must be a known agent id (e.g., "openagent") or a category-based path (e.g., "core/openagent")' }
+  ),
   totalTests: z.number().int().positive(),
   estimatedRuntime: z.string().regex(/^\d+-\d+ (minutes|seconds|hours)$/),
   coverage: z.record(z.boolean()).optional(),
@@ -144,9 +152,21 @@ export class SuiteValidator {
     
     const suite = parseResult.data;
     result.suite = suite;
-    
-    // Validate test paths exist
-    const testsDir = join(this.agentsDir, agent, 'tests');
+
+    // Conflict detection: the requested agent must resolve to the same
+    // canonical id as the agent declared in the suite. Legacy vs canonical
+    // forms of the SAME agent (e.g. "openagent" vs "core/openagent") match.
+    if (suite.agent && normalizeAgentId(agent) !== normalizeAgentId(suite.agent)) {
+      result.valid = false;
+      result.errors.push({
+        field: 'agent',
+        message: `Suite agent "${suite.agent}" (resolves to "${normalizeAgentId(suite.agent)}") does not match requested agent "${agent}" (resolves to "${normalizeAgentId(agent)}")`
+      });
+      return result;
+    }
+
+    // Validate test paths exist (resolve legacy ids to canonical dirs)
+    const testsDir = join(this.agentsDir, normalizeAgentId(agent), 'tests');
     
     if (!existsSync(testsDir)) {
       result.valid = false;
@@ -216,8 +236,19 @@ export class SuiteValidator {
       missingTests: [],
       suite
     };
-    
-    const testsDir = join(this.agentsDir, agent, 'tests');
+
+    // Conflict detection: requested agent must resolve to the same canonical
+    // id as the declared suite agent (legacy vs canonical forms still match).
+    if (suite.agent && normalizeAgentId(agent) !== normalizeAgentId(suite.agent)) {
+      result.valid = false;
+      result.errors.push({
+        field: 'agent',
+        message: `Suite agent "${suite.agent}" (resolves to "${normalizeAgentId(suite.agent)}") does not match requested agent "${agent}" (resolves to "${normalizeAgentId(agent)}")`
+      });
+      return result;
+    }
+
+    const testsDir = join(this.agentsDir, normalizeAgentId(agent), 'tests');
     
     if (!existsSync(testsDir)) {
       result.valid = false;
@@ -317,9 +348,9 @@ export class SuiteValidator {
     const content = readFileSync(suitePath, 'utf8');
     const suite = JSON.parse(content) as TestSuite;
     
-    // Ensure agent field is set
+    // Ensure agent field is set (canonicalize the requested id)
     if (!suite.agent) {
-      suite.agent = agent as 'openagent' | 'opencoder';
+      suite.agent = normalizeAgentId(agent);
     }
     
     return suite;
@@ -329,7 +360,7 @@ export class SuiteValidator {
    * Get absolute paths for all tests in a suite
    */
   getTestPaths(agent: string, suite: TestSuite): string[] {
-    const testsDir = join(this.agentsDir, agent, 'tests');
+    const testsDir = join(this.agentsDir, normalizeAgentId(agent), 'tests');
     const paths: string[] = [];
     
     for (const test of suite.tests) {

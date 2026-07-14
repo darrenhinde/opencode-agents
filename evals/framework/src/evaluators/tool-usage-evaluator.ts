@@ -33,11 +33,11 @@ export class ToolUsageEvaluator extends BaseEvaluator {
   // Patterns for detecting suboptimal bash usage
   // NOTE: grep, rg, npm, git, and other valid bash commands are ALLOWED
   private bashAntiPatterns = [
-    { 
-      pattern: /\bcat\s+([^\s|>]+)(?!\s*[|>])/i, 
-      tool: 'read', 
+    {
+      pattern: /\bcat\s+([^\s|>]+)(?!\s*[|>])/i,
+      tool: 'read',
       message: 'Use Read tool instead of cat for reading files',
-      severity: 'warning' as const,
+      severity: 'error' as const,
       example: 'read(filePath: "path/to/file")'
     },
     { 
@@ -54,11 +54,11 @@ export class ToolUsageEvaluator extends BaseEvaluator {
       severity: 'warning' as const,
       example: 'read(filePath: "file", offset: -10)'
     },
-    { 
-      pattern: /\bls\s+(?!-[al]+\s)([^\s]*)/i, 
-      tool: 'list', 
-      message: 'Use List tool instead of ls (unless ls -la for detailed info)',
-      severity: 'info' as const,
+    {
+      pattern: /\bls(\s+|$)/i,
+      tool: 'list',
+      message: 'Use List tool (or Glob for patterns) instead of ls',
+      severity: 'error' as const,
       example: 'list(path: "directory")'
     },
     { 
@@ -116,7 +116,6 @@ export class ToolUsageEvaluator extends BaseEvaluator {
     /^\s*mv\s+/i,            // moving files
     /^\s*cp\s+/i,            // copying files
     /^\s*chmod\s+/i,         // permissions
-    /^\s*ls\s+-[la]+/i,      // ls -la for detailed directory info
     /^\s*cd\s+/i,            // navigation
     /^\s*pwd\s*/i,           // current directory
     /^\s*which\s+/i,         // command location
@@ -195,7 +194,7 @@ export class ToolUsageEvaluator extends BaseEvaluator {
         // Add violation with appropriate severity
         violations.push(
           this.createViolation(
-            'suboptimal-tool-usage',
+            `bash-antipattern-${antiPattern.tool}`,
             antiPattern.severity,
             antiPattern.message,
             bashCall.timestamp,

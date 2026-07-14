@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import { parse as parseYaml } from 'yaml';
 import { TestCaseSchema, TestSuiteSchema, type TestCase, type TestSuite } from './test-case-schema.js';
+import { normalizeAgentId } from '../config.js';
 
 /**
  * Load a single test case from a YAML file
@@ -11,7 +12,13 @@ export async function loadTestCase(filePath: string): Promise<TestCase> {
   
   try {
     const testCase = TestCaseSchema.parse(data);
-    
+
+    // Canonicalize legacy agent identifiers to category-based IDs (e.g. "openagent" → "core/openagent").
+    // Unknown identifiers are preserved unchanged by normalizeAgentId.
+    if (testCase.agent) {
+      testCase.agent = normalizeAgentId(testCase.agent);
+    }
+
     // Warn about deprecated schema
     if (testCase.expected && !testCase.behavior && !testCase.expectedViolations) {
       console.warn(`⚠️  Test ${testCase.id} uses deprecated "expected" schema.`);
