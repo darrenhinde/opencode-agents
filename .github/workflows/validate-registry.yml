@@ -1,379 +1,87 @@
 name: Validate Registry on PR
 
-# This workflow validates the registry.json and prompt library structure on all PRs.
-# 
-# For bot-created PRs (like automated version bumps), the workflow won't trigger automatically
-# due to GitHub's security restrictions. In those cases, you can manually trigger this workflow:
-#
-# Option 1 - Run Validation:
-# 1. Go to Actions > Validate Registry on PR > Run workflow
-# 2. Enter the PR number (e.g., 106)
-# 3. Leave "skip_validation" unchecked
-# 4. Click "Run workflow"
-#
-# Option 2 - Admin Bypass (for trusted bot PRs):
-# 1. Go to Actions > Validate Registry on PR > Run workflow
-# 2. Enter the PR number (e.g., 106)
-# 3. Check "skip_validation" checkbox
-# 4. Click "Run workflow"
-# 5. The check will pass immediately without running validation
+# Contributor code must run only with a read-only token and no secrets.
+# Never change this workflow back to pull_request_target while it checks out
+# and executes pull-request code.
 
 on:
-  # Use pull_request_target to allow running on bot-created PRs
-  # This also allows the workflow to write to the PR branch
-  pull_request_target:
+  pull_request:
     branches:
       - main
       - dev
-    # Removed paths filter - this check is required by repository ruleset
-    # so it must run on ALL PRs to prevent blocking merges
   workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'PR number to validate (for manual runs on bot-created PRs)'
-        required: false
-        type: number
-      skip_validation:
-        description: 'Skip validation checks (maintainer override)'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   validate-and-update:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 10
+
     steps:
-      - name: Admin bypass check
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_validation == 'true'
-        run: |
-          echo "## ✅ Validation Bypassed (Admin Override)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Validation checks skipped by maintainer." >> $GITHUB_STEP_SUMMARY
-          echo "PR: #${{ github.event.inputs.pr_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The workflow will complete successfully without running validation steps." >> $GITHUB_STEP_SUMMARY
-      
-      - name: Checkout repository (for manual runs)
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_validation != 'true'
+      - name: Checkout code without persisted credentials
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Get PR details (for manual runs)
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number != '' && github.event.inputs.skip_validation != 'true'
-        id: get_pr
-        run: |
-          PR_DATA=$(gh pr view ${{ github.event.inputs.pr_number }} --json headRefName,headRepository,headRepositoryOwner)
-          echo "head_ref=$(echo $PR_DATA | jq -r '.headRefName')" >> $GITHUB_OUTPUT
-          echo "head_repo=$(echo $PR_DATA | jq -r '.headRepositoryOwner.login + "/" + .headRepository.name')" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Checkout PR branch
-        if: github.event.inputs.skip_validation != 'true'
-        uses: actions/checkout@v4
-        with:
-          # For manual runs: use PR details from get_pr step
-          # For PR events: use event data
-          repository: ${{ github.event_name == 'workflow_dispatch' && steps.get_pr.outputs.head_repo || github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event_name == 'workflow_dispatch' && steps.get_pr.outputs.head_ref || github.event.pull_request.head.ref }}
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Detect fork PR
-        if: github.event.inputs.skip_validation != 'true'
-        id: fork_check
-        run: |
-          # For manual runs, use the fetched PR data
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            HEAD_REPO="${{ steps.get_pr.outputs.head_repo }}"
-          else
-            HEAD_REPO="${{ github.event.pull_request.head.repo.full_name }}"
-          fi
-          
-          if [ "$HEAD_REPO" != "${{ github.repository }}" ]; then
-            echo "is_fork=true" >> $GITHUB_OUTPUT
-            echo "🔀 Fork PR detected from: $HEAD_REPO"
-          else
-            echo "is_fork=false" >> $GITHUB_OUTPUT
-            echo "📝 Internal PR detected"
-          fi
-      
-      - name: Install dependencies
-        if: github.event.inputs.skip_validation != 'true'
+          persist-credentials: false
+
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
-      
+
       - name: Install Bun
-        if: github.event.inputs.skip_validation != 'true'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      
-      - name: Install dependencies
-        if: github.event.inputs.skip_validation != 'true'
-        run: |
-          # Install root dependencies (glob package needed for validation script)
-          bun install --frozen-lockfile
-      
-      - name: Make scripts executable
-        if: github.event.inputs.skip_validation != 'true'
+
+      - name: Install project dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Make validation scripts executable
         run: |
           chmod +x scripts/registry/validate-registry.sh
           chmod +x scripts/registry/auto-detect-components.sh
           chmod +x scripts/registry/register-component.sh
           chmod +x scripts/prompts/validate-pr.sh
-      
-      - name: Auto-detect new components
-        if: github.event.inputs.skip_validation != 'true'
-        id: auto_detect
+
+      - name: Report registry drift
+        id: registry_drift
         run: |
-          echo "## 🔍 Auto-Detection Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Run auto-detect in dry-run mode first to see what would be added
-          if ./scripts/registry/auto-detect-components.sh --dry-run > /tmp/detect-output.txt 2>&1; then
-            cat /tmp/detect-output.txt >> $GITHUB_STEP_SUMMARY
-            
-            # Check if new components were found
-            if grep -q "Found.*new component" /tmp/detect-output.txt; then
-              echo "new_components=true" >> $GITHUB_OUTPUT
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "⚠️ New components detected - will auto-add to registry" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "new_components=false" >> $GITHUB_OUTPUT
-              echo "✅ No new components found" >> $GITHUB_STEP_SUMMARY
-            fi
+          ./scripts/registry/auto-detect-components.sh --dry-run > /tmp/detect-output.txt 2>&1
+          cat /tmp/detect-output.txt
+          sed $'s/\033\\[[0-9;]*m//g' /tmp/detect-output.txt > /tmp/detect-output-plain.txt
+
+          if grep -Eq 'New Components:[[:space:]]*[1-9][0-9]*([[:space:]]|$)' /tmp/detect-output-plain.txt; then
+            echo "drift_detected=true" >> "$GITHUB_OUTPUT"
+            echo "## Registry drift detected" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The repository already contains components not represented in registry.json." >> "$GITHUB_STEP_SUMMARY"
+            echo "This is reported but does not block security validation until the existing drift is reconciled." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "new_components=false" >> $GITHUB_OUTPUT
-            echo "❌ Auto-detection failed" >> $GITHUB_STEP_SUMMARY
+            echo "drift_detected=false" >> "$GITHUB_OUTPUT"
           fi
-      
-      - name: Add new components to registry
-        if: steps.auto_detect.outputs.new_components == 'true' && github.event.inputs.skip_validation != 'true'
-        run: |
-          echo "## 📝 Adding New Components" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          ./scripts/registry/auto-detect-components.sh --auto-add | tee -a $GITHUB_STEP_SUMMARY
-      
+
       - name: Validate prompt library structure
-        if: github.event.inputs.skip_validation != 'true'
-        id: validate_prompts
-        run: |
-          echo "## 🔍 Prompt Library Validation" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if ./scripts/prompts/validate-pr.sh > /tmp/prompt-validation.txt 2>&1; then
-            echo "prompt_validation=passed" >> $GITHUB_OUTPUT
-            echo "✅ Prompt library structure is valid!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat /tmp/prompt-validation.txt >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "prompt_validation=failed" >> $GITHUB_OUTPUT
-            echo "❌ Prompt library validation failed!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat /tmp/prompt-validation.txt >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Architecture:**" >> $GITHUB_STEP_SUMMARY
-            echo "- Agent files (.opencode/agent/**/*.md) = Canonical defaults" >> $GITHUB_STEP_SUMMARY
-            echo "- Prompt variants (.opencode/prompts/<agent>/<model>.md) = Model-specific" >> $GITHUB_STEP_SUMMARY
-            echo "- default.md files should NOT exist" >> $GITHUB_STEP_SUMMARY
-            echo "- Agents organized in category subdirectories (core/, development/, content/, etc.)" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "See [CONTRIBUTING.md](docs/contributing/CONTRIBUTING.md) for details" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
+        run: ./scripts/prompts/validate-pr.sh
 
       - name: Validate markdown context links
-        if: github.event.inputs.skip_validation != 'true'
-        id: validate_context_links
-        run: |
-          echo "## 🔗 Context Link Validation" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+        run: npm run validate:context-links
 
-          if bun run scripts/validation/validate-markdown-links.ts > /tmp/context-link-validation.txt 2>&1; then
-            echo "context_links=passed" >> $GITHUB_OUTPUT
-            echo "✅ Context markdown links are valid!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat /tmp/context-link-validation.txt >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "context_links=failed" >> $GITHUB_OUTPUT
-            echo "❌ Context markdown link validation failed!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat /tmp/context-link-validation.txt >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-      
       - name: Validate registry
-        if: github.event.inputs.skip_validation != 'true'
-        id: validate
-        run: |
-          echo "## ✅ Registry Validation" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Use TypeScript validator (fast and reliable)
-          # Run validation and capture output (show in logs AND save to file)
-          if bun run scripts/registry/validate-registry.ts 2>&1 | tee /tmp/validation-output.txt; then
-            echo "validation=passed" >> $GITHUB_OUTPUT
-            echo "✅ All registry paths are valid!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat /tmp/validation-output.txt >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "validation=failed" >> $GITHUB_OUTPUT
-            echo "❌ Registry validation failed!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat /tmp/validation-output.txt >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Check the logs above for detailed error output**" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-      
-      - name: Commit registry updates (Internal PRs only)
-        if: |
-          github.event.inputs.skip_validation != 'true' &&
-          steps.fork_check.outputs.is_fork == 'false' &&
-          steps.auto_detect.outputs.new_components == 'true' &&
-          steps.validate_prompts.outputs.prompt_validation == 'passed' &&
-          steps.validate.outputs.validation == 'passed'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          if ! git diff --quiet registry.json; then
-            git add registry.json
-            git commit -m "chore: auto-update registry with new components [skip ci]"
-            
-            # For manual runs, use the fetched branch name
-            BRANCH_NAME="${{ github.event_name == 'workflow_dispatch' && steps.get_pr.outputs.head_ref || github.event.pull_request.head.ref }}"
-            git push origin "$BRANCH_NAME"
-            
-            echo "## 🚀 Registry Updated" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Registry has been automatically updated with new components." >> $GITHUB_STEP_SUMMARY
-            echo "Changes have been pushed to this PR branch." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ℹ️ No Changes to Commit" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Registry is already up to date." >> $GITHUB_STEP_SUMMARY
-          fi
-      
-      - name: Fork PR notice
-        if: |
-          github.event.inputs.skip_validation != 'true' &&
-          steps.fork_check.outputs.is_fork == 'true' &&
-          steps.auto_detect.outputs.new_components == 'true' &&
-          steps.validate_prompts.outputs.prompt_validation == 'passed' &&
-          steps.validate.outputs.validation == 'passed'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 📝 Registry Update Needed
-            
-            Hi @${{ github.event.pull_request.user.login }}! 👋
-            
-            New components were detected in your PR. Since this is a fork PR, I can't auto-commit the registry updates for security reasons.
-            
-            **Please run these commands locally:**
-            \`\`\`bash
-            ./scripts/registry/auto-detect-components.sh --auto-add
-            git add registry.json
-            git commit -m "chore: update registry"
-            git push
-            \`\`\`
-            
-            Once you push the updated registry, the checks will pass! ✅`
-            });
-      
-      - name: Fork PR summary
-        if: steps.fork_check.outputs.is_fork == 'true' && github.event.inputs.skip_validation != 'true'
-        run: |
-          echo "## 🔀 Fork PR Detected" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "This is an external contribution - thank you! 🎉" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ steps.auto_detect.outputs.new_components }}" == "true" ]; then
-            echo "⚠️ **Action Required:** New components detected" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "A comment has been posted with instructions to update the registry." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ No registry updates needed" >> $GITHUB_STEP_SUMMARY
-          fi
-      
-      - name: Post validation summary
-        if: always()
-        run: |
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          PROMPT_VALID="${{ steps.validate_prompts.outputs.prompt_validation }}"
-          CONTEXT_LINKS_VALID="${{ steps.validate_context_links.outputs.context_links }}"
-          REGISTRY_VALID="${{ steps.validate.outputs.validation }}"
+        run: npm run validate:registry
 
-          if [ "$PROMPT_VALID" = "passed" ] && [ "$CONTEXT_LINKS_VALID" = "passed" ] && [ "$REGISTRY_VALID" = "passed" ]; then
-            echo "### ✅ All Validations Passed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ Prompt library structure is valid" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ Context markdown links are valid" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ Registry paths are valid" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "This PR is ready for review!" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### ❌ Validation Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            if [ "$PROMPT_VALID" != "passed" ]; then
-              echo "- ❌ Prompt library validation failed" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "- ✅ Prompt library validation passed" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            if [ "$CONTEXT_LINKS_VALID" != "passed" ]; then
-              echo "- ❌ Context markdown link validation failed" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "- ✅ Context markdown link validation passed" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            if [ "$REGISTRY_VALID" != "passed" ]; then
-              echo "- ❌ Registry validation failed" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "- ✅ Registry validation passed" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Please fix the issues above before merging." >> $GITHUB_STEP_SUMMARY
-          fi
-      
-      - name: Fail if validation failed
-        if: |
-          (steps.validate_prompts.outputs.prompt_validation == 'failed' || steps.validate_context_links.outputs.context_links == 'failed' || steps.validate.outputs.validation == 'failed') &&
-          github.event.inputs.skip_validation != 'true'
+      - name: Validation summary
+        if: success()
         run: |
-          echo "❌ Validation failed - blocking PR merge"
-          echo "Maintainer can override by running workflow manually with 'skip_validation' enabled"
-          exit 1
+          echo "## All registry validations passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Prompt library structure is valid" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Context markdown links are valid" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Registry paths and dependencies are valid" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.registry_drift.outputs.drift_detected }}" = "true" ]; then
+            echo "- Existing registry drift was reported separately" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- No unregistered components were detected" >> "$GITHUB_STEP_SUMMARY"
+          fi

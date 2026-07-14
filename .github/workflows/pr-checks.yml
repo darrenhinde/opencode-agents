@@ -5,6 +5,9 @@ on:
     branches: [main, dev]
     types: [opened, edited, synchronize, reopened]
 
+permissions:
+  contents: read
+
 jobs:
   pr-title-check:
     name: Validate PR Title
@@ -101,15 +104,9 @@ jobs:
               Edit your PR title to match the format above.
               `;
               
+              core.info(message);
+              await core.summary.addRaw(message).write();
               core.setFailed(message);
-              
-              // Also post as a comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body: message
-              });
             } else {
               const [type] = matchedType;
               let versionBump = 'patch (0.3.0 → 0.3.1)';
@@ -160,52 +157,29 @@ jobs:
     needs: pr-title-check
     if: needs.pr-title-check.outputs.title-valid == 'true'
     outputs:
-      has-evals: ${{ steps.filter.outputs.evals }}
-      has-docs: ${{ steps.filter.outputs.docs }}
-      has-workflows: ${{ steps.filter.outputs.workflows }}
+      has-evals: ${{ steps.filter.outputs.has-evals }}
+      has-docs: ${{ steps.filter.outputs.has-docs }}
+      has-workflows: ${{ steps.filter.outputs.has-workflows }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
       
       - name: Check changed files
         id: filter
         run: |
-          # Get list of changed files
-          git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-          
-          # Check for evals changes
-          if echo "$CHANGED_FILES" | grep -q "^evals/"; then
-            echo "has-evals=true" >> $GITHUB_OUTPUT
-            echo "✅ Evals changes detected"
-          else
-            echo "has-evals=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No evals changes"
-          fi
-          
-          # Check for docs changes
-          if echo "$CHANGED_FILES" | grep -q "^docs/"; then
-            echo "has-docs=true" >> $GITHUB_OUTPUT
-            echo "✅ Docs changes detected"
-          else
-            echo "has-docs=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No docs changes"
-          fi
-          
-          # Check for workflow changes
-          if echo "$CHANGED_FILES" | grep -q "^.github/workflows/"; then
-            echo "has-workflows=true" >> $GITHUB_OUTPUT
-            echo "✅ Workflow changes detected"
-          else
-            echo "has-workflows=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No workflow changes"
-          fi
+          echo "Changed files:" >&2
+          git diff --name-only -z "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" |
+            tee >(while IFS= read -r -d '' path; do printf '  %q\n' "$path" >&2; done) |
+            bun run scripts/validation/detect-pr-changes.ts
 
   build-check:
     name: Build & Validate
@@ -219,6 +193,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -295,24 +271,41 @@ jobs:
             if [ "${{ needs.check-changes.outputs.has-workflows }}" == "true" ]; then
               echo "  - ⚙️ Workflow changes detected" >> $GITHUB_STEP_SUMMARY
             fi
-          else
+          elif [ "${{ needs.check-changes.result }}" == "failure" ]; then
+            echo "❌ **Changed Files:** Detection failed - check logs" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.check-changes.result }}" == "cancelled" ]; then
+            echo "🚫 **Changed Files:** Detection cancelled" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.check-changes.result }}" == "skipped" ]; then
             echo "⏭️ **Changed Files:** Skipped (title validation failed)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❓ **Changed Files:** Unknown result" >> $GITHUB_STEP_SUMMARY
           fi
           
           # Build Check
           if [ "${{ needs.build-check.result }}" == "success" ]; then
             echo "✅ **Build & Validate:** Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.build-check.result }}" == "skipped" ]; then
-            echo "⏭️ **Build & Validate:** Skipped (no evals changes)" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ needs.check-changes.result }}" != "success" ]; then
+              echo "⏭️ **Build & Validate:** Skipped (change detection did not succeed)" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.check-changes.outputs.has-evals }}" != "true" ]; then
+              echo "⏭️ **Build & Validate:** Skipped (no evals changes)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⏭️ **Build & Validate:** Skipped (prerequisite not met)" >> $GITHUB_STEP_SUMMARY
+            fi
           elif [ "${{ needs.build-check.result }}" == "failure" ]; then
             echo "❌ **Build & Validate:** Failed - check logs" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.build-check.result }}" == "cancelled" ]; then
+            echo "🚫 **Build & Validate:** Cancelled" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Overall status
           if [ "${{ needs.pr-title-check.result }}" == "success" ] && \
-             ([ "${{ needs.build-check.result }}" == "success" ] || [ "${{ needs.build-check.result }}" == "skipped" ]); then
+             [ "${{ needs.check-changes.result }}" == "success" ] && \
+             { [ "${{ needs.build-check.result }}" == "success" ] || \
+               { [ "${{ needs.build-check.result }}" == "skipped" ] && \
+                 [ "${{ needs.check-changes.outputs.has-evals }}" != "true" ]; }; }; then
             echo "### ✅ All Required Checks Passed!" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "This PR is ready for review." >> $GITHUB_STEP_SUMMARY
@@ -320,4 +313,5 @@ jobs:
             echo "### ❌ Some Checks Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Please fix the failing checks before merging." >> $GITHUB_STEP_SUMMARY
+            exit 1
           fi
