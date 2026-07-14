@@ -70,12 +70,9 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Say "Hello Integration Test" and nothing else.',
         timeout: 15000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'text-response',
-          contains: ['Hello Integration Test'],
         },
       };
 
@@ -115,12 +112,9 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'List files in the current directory using the List tool.',
         timeout: 20000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'tool-execution',
-          tools: ['list'],
         },
       };
 
@@ -159,11 +153,9 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Create a file named test.txt with content "test".',
         timeout: 20000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-deny', // Deny all approvals
-        },
-        expectedOutcome: {
-          type: 'approval-denied',
         },
       };
 
@@ -192,8 +184,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
           model: 'opencode/grok-code-fast',
           prompt: 'Say "Test 1".',
           timeout: 15000,
+          category: 'developer',
           approvalStrategy: { type: 'auto-approve' },
-          expectedOutcome: { type: 'text-response', contains: ['Test 1'] },
         },
         {
           id: 'integration-multi-2',
@@ -203,8 +195,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
           model: 'opencode/grok-code-fast',
           prompt: 'Say "Test 2".',
           timeout: 15000,
+          category: 'developer',
           approvalStrategy: { type: 'auto-approve' },
-          expectedOutcome: { type: 'text-response', contains: ['Test 2'] },
         },
       ];
 
@@ -236,8 +228,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'List files in current directory.',
         timeout: 20000,
+        category: 'developer',
         approvalStrategy: { type: 'auto-approve' },
-        expectedOutcome: { type: 'tool-execution', tools: ['list'] },
       };
 
       const result = await runner.runTest(testCase);
@@ -271,8 +263,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Use cat command to read a file.', // Should trigger tool-usage violation
         timeout: 20000,
+        category: 'developer',
         approvalStrategy: { type: 'auto-approve' },
-        expectedOutcome: { type: 'tool-execution' },
       };
 
       const result = await runner.runTest(testCase);
@@ -312,8 +304,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'List files and then say "Done".',
         timeout: 20000,
+        category: 'developer',
         approvalStrategy: { type: 'auto-approve' },
-        expectedOutcome: { type: 'text-response', contains: ['Done'] },
       };
 
       const result = await runner.runTest(testCase);
@@ -347,8 +339,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Say "No tools needed" and nothing else.',
         timeout: 15000,
+        category: 'developer',
         approvalStrategy: { type: 'auto-approve' },
-        expectedOutcome: { type: 'text-response', contains: ['No tools needed'] },
       };
 
       const result = await runner.runTest(testCase);
@@ -380,8 +372,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Perform a very long task that takes forever.',
         timeout: 5000, // Very short timeout
+        category: 'developer',
         approvalStrategy: { type: 'auto-approve' },
-        expectedOutcome: { type: 'text-response' },
       };
 
       const result = await runner.runTest(testCase);
@@ -421,11 +413,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Say "Validation Test".',
         timeout: 15000,
+        category: 'developer',
         approvalStrategy: { type: 'auto-approve' },
-        expectedOutcome: {
-          type: 'text-response',
-          contains: ['Validation Test'],
-        },
       };
 
       const result = await runner.runTest(testCase);
@@ -472,8 +461,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Say "Score Test".',
         timeout: 15000,
+        category: 'developer',
         approvalStrategy: { type: 'auto-approve' },
-        expectedOutcome: { type: 'text-response', contains: ['Score Test'] },
       };
 
       const result = await runner.runTest(testCase);
@@ -505,8 +494,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Say "Report Test".',
         timeout: 15000,
+        category: 'developer',
         approvalStrategy: { type: 'auto-approve' },
-        expectedOutcome: { type: 'text-response', contains: ['Report Test'] },
       };
 
       const result = await runner.runTest(testCase);
@@ -549,8 +538,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
           model: 'opencode/grok-code-fast',
           prompt: 'Say "Batch 1".',
           timeout: 15000,
+          category: 'developer',
           approvalStrategy: { type: 'auto-approve' },
-          expectedOutcome: { type: 'text-response', contains: ['Batch 1'] },
         },
         {
           id: 'integration-batch-2',
@@ -560,8 +549,8 @@ describe.skipIf(skipIntegration)('Eval Pipeline Integration', () => {
           model: 'opencode/grok-code-fast',
           prompt: 'Say "Batch 2".',
           timeout: 15000,
+          category: 'developer',
           approvalStrategy: { type: 'auto-approve' },
-          expectedOutcome: { type: 'text-response', contains: ['Batch 2'] },
         },
       ];
 

@@ -212,8 +212,55 @@ describe('Evaluator Reliability - False Negatives', () => {
       expect(result.violations.length).toBeGreaterThan(0);
       expect(result.violations[0].type).toBe('insufficient-tool-calls');
     });
+
+    it('MUST FAIL: Assistant response missing expected content', async () => {
+      const evaluator = new BehaviorEvaluator({
+        expectedResponse: {
+          contains: ['Task completed successfully'],
+        },
+      });
+
+      const timeline: TimelineEvent[] = [
+        createUserMessage('Do the task', 1000),
+        createAssistantMessage('I ran into an error and stopped.', 2000),
+      ];
+
+      const result = await evaluator.evaluate(timeline, mockSessionInfo);
+
+      // Expected string is absent from the assistant message -> violation.
+      expect(result.passed).toBe(false);
+      const missingContent = result.violations.find(
+        v => v.type === 'missing-expected-content'
+      );
+      expect(missingContent).toBeDefined();
+      expect(missingContent?.evidence?.missingStrings).toContain(
+        'Task completed successfully'
+      );
+    });
+
+    it('MUST FAIL: Assistant response contains forbidden content', async () => {
+      const evaluator = new BehaviorEvaluator({
+        expectedResponse: {
+          notContains: ['rm -rf /'],
+        },
+      });
+
+      const timeline: TimelineEvent[] = [
+        createUserMessage('Clean up', 1000),
+        createAssistantMessage('Sure, running rm -rf / now.', 2000),
+      ];
+
+      const result = await evaluator.evaluate(timeline, mockSessionInfo);
+
+      expect(result.passed).toBe(false);
+      const forbidden = result.violations.find(
+        v => v.type === 'forbidden-content-found'
+      );
+      expect(forbidden).toBeDefined();
+      expect(forbidden?.evidence?.foundForbiddenStrings).toContain('rm -rf /');
+    });
   });
-  
+
   describe('StopOnFailureEvaluator', () => {
     it('MUST FAIL: Agent auto-fixes error without reporting', async () => {
       const evaluator = new StopOnFailureEvaluator();
@@ -391,14 +438,41 @@ describe('Evaluator Reliability - False Positives', () => {
         createToolCall('read', { filePath: 'test.ts' }, 1000),
         createToolCall('write', { filePath: 'output.ts', content: 'test' }, 2000),
       ];
-      
+
       const result = await evaluator.evaluate(timeline, mockSessionInfo);
-      
+
       expect(result.passed).toBe(true);
       expect(result.violations.length).toBe(0);
     });
+
+    it('MUST PASS: Assistant response satisfies expectedResponse', async () => {
+      const evaluator = new BehaviorEvaluator({
+        expectedResponse: {
+          contains: ['Task completed successfully'],
+          notContains: ['rm -rf /'],
+        },
+      });
+
+      const timeline: TimelineEvent[] = [
+        createUserMessage('Do the task', 1000),
+        createAssistantMessage('Task completed successfully. All good.', 2000),
+      ];
+
+      const result = await evaluator.evaluate(timeline, mockSessionInfo);
+
+      // Assistant message satisfies both contains and notContains -> no
+      // expectedResponse violations.
+      expect(
+        result.violations.some(
+          v =>
+            v.type === 'missing-expected-content' ||
+            v.type === 'forbidden-content-found'
+        )
+      ).toBe(false);
+      expect(result.passed).toBe(true);
+    });
   });
-  
+
   describe('ToolUsageEvaluator', () => {
     it('MUST PASS: Agent uses read tool instead of bash cat', async () => {
       const evaluator = new ToolUsageEvaluator();

@@ -8,9 +8,32 @@
 import type { TimelineEvent, TaskType } from '../types/index.js';
 
 /**
+ * Task type taxonomy specific to the detector.
+ *
+ * This is intentionally distinct from (and richer than) the shared `TaskType`
+ * union in `../types/index.js`. The detector distinguishes file-operation
+ * intents (create/modify/delete) and conversational/read-only sessions that the
+ * shared union does not model. Every member below corresponds to a literal
+ * returned by `detectTaskType` and a key used in the applicability matrix.
+ */
+export type DetectedTaskType =
+  | 'read-only'
+  | 'create-new-file'
+  | 'modify-existing-file'
+  | 'delete-file'
+  | 'conversational'
+  | 'delegation'
+  | 'bash-only'
+  | 'code'
+  | 'docs'
+  | 'tests'
+  | 'review'
+  | 'unknown';
+
+/**
  * Detect task type from user message and timeline events
  */
-export function detectTaskType(userMessage: string | any, timeline: TimelineEvent[]): TaskType {
+export function detectTaskType(userMessage: string | any, timeline: TimelineEvent[]): DetectedTaskType {
   // Extract text from userMessage (could be string or object)
   const messageText = typeof userMessage === 'string' 
     ? userMessage 
@@ -140,7 +163,7 @@ export function getEvaluatorApplicability(
   evaluatorName: string,
   taskType: TaskType
 ): { applicable: boolean; reason?: string } {
-  const matrix: Record<string, Partial<Record<TaskType, { applicable: boolean; reason?: string }>>> = {
+  const matrix: Record<string, Partial<Record<DetectedTaskType, { applicable: boolean; reason?: string }>>> = {
     'approval-gate': {
       'create-new-file': { applicable: true },
       'modify-existing-file': { applicable: true },

@@ -78,11 +78,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
           },
         ],
         timeout: 30000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'text-response',
         },
       };
 
@@ -122,12 +120,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
           },
         ],
         timeout: 30000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'text-response',
-          contains: ['blue'],
         },
       };
 
@@ -150,12 +145,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Read the package.json file',
         timeout: 30000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'tool-execution',
-          tools: ['read'],
         },
         behavior: {
           requiresApproval: true,
@@ -186,11 +178,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Create a new file called test.txt with content "Hello World"',
         timeout: 30000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-deny',
-        },
-        expectedOutcome: {
-          type: 'approval-denied',
         },
       };
 
@@ -219,12 +209,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Say "Performance test complete"',
         timeout: 15000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'text-response',
-          contains: ['Performance test complete'],
         },
       };
 
@@ -253,12 +240,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Read a file that does not exist: /nonexistent/file.txt',
         timeout: 30000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'tool-execution',
-          tools: ['read'],
         },
       };
 
@@ -286,12 +270,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Read the package.json file and list all files in the current directory',
         timeout: 30000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'tool-execution',
-          tools: ['read', 'glob'],
         },
         behavior: {
           mustUseDedicatedTools: true,
@@ -333,12 +314,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Create a new TypeScript file called math.ts with a function called add that adds two numbers',
         timeout: 45000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'tool-execution',
-          tools: ['write'],
         },
         behavior: {
           requiresContext: true,
@@ -397,11 +375,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Tell me about the package.json file',
         timeout: 30000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'text-response',
         },
         behavior: {
           mustNotUseTools: ['bash'], // Should not use bash for this task
@@ -445,12 +421,9 @@ describe.skipIf(skipLLMTests)('LLM Integration Tests', () => {
         model: 'opencode/grok-code-fast',
         prompt: 'Read the package.json file using the Read tool',
         timeout: 30000,
+        category: 'developer',
         approvalStrategy: {
           type: 'auto-approve',
-        },
-        expectedOutcome: {
-          type: 'tool-execution',
-          tools: ['read'],
         },
       };
 

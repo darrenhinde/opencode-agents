@@ -38,7 +38,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/glob": "^8.1.0",
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
