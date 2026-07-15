@@ -1,6 +1,6 @@
 {
   "name": "@nextsystems/oac-cli",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OAC CLI — install, manage, and update AI agents and context files",
   "type": "module",
   "bin": {

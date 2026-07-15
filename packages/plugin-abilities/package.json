@@ -1,6 +1,6 @@
 {
   "name": "@openagents/plugin-abilities",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "description": "Enforced, validated workflows for OpenCode agents",
   "type": "module",
   "main": "dist/index.js",
