@@ -1,7 +1,10 @@
 # 01 — Feature & Content Inventory
 
 > **Owner:** Agent A
-> **Status:** Spec only — no implementation.
+> **Status:** Spec only — no implementation. **v2** (2026-07-15): census re-verified from
+> disk; `{pattern, effect}` terminology aligned to Locked Decision #5's `{scope, decision}`;
+> the `.env` security alarm retracted as a non-finding (Q17 closed — only the build-hygiene
+> point survives); navigation/registry counts corrected per `06-REVIEW` disposition #2.
 > **Read first:** [`00-INDEX.md`](./00-INDEX.md) for locked decisions.
 >
 > **Purpose:** Exhaustive inventory of every feature and capability that exists today in
@@ -35,7 +38,8 @@ Counts verified by enumeration, not by trusting the docs.
 | Category descriptors | `.opencode/agent/**/0-category.json` | **5** | `content`, `core`, `data`, `meta`, `subagents/development`. |
 | Agent metadata entries | `.opencode/config/agent-metadata.json` | **28** | 8 `type: agent`, 20 `type: subagent`. **6 disk agents have no entry.** |
 | Commands | `.opencode/command/**/*.md` | **20** | Task brief said 29; 29 = 20 `.md` + 9 `.yaml` eval templates. |
-| Context files | `.opencode/context/**/*` | **300** | 297 `.md` + `paths.json` + 2 JSON schemas. 79 are `navigation.md`. |
+| Context files | `.opencode/context/**/*` | **297 entries** | = **294 regular files** (293 `.md` + `paths.json`) + **3 `.md` symlinks** — i.e. **296 `.md`** counting symlinks (the `00-INDEX` figure) and 294 files + 3 symlinks (the `07-EXECUTION-PLAN` figure; both reconcile). 75 are `navigation.md`. v1's "+2 task JSON schemas" matches nothing on disk (and nothing in git history) — dropped. |
+| Context symlinks | `.opencode/context/core/standards/{code,docs,tests}.md` | **3** | → `code-quality.md` / `documentation.md` / `test-coverage.md`. Same trio as the duplicate-id finding (§3.6); break Windows checkouts — see `00-INDEX` v2.2. |
 | Skills (plural dir) | `.opencode/skills/*/SKILL.md` | **4** | `task-management`, `context-manager`, `context7`, `smart-router-skill`. |
 | Skills (singular dir) | `.opencode/skill/*/` | **2** | `project-orchestration`, `task-management` — **not in registry** (see §4.3). |
 | Tools | `.opencode/tool/*/index.ts` | **3** | `env`, `gemini`, `template`. |
@@ -43,7 +47,7 @@ Counts verified by enumeration, not by trusting the docs.
 | Plugins (plural dir) | `.opencode/plugins/*/` | **1** | `coder-verification`. |
 | Profiles | `.opencode/profiles/*/profile.json` | **5** | **Stale duplicates** of `registry.json#profiles` (see §8.2). |
 | Prompts | `.opencode/prompts/**` | **6 agents × N models** | Per-model prompt variants + eval results. |
-| Registry components | `registry.json#components` | **8 types / 245 entries** | agents 8, subagents 19, commands 17, tools 2, plugins 1, skills 4, contexts 191, config 3. |
+| Registry components | `registry.json#components` | **8 types / 248 entries** | agents 8, subagents 19, commands 17, tools 2, plugins 1, skills 4, contexts 194, config 3. |
 | CC plugin agents | `plugins/claude-code/agents/` | **7** | vs 34 in `.opencode/` — **the drift**. |
 | CC plugin skills | `plugins/claude-code/skills/` | **12** | vs 4 in `.opencode/skills/` — **CC is ahead here**. |
 
@@ -194,23 +198,24 @@ Concrete losses if the flat shape is adopted as-is:
 
 **Class: 🟡 OPENCODE-SPECIFIC, but 🔴 AT RISK of silent loss.**
 
-**Recommendation to Agent B:** `capabilities.<tool>` must accept **either** a scalar
-(`allow|ask|deny`) **or** an ordered **rule list**:
+**Adopted — Locked Decision #5 (v2, "Option A"):** `capabilities.<tool>` accepts **either** a
+scalar (`allow|ask|deny`) **or** an ordered **rule list** of `{scope, decision}`:
 
 ```yaml
 capabilities:
   bash:
-    - { pattern: "*",          effect: ask }
-    - { pattern: "sudo *",     effect: deny }
+    - { scope: "*",          decision: ask }
+    - { scope: "sudo *",     decision: deny }
   edit:
-    - { pattern: "**/*.env*",  effect: deny }
-    - { pattern: "**/*",       effect: allow }
+    - { scope: "**/*.env*",  decision: deny }
+    - { scope: "**/*",       decision: allow }
 ```
 
-The scalar form is sugar for `[{pattern: "**/*", effect: <v>}]`. The OpenCode adapter renders
+The scalar form is sugar for `[{scope: "*", decision: <v>}]`. The OpenCode adapter renders
 this back losslessly; the Claude adapter collapses to a `tools:`/`disallowedTools:` allowlist
 **and emits a warning naming each dropped glob rule**. This makes the loss *known and reported*,
-per the `00-INDEX.md` principle. See Open Question **Q2**.
+per the `00-INDEX.md` principle. Q2 is **closed** by Locked Decision #5 (see `00-INDEX.md`,
+which also fixes precedence as last-match-wins and absent-capability = tool default).
 
 ### 1.4 `permission.task` → `delegate`
 
@@ -465,8 +470,9 @@ The 8 numbered YAML tests encode **OAC's agent quality bar** (every new agent sh
 
 ## 3. Context System — **DEEP DIVE** 🏆
 
-> This is OAC's crown jewel and the most at-risk asset: **300 files, 79 navigation hubs,
-> 191 registry entries, and a metadata convention that is not YAML frontmatter.**
+> This is OAC's crown jewel and the most at-risk asset: **297 entries (294 files + 3
+> symlinks), 75 navigation hubs, 194 registry entries, and a metadata convention that is
+> not YAML frontmatter.**
 
 ### 3.1 Context metadata is an HTML comment, not frontmatter
 
@@ -498,7 +504,9 @@ Live example — `.opencode/context/core/standards/code-quality.md` line 1:
 > YAML frontmatter would display as a table or raw text in some renderers.
 >
 > **Migration risk 🔴:** a generic markdown/frontmatter parser (e.g. `gray-matter`) will find
-> **no frontmatter** on ~297 context files and treat `Priority`/`Version`/`Updated` as body text.
+> **no frontmatter** on 286 of the 296 context `.md` files (leading-window count, symlinks
+> included; 3 are dual-format YAML+MVI, 7 carry neither — see `00-INDEX` decision #6) and
+> treat `Priority`/`Version`/`Updated` as body text.
 > **All priority information silently vanishes**, and priority is what drives context ordering.
 > The neutral parser **must** implement a dedicated HTML-comment reader. This is the single
 > most likely way the refactor silently destroys the crown jewel. See **Q10**.
@@ -507,13 +515,15 @@ Live example — `.opencode/context/core/standards/code-quality.md` line 1:
 shows only ~16 files with a `description:` key and a long tail of *false positives* — lines like
 `Agent:`, `User:`, `Voice:`, `--text-muted:`, `curl:` matched as "frontmatter keys" because they
 are **body content** (dialogue transcripts, CSS variables, code samples). Real finding:
-**most context files carry only the HTML-comment header**, and a handful (`.opencode/context/tasks/`,
-some `openagents-repo/` files) additionally use YAML frontmatter with `id`/`type`/`category`/`model`/`tools`.
+**most context files carry only the HTML-comment header**, and exactly 3 files
+(`core/standards/csharp.md`, `core/standards/csharp-project-structure.md`,
+`openagents-repo/quality/registry-dependencies.md`) additionally open with YAML frontmatter —
+**dual-format**, since each still carries an MVI marker at line 11 (see `00-INDEX` decision #6).
 **Two metadata conventions coexist in one tree.** See **Q10**.
 
 ### 3.2 `navigation.md` — the discovery backbone
 
-**79 `navigation.md` files** — one per directory, at every level. This is a **hand-maintained
+**75 `navigation.md` files** — one per directory, at every level. This is a **hand-maintained
 routing tree**, not an index generated from the filesystem.
 
 Root — `.opencode/context/navigation.md`:
@@ -549,8 +559,8 @@ Root — `.opencode/context/navigation.md`:
 > **Design insight worth preserving explicitly:** navigation uses **relative** links between
 > hubs (`core/navigation.md`) but the *root* hub hardcodes the absolute tree
 > (`.opencode/context/`). So the **chain is portable; only the entry point is not.** The adapter
-> only needs to rewrite the root, not all 79. This is a much smaller job than it first appears —
-> and worth stating so nobody "fixes" all 79 files.
+> only needs to rewrite the root, not all 75. This is a much smaller job than it first appears —
+> and worth stating so nobody "fixes" all 75 files.
 
 ### 3.3 Context discovery / loading — the runtime chain
 
@@ -644,14 +654,14 @@ Computed by set-difference between disk and `registry.json#components.contexts`:
 
 | Metric | Count |
 |---|---|
-| Context files on disk | **300** |
-| Registry context entries | **191** (188 unique paths) |
-| On disk but **NOT** in registry | **112** |
+| Context entries on disk (files + symlinks) | **297** |
+| Registry context entries | **194** (191 unique paths) |
+| On disk but **NOT** in registry | **106** |
 | In registry but **NOT** on disk (broken) | **0** ✅ |
-| `navigation.md` on disk | **79** |
-| `navigation.md` in registry | **36** |
+| `navigation.md` on disk | **75** |
+| `navigation.md` in registry (unique paths) | **33** |
 
-**43 of 79 navigation hubs are unregistered** ⇒ installing a context subtree can produce a
+**42 of 75 navigation hubs are unregistered** ⇒ installing a context subtree can produce a
 directory whose `navigation.md` was never installed ⇒ **the discovery chain dead-ends**, and the
 `.oac.json` protocol's "no `navigation.md` ⇒ invalid root" check then rejects a root that *is*
 correct. This is a **silent, in-the-field breakage of the crown jewel**.
@@ -676,7 +686,10 @@ directory is installed (a structural dependency, not a declared one). See **Q13*
 | `core/standards/documentation.md` | `standards-docs` **and** `documentation` |
 
 ⇒ `resolve_dependencies` can add **both** ids for the same file, and `install.sh` will copy it
-twice. Meanwhile a proper `aliases[]` field **does exist** and is used by exactly 3 entries
+twice. These are also **the same three files targeted by the 3 context symlinks**
+(`core/standards/{code,docs,tests}.md` — see `00-INDEX` v2.2): collapsing to `aliases[]` must
+also convert the symlinks and fix the 3 files that reference the alias paths directly.
+Meanwhile a proper `aliases[]` field **does exist** and is used by exactly 3 entries
 (`feature-breakdown → workflows-task-breakdown`, `session-management → workflows-sessions`,
 `component-planning → workflows-component-planning`). **Two mechanisms for one concept.**
 
@@ -699,7 +712,7 @@ build **fails** on duplicates. This is a test the minimal-test-first slice shoul
 | Context **operations** | `core/context-system/operations/{harvest,extract,organize,update,migrate,error}.md` | 🟢 UNIVERSAL | Neutral. The verbs behind `/context`. |
 | Context **guides** | `.../guides/{compact,creation,organizing-context,workflows,navigation-design-basics,navigation-templates}.md` | 🟢 UNIVERSAL | Neutral. |
 | Context-system **CHANGELOG** | `core/context-system/CHANGELOG.md` | 🟢 UNIVERSAL | Neutral. |
-| Task JSON schemas | `context/tasks/schemas/{task,subtask}-schema.json` | 🟢 UNIVERSAL | Neutral — **non-`.md` context**, same special case as `paths.json`. |
+| Task JSON schemas | `context/tasks/schemas/{task,subtask}-schema.json` | ⚠️ **NOT ON DISK** | Cited by v1's census; **no such files exist on disk** (and none appear in git history). `paths.json` is the **only** non-`.md` context file. Dropped from the census — retained here so the discrepancy stays visible. |
 | `index.md` (root) | `.opencode/context/index.md` | 🟢 UNIVERSAL | Neutral. Note: **`index.md` AND `navigation.md` both at root** — overlapping entry points. **Q14**. |
 | Project Intelligence standard | `core/standards/project-intelligence.md`, `context/project-intelligence/` | 🟢 UNIVERSAL | Neutral. Driven by `/add-context`. |
 | `CONTEXT_SYSTEM_GUIDE.md` (16KB, repo root) | root | 🟢 UNIVERSAL | **Outside `.opencode/`** — easily missed by a `.opencode/`-only migration. |
@@ -820,7 +833,7 @@ starting point. See **Q16**.
 | `gemini` | `.opencode/tool/gemini/index.ts` | ✅ `tool:gemini`, `dependencies: ["tool:env"]` | 🟡 | Image gen/edit/analysis. **The only tool→tool dependency in the registry.** |
 | `template` | `.opencode/tool/template/index.ts` + `README.md` | ❌ | 🔵 BUILD | Scaffold for new tools → CLI template. |
 | `index.ts` | `.opencode/tool/index.ts` | ❌ | 🟡 | Barrel export. |
-| `.opencode/tool/.env` | — | 🔴 **SECURITY** | A committed `.env` inside the tool dir. **Must not be copied into `/content/`.** See **Q17**. |
+| `.opencode/tool/.env` | — | 🔵 BUILD HYGIENE | **Untracked local file, gitignored** (`.gitignore:9-13`; `git ls-files` matches no `.env`). Q17 **closed** — not a security incident. Only rule: a globbing build must never sweep local `.env` files into `/content/` or any output. |
 | `package.json`/`tsconfig.json`/`bun.lock` | — | 🔵 BUILD | Tool workspace config. |
 
 **Class overall: 🟡 OPENCODE-SPECIFIC.** Tools implement the OpenCode plugin/tool API. Claude
@@ -839,7 +852,7 @@ Two directories again (`plugin/` singular, `plugins/` plural).
 | `notify` | `.opencode/plugin/notify.ts` | ✅ `plugin:notify` | 🟡 | Hooks OpenCode's `event` with `session.idle` → `say "Your code is done!"`. **Ships disabled** (`const ENABLED = false`). |
 | `agent-validator` | `.opencode/plugin/agent-validator.ts` | ❌ | 🔴 | **Also present as `agent-validator.ts.disabled`** — two copies, neither registered. Has `docs/VALIDATOR_GUIDE.md` + `tests/validator/{test-validation.sh,test-validator.sh,interactive.md}`. |
 | `coder-verification` | `.opencode/plugins/coder-verification/` | ❌ | 🔴 | Own `plugin.json` (name/description/version/author), `index.ts`, `README.md`, `IMPLEMENTATION_SUMMARY.md`. "Reminds about checks and auto-completes tasks" for CoderAgent. **Unregistered.** |
-| `.opencode/plugin/.env` | — | 🔴 **SECURITY** | Second committed `.env`. See **Q17**. |
+| `.opencode/plugin/.env` | — | 🔵 BUILD HYGIENE | Second **untracked, gitignored** local `.env` — not a security issue (Q17 closed). Same build-hygiene rule as `.opencode/tool/.env` (§5). |
 
 **Findings:**
 - **Hooks exist only as plugins in OpenCode** — there is no `hooks:` frontmatter field anywhere
@@ -927,7 +940,7 @@ expand_context_wildcard() {
 | Detail | Consequence |
 |---|---|
 | `*` is a **prefix match**, not a glob | `core/*` matches `core/**` recursively too. `ui/web/a*` would match anything starting `ui/web/a`. **Not real glob semantics.** |
-| `sub("\\.md$"; "")` strips the extension | A **non-`.md` context** (`paths.json`, `tasks/schemas/*.json`) survives wildcard expansion **with its extension intact**, producing id `core/config/paths.json` — which then must match a registry `id`. This is exactly the class of bug PR #252 ("resolve non-.md context paths like paths.json") fixed. 🔴 |
+| `sub("\\.md$"; "")` strips the extension | A **non-`.md` context** (`paths.json` — the only one on disk) survives wildcard expansion **with its extension intact**, producing id `core/config/paths.json` — which then must match a registry `id`. This is exactly the class of bug PR #252 ("resolve non-.md context paths like paths.json") fixed. 🔴 |
 | Matches on **`path`**, emits a **path-derived id** | So wildcards produce **path-style** ids while hand-written deps use **short-style** ids. Two id namespaces in one list. 🔴 |
 
 ### 7.3 🔴 The dual-namespace bug
@@ -958,7 +971,7 @@ Not expressible today; must be **inferred** by the build:
 
 | Implicit dependency | Why | Today |
 |---|---|---|
-| context file → its dir's `navigation.md` | Discovery chain dead-ends without it | ❌ **not declared** — 43 hubs unregistered (§3.5) |
+| context file → its dir's `navigation.md` | Discovery chain dead-ends without it | ❌ **not declared** — 42 hubs unregistered (§3.5) |
 | context file → parent `navigation.md` … → root `navigation.md` | Chain traversal from the root | ❌ not declared |
 | agent → `agent-metadata.json` | The sidecar carries its metadata | ⚠️ `config:agent-metadata` in some profiles |
 | skill → `files[]` | Multi-file skills | ✅ via `files[]` |
@@ -1203,24 +1216,24 @@ must preserve the escaping** — a naive template would reintroduce the injectio
 - [ ] **6 CC-only commands** (`brainstorm`, `debug`, `install-context`, `oac-cleanup`, `oac-help`, `oac-status`) harvested → `/content/commands/`
 
 ### Context system 🏆
-- [ ] **All 300 context files** migrated (297 `.md` + `paths.json` + 2 task schemas)
+- [ ] **All 297 context entries** migrated (293 regular `.md` + `paths.json` + 3 symlinks — symlinks convert to `aliases[]` per `00-INDEX` v2.2)
 - [ ] **HTML-comment header parsed, not ignored**: `<!-- Context: {cat}/{fn} | Priority: … | Version: X.Y | Updated: … -->` (§3.1) — **the #1 silent-loss risk**
 - [ ] `Priority` (`critical`/`high`/`medium`/`low`) → neutral `priority` — **drives load order**
 - [ ] `Category`/`Function` dual taxonomy preserved
 - [ ] `Version` `X.Y` form reconciled with SemVer (Q9)
 - [ ] `Updated` date preserved
-- [ ] **All 79 `navigation.md` hubs** migrated
+- [ ] **All 75 `navigation.md` hubs** migrated
 - [ ] **Task→path "Quick Routes" tables** preserved verbatim — *the* discovery mechanism
 - [ ] **Relative inter-hub links** stay relative (portable); only the **root** tree diagram is rewritten (§3.2)
-- [ ] **43 unregistered `navigation.md`** registered / auto-included (§3.5)
-- [ ] **112 unregistered context files** registered or consciously dropped (§3.5)
+- [ ] **42 unregistered `navigation.md`** registered / auto-included (§3.5)
+- [ ] **106 unregistered context files** registered or consciously dropped (§3.5)
 - [ ] **Navigation chain auto-included** as a structural dependency (§7.4)
 - [ ] **3 duplicate-path context ids** collapsed to `aliases[]` (§3.6)
 - [ ] **3 duplicate context ids** (`agents`, `ui-navigation`, `context-bundle-template`) made unique (§3.6)
 - [ ] `paths.json` local/global roots → neutral config; adapter rewrites
 - [ ] **`.oac.json` discovery protocol preserved** (fast path → chain → validity check → self-heal) (§3.3)
 - [ ] `navigation.md`-presence validity check preserved
-- [ ] Non-`.md` contexts (`paths.json`, task schemas) survive wildcard expansion (§7.2, PR #252)
+- [ ] Non-`.md` contexts (`paths.json` — the only one on disk) survive wildcard expansion (§7.2, PR #252)
 - [ ] **MVI standard** preserved (formula, what-to-extract/skip, <30s scannable)
 - [ ] **<200-line rule** preserved (candidate `oac doctor` lint)
 - [ ] **Function-based structure** (`concepts/ examples/ guides/ lookup/ errors/`) preserved
@@ -1228,7 +1241,7 @@ must preserve the escaping** — a naive template would reintroduce the injectio
 - [ ] Context **guides** (compact/creation/organizing/workflows/navigation-design) preserved
 - [ ] `structure.md`/`templates.md`/`codebase-references.md`/`typescript-coding.md` preserved
 - [ ] `core/context-system/CHANGELOG.md` preserved
-- [ ] Task JSON schemas (`tasks/schemas/{task,subtask}-schema.json`) preserved
+- [ ] ~~Task JSON schemas (`tasks/schemas/{task,subtask}-schema.json`) preserved~~ — v1 census artifact; **no such files on disk** (§3.7)
 - [ ] Root `index.md` **and** `navigation.md` reconciled (Q14)
 - [ ] `CODEBASE_STANDARDS.md` (unregistered) preserved
 - [ ] **`CONTEXT_SYSTEM_GUIDE.md`** (repo root, outside `.opencode/`) preserved
@@ -1250,7 +1263,7 @@ must preserve the escaping** — a naive template would reintroduce the injectio
 - [ ] Wildcard-produced path-ids resolve their own transitive deps
 
 ### Registry
-- [ ] All **245 component entries** across 8 types preserved
+- [ ] All **248 component entries** across 8 types preserved
 - [ ] `id`/`name`/`type`/`path`/`description`/`tags[]`/`dependencies[]`/`category` preserved
 - [ ] `aliases[]` (3) + `files[]` (4 skills) preserved
 - [ ] `path` re-pointed `.opencode/…` → `/content/…`; **output paths adapter-computed**
@@ -1291,7 +1304,7 @@ must preserve the escaping** — a naive template would reintroduce the injectio
 - [ ] `tool:gemini → tool:env` dependency preserved
 - [ ] `tool/template/` → CLI scaffold
 - [ ] Non-OpenCode targets: tools unsupported → **explicit warning**, or MCP path (Q18)
-- [ ] 🔴 `.opencode/tool/.env` **NOT** carried into `/content/` (Q17)
+- [ ] `.env` files (untracked, gitignored — Q17 closed) never swept into `/content/` or build output — build hygiene, not security remediation
 
 ### Plugins & hooks
 - [ ] `plugin:notify` preserved (incl. `ENABLED = false` default)
@@ -1299,7 +1312,7 @@ must preserve the escaping** — a naive template would reintroduce the injectio
 - [ ] 🔴 `plugins/coder-verification/` (index.ts, plugin.json, README, IMPLEMENTATION_SUMMARY) registered or deleted
 - [ ] `plugin.json` manifest shape unified with `.claude-plugin/plugin.json`
 - [ ] 🔴 OpenCode `event` callback vs CC `hooks.json` — hook model decided (§6, Q19)
-- [ ] 🔴 `.opencode/plugin/.env` **NOT** carried into `/content/` (Q17)
+- [ ] `.opencode/plugin/.env` (untracked, gitignored — Q17 closed) excluded by the same build-hygiene rule
 
 ### Claude Code plugin 🏆
 - [ ] `.claude-plugin/plugin.json` generated (name/description/version/author/license/repo/homepage/keywords)
@@ -1346,11 +1359,10 @@ ids** as a one-time migration and make `filename == id` an invariant? The latter
 but breaks any external reference to the old paths. **Recommendation: filename == id, with
 `aliases[]` retained for dependency back-compat.**
 
-**Q2 — `capabilities`: flat scalars or ordered rule lists?** The `00-INDEX.md` worked example
-shows `read: allow` / `edit: deny`. That shape **cannot** express OpenCode's glob-scoped,
-ordered, tri-state permissions — and those encode real security controls (`**/*.env*: deny`,
-`coder-agent`'s bash allowlist, `rm -rf /*: deny`). Adopt the rule-list form (§1.3) with scalar
-sugar? **This changes the worked example in `00-INDEX.md`** and needs sign-off.
+**Q2 — CLOSED (v2): Locked Decision #5.** The ordered `{scope, decision}` rule-list with
+scalar sugar (§1.3) was adopted, and `00-INDEX.md`'s worked example was revised to it. The
+flat model was provably lossy against real agents (`coder-agent`'s deny-all-then-allowlist,
+the `**/*.env*`/`**/*.key` security globs, `rm -rf /*: deny`). No longer open.
 
 **Q3 — Model policy vs shipped reality.** Locked Decision #2 says `model: null`. But
 `plugins/claude-code/agents/*.md` hardcode `model: sonnet`, `settings.json` sets `opusplan`
@@ -1387,15 +1399,15 @@ acceptance gate for new agents? Coordinate with Agent E.
 
 **Q9 — Version format.** Context files use `Version: X.Y`; agents/skills use SemVer `X.Y.Z`;
 registry has `version` **and** `schema_version` **and** `metadata.schemaVersion`. One format
-(SemVer) with a migration of ~300 context headers, or keep `X.Y` for context as a distinct field?
+(SemVer) with a migration of ~290 context headers, or keep `X.Y` for context as a distinct field?
 
-**Q10 — Context metadata: HTML comment or YAML frontmatter?** ~297 files use
-`<!-- Context: … | Priority: … -->`; a handful additionally use YAML. **Two conventions in one
-tree.** Options: (a) neutral parser reads the HTML comment (zero content churn, must be
-hand-written — `gray-matter` will silently return nothing); (b) migrate all ~297 to YAML
-(one-time churn, standard tooling, but YAML renders visibly in markdown viewers — which is *why*
-the HTML comment was chosen). **This is the highest-risk decision in the doc: pick (a) or (b),
-but never let a generic parser near these files.**
+**Q10 — CLOSED (v2): Locked Decision #6 — option (a).** 286 of 296 `.md` files use
+`<!-- Context: … | Priority: … -->`; 3 are dual-format (YAML + MVI marker at line 11); 7 have
+neither. The HTML-comment format **stays on disk** (it is deliberate and token-efficient); the
+IR parser normalizes it in memory, honoring the **leading-window rule** (line 1, or first line
+after a closing YAML `---`) to avoid the two verified parser traps. **Never let a generic
+frontmatter parser (`gray-matter`) near these files** — it silently returns nothing and all
+priority data vanishes. See `00-INDEX` decision #6 for the full rationale.
 
 **Q11 — Unify context discovery on `.oac.json`?** OpenCode has `paths.json` (static local/global);
 CC has the `.oac.json` protocol (fast path → discovery chain → `navigation.md` validity check →
@@ -1408,8 +1420,8 @@ brittle), or id-based indirection (cleanest, biggest rewrite)? **Recommendation:
 a `no raw .opencode/ in /content/` lint; ids later.** Without this, generated CC agents point at
 paths that don't exist — likely why the CC plugin was hand-written in the first place.
 
-**Q13 — Auto-generate registry context entries?** 112 of 300 context files are unregistered
-(incl. 43 of 79 `navigation.md`). Hand-maintenance has demonstrably failed. Generate all context
+**Q13 — Auto-generate registry context entries?** 106 of 297 context entries are unregistered
+(incl. 42 of 75 `navigation.md`). Hand-maintenance has demonstrably failed. Generate all context
 entries from disk at build time, with `navigation.md` auto-included whenever any sibling is
 installed? What then determines a context's `category`/tier — the HTML `Priority`? Its directory?
 
@@ -1426,9 +1438,12 @@ are **disjoint**. The CC 12 are the product's actual shipped UX (`oac:code-revie
 `oac:task-breakdown`, …). Seed from CC, from OpenCode, or the union of 16? **If `/content/` is
 seeded only from `.opencode/`, the 12 CC skills are silently destroyed.**
 
-**Q17 — Committed `.env` files.** `.opencode/tool/.env` and `.opencode/plugin/.env` are in the
-repo. Are they real secrets (⇒ rotate + purge history) or empty templates? Either way they must
-**not** be copied into `/content/` or any build output. Needs a human to look.
+**Q17 — CLOSED (v2): non-finding.** The v1 "committed `.env`" alarm was **false**. Verified:
+**0 tracked `.env` files** — `git ls-files` matches none, and `.env` is gitignored
+(`.gitignore:9-13`). `.opencode/tool/.env` and `.opencode/plugin/.env` exist on disk only as
+**untracked local artifacts**. No rotation, no history purge, no security incident. The only
+surviving requirement is **build hygiene**: a filesystem-globbing build must never sweep local
+`.env` files into `/content/` or any build output.
 
 **Q18 — Tools on non-OpenCode targets.** `.opencode/tool/*` implements the OpenCode tool API.
 Claude Code has no equivalent primitive (nearest: MCP servers). Are tools (a) OpenCode-only with
@@ -1479,19 +1494,18 @@ Every claim above is grounded in these files (all paths repo-relative):
 - `.opencode/agent/**/*.md` (34), `.opencode/agent/**/0-category.json` (5)
 - `.opencode/config/agent-metadata.json`
 - `.opencode/command/**/*.md` (20), `.opencode/command/openagents/new-agents/templates/*.yaml` (9)
-- `.opencode/context/**` (300), esp.
+- `.opencode/context/**` (297 entries = 294 files + 3 symlinks), esp.
   `context/navigation.md`, `context/index.md`, `context/CODEBASE_STANDARDS.md`,
   `context/core/config/paths.json`,
   `context/core/context-system/standards/{frontmatter,mvi,structure,templates,codebase-references}.md`,
-  `context/core/context-system/operations/*.md`, `context/core/standards/code-quality.md`,
-  `context/tasks/schemas/{task,subtask}-schema.json`
+  `context/core/context-system/operations/*.md`, `context/core/standards/code-quality.md`
 - `.opencode/skills/*/SKILL.md` (4), `.opencode/skill/{project-orchestration,task-management}/**`
-- `.opencode/tool/{env,gemini,template}/index.ts`, `.opencode/tool/.env`
-- `.opencode/plugin/{notify.ts,agent-validator.ts,agent-validator.ts.disabled,.env}`,
+- `.opencode/tool/{env,gemini,template}/index.ts`, `.opencode/tool/.env` (untracked)
+- `.opencode/plugin/{notify.ts,agent-validator.ts,agent-validator.ts.disabled,.env}` (`.env` untracked),
   `.opencode/plugins/coder-verification/{index.ts,plugin.json}`
 - `.opencode/profiles/*/profile.json` (5), `.opencode/prompts/**`, `.opencode/docs/**`,
   `.opencode/scripts/task-cli.ts`, `.opencode/{opencode.json,config.json}`
-- `registry.json` (107KB) — `components` (8 types / 245 entries), `profiles` (5), `categories` (5)
+- `registry.json` (107KB) — `components` (8 types / 248 entries), `profiles` (5), `categories` (5)
 - `install.sh` — `get_registry_key():331`, `get_install_path():353`,
   `expand_context_wildcard():361`, `expand_selected_components():373`,
   `resolve_dependencies():420-481`, profile reads `:294,:636-688`, `additionalPaths` `:1222`

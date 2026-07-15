@@ -1,7 +1,11 @@
 # 05 — Impact Analysis, Migration Staging & Test Spec
 
 > **Owner:** Agent E
-> **Status:** Spec only — no implementation code.
+> **Status:** Spec only — no implementation code. **v2** (2026-07-15): the false "160 agents"
+> figure purged (real count: **34**, disk-verified — see `06-REVIEW` F1); Stage 3 rewritten as
+> a **merge from both trees** (`.opencode/` AND `plugins/claude-code/`), not a copy from
+> `.opencode/` (`06-REVIEW` C2); the "or diff-explained" escape hatch deleted from the Stage-2
+> gate (`06-REVIEW` G7); golden-test warning count corrected to 2 (`06-REVIEW` C4).
 > **Read first:** [`00-INDEX.md`](./00-INDEX.md) (locked decisions). This doc depends on the
 > canonical schema (02), adapter specs (03), and CLI/build/distribution (04).
 
@@ -19,8 +23,8 @@ Facts below are pulled from the current tree and anchor every claim in this doc.
 
 | Fact | Value | Source |
 |------|-------|--------|
-| Source of truth today | `.opencode/` (**160** agent `.md` files under `agent/`) | `find .opencode -path '*agent*' -name '*.md'` |
-| Claude Code output today | `plugins/claude-code/` (**7** agents) — badly drifted | `find plugins/claude-code -path '*agents*' -name '*.md'` |
+| Source of truth today (OpenCode side) | `.opencode/` (**34** agent `.md` files under `agent/`) | `find .opencode/agent -name '*.md' \| wc -l` → 34. *(v1 claimed 160 via `-path '*agent*'`, which also matched `context/openagents-repo/**` and `prompts/core/openagent/**` — falsified in `06-REVIEW` F1.)* |
+| Claude Code side today | `plugins/claude-code/` — **7** agents, **12** skills, **6** CC-only commands, `hooks/session-start.sh` | drift is **bidirectional**: behind on agents, *ahead* on skills/commands/hooks (`00-INDEX` finding #3) |
 | What syncs them | `scripts/bridge/sync-to-claude.sh` — a **39-line naive `cp`** | file `wc -l` |
 | OpenCode install path | `curl … install.sh \| bash -s <profile>` (52 KB bash) | `README.md:125` |
 | OpenCode update path | `curl … update.sh \| bash` (10 KB bash) | `README.md:139` |
@@ -212,23 +216,46 @@ Explicitly *not* the #298 pattern (one +19k PR). Each stage is a handful of PRs 
 - **Independently valuable:** this is the "does the whole idea work?" proof; unblocks every
   later delete.
 - **Exit criteria:** §3.1 golden + manifest tests green in CI; generated `.opencode/`
-  `code-reviewer` is byte-identical (or diff-explained) to hand-maintained; **evals smoke-test
-  still passes** against generated output.
+  `code-reviewer` is **byte-identical** to the committed golden — **no escape hatch**. (The
+  v1 wording "byte-identical *or diff-explained*" made the gate unfalsifiable — `06-REVIEW`
+  G7 — and was deleted. Any difference between generated output and the hand-maintained file
+  is resolved as an explicit, written merge decision in `09-MERGE-RULES.md` *before* the
+  golden is committed; the gate itself only accepts byte-identity.) **Evals smoke-test still
+  passes** against generated output.
 - **Release:** minor bump; `oac build` is a real new capability.
 
-### Stage 3 — Migrate all content into `/content`; retire the bridge *(the big sweep, staged)*
-- **Goal:** move all 160 agents + skills/commands/context into `/content`; `oac build`
-  reproduces the full `.opencode/` + full CC plugin.
-- **Deliverable:** a one-shot migration script (`content/*` from current `.opencode/*`);
-  delete `scripts/bridge/sync-to-claude.sh`; `plugins/claude-code/` now 100% generated (fixes
-  the 7-vs-160 drift — a visible CC-user upgrade); `registry.json` generated to
-  `/content/registry.json` with a root copy for compat; repoint `update-registry.yml` /
-  `validate-registry.yml` / `sync-docs.yml` / `post-merge-pr.yml`.
-- **Ships to users:** **CC users get the full agent set** via existing marketplace update.
+### Stage 3 — MERGE both trees into `/content`; retire the bridge *(the big sweep, staged)*
+
+> ⚠️ **This is a MERGE, not a copy** (`00-INDEX` finding #3; `06-REVIEW` C2/L1). Drift is
+> **bidirectional**. `.opencode/` has 34 agents to CC's 7 — but `plugins/claude-code/` is
+> *ahead* everywhere else: **12 skills** vs OpenCode's 4+2 (disjoint sets), hand-authored
+> `<example>` blocks that exist nowhere in `.opencode/`, **6 CC-only commands**, and
+> `hooks/session-start.sh` — the context-injection hook with no OpenCode equivalent.
+> Seeding `/content/` from `.opencode/` alone destroys all of it.
+
+- **Goal:** merge **both** source trees — `.opencode/` (34 agents, 20 commands, 4+2 skills,
+  297 context entries) **and** `plugins/claude-code/` (7 agents, 12 skills, 6 commands,
+  hooks) — into `/content` per the written conflict rules in `09-MERGE-RULES.md`; `oac build`
+  then reproduces the full `.opencode/` **and** the full CC plugin from one source.
+- **Deliverable:** a migration script driven by `09-MERGE-RULES.md` — **not** a blind copy of
+  `.opencode/*`. Per the Stage-1 conflict rules: for the **7 dual-home agents**, the CC body
+  wins (newer, richer, carries the `<example>` blocks) with OpenCode-only fields grafted;
+  skills = **union of 16**, gated by `targets: []`; harvest the CC `<example>` blocks into
+  `examples[]`, the 6 CC-only commands into `/content/commands/`, and `session-start.sh`'s
+  six capabilities into `/content/hooks/`; every conflict resolved by a written rule and
+  recorded in the PR. Then: delete `scripts/bridge/sync-to-claude.sh`;
+  `plugins/claude-code/` now 100% generated (fixes the 7-vs-34 agent drift — a visible
+  CC-user upgrade); `registry.json` generated to `/content/registry.json` with a root copy
+  for compat; repoint `update-registry.yml` / `validate-registry.yml` / `sync-docs.yml` /
+  `post-merge-pr.yml`.
+- **Ships to users:** **CC users get the full agent set**; OpenCode users gain the merged
+  CC-side content where applicable — via the existing channels.
 - **Independently valuable:** kills the single worst bug in the repo (the naive-`cp` drift).
 - **Exit criteria:** structural/manifest tests (§3, Layer 4) green for the whole set; evals full
   suite unaffected; `validate-registry` = "registry matches build output"; no hand-edits
-  remain in `.opencode/` (CI guard).
+  remain in `.opencode/` (CI guard); **no CC-only asset lost** — the 12 skills, 6 commands,
+  all `<example>` blocks, and `session-start.sh`'s six capabilities are present in `/content`
+  (checked against `01` §11's preservation checklist).
 - **Release:** minor/major; announce CC plugin parity.
 
 ### Stage 4 — Absorb `install.sh` / `update.sh` into the CLI *(installer parity)*
@@ -296,8 +323,11 @@ any deletion.** Two assertions on **one** agent (`code-reviewer`):
 2. **Golden snapshot — claude target**
    `oac build --target claude` ⇒ compare emitted `agents/code-reviewer.md` + generated
    `plugin.json` fragment against golden. Asserts: `name` kebab-cased, `tools: Read, Glob, Grep`
-   allowlist, examples folded into `description`, and the **known `temperature`-dropped warning**
-   is emitted (from `CapabilityMatrix`), not silent.
+   allowlist, examples folded into `description`, and **exactly 2 warnings** emitted (from
+   `CapabilityMatrix`), never silent: (a) `temperature` dropped — CC has no per-agent
+   temperature; (b) the scoped `delegate` rule dropped with `Task`. *(v1 asserted one warning
+   — corrected per `00-INDEX` worked example and `03` §2.8; `06-REVIEW` C4. `coder-agent` =
+   4 warnings.)*
 
 3. **Parse/manifest load check (CC output actually loads)**
    Parse the generated CC `plugin.json` + agent front-matter (reuse the `manifest.ts` reader
@@ -305,8 +335,8 @@ any deletion.** Two assertions on **one** agent (`code-reviewer`):
    `version` matches `VERSION`, every referenced agent file exists on disk. Proves the output
    isn't just byte-stable but *loadable*.
 
-Fixtures: one input (`/content/agents/code-reviewer.md`) + two golden outputs + one expected
-warning string. Golden files are regenerated with an `--update` flag (vitest snapshot update),
+Fixtures: one input (`/content/agents/code-reviewer.md`) + two golden outputs + two expected
+warning strings. Golden files are regenerated with an `--update` flag (vitest snapshot update),
 reviewed in PR — the human-diff of a golden change is a feature, not a chore.
 
 ### 3.2 DEFERRED — the layered spec (write now, build at the marked stage)
@@ -325,7 +355,9 @@ Initial concrete cases per layer (2–3 each), to be authored when its stage arr
 
 - **Layer 1 — Schema validation**
   1. `code-reviewer.md` validates; all required IR fields present.
-  2. `model:` set to a string (not `null`) → **rejected** (enforces locked decision #2).
+  2. `model:` set to a string (not `null`) → **rejected** (enforces locked decision #2;
+     ratified in `07-EXECUTION-PLAN` Stage 1: `model` is **not authorable** — cost intent
+     moves to `inference.tier`, resolving `06-REVIEW` C3).
   3. Unknown capability key → validation error with the offending path.
 
 - **Layer 2 — Round-trip / idempotence**
@@ -339,7 +371,7 @@ Initial concrete cases per layer (2–3 each), to be authored when its stage arr
   3. A fully-supported agent → **zero** warnings (no false positives).
 
 - **Layer 4 — Structural / manifest**
-  1. Full build emits the same **count** of agents as `/content/agents/*` (guards the 7-vs-160
+  1. Full build emits the same **count** of agents as `/content/agents/*` (guards the 7-vs-34
      drift regression directly).
   2. Manifest `sha256` per file matches on-disk content (reuse `sha256.test.ts`).
   3. `plugin.json.version` == `marketplace.json` version == `VERSION`.
