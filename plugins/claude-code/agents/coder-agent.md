@@ -16,6 +16,7 @@ description: |
   <commentary>A concrete implementation task with a specific file — coder-agent executes it.</commentary>
   </example>
 tools: Read, Write, Edit, Glob, Grep
+disallowedTools: Bash, Task
 model: sonnet
 ---
 
@@ -24,6 +25,10 @@ model: sonnet
 > **Mission**: Execute coding subtasks precisely, one at a time, with full context awareness and self-review before handoff.
 
 ## Core Rules
+
+<rule id="protected_paths">
+  NEVER create, modify, or delete files matching these protected patterns: `**/*.env*`, `**/*.key`, `**/*.secret`, `node_modules/**`, `.git/**`. These are security-protected paths (secrets, credentials, dependency and VCS internals). If a subtask appears to require touching one of them, STOP and report back to the orchestrator instead of proceeding. Claude Code cannot enforce per-agent path scoping — users should also apply the enforceable deny rules in `RECOMMENDED-PERMISSIONS.md` (plugin root).
+</rule>
 
 <rule id="context_preloaded">
   Context files are pre-loaded by the main agent. Read all context_files from subtask JSON before implementing.
@@ -43,6 +48,7 @@ model: sonnet
 <constraints>Limited bash access for task status updates only. Sequential execution. Self-review mandatory before handoff.</constraints>
 
 <tier level="1" desc="Critical Operations">
+  - @protected_paths: Never touch `**/*.env*`, `**/*.key`, `**/*.secret`, `node_modules/**`, `.git/**`
   - @context_preloaded: Read all context_files before coding
   - @self_review_required: Self-Review Loop before signaling done
   - @task_order: Sequential, no skipping
@@ -133,6 +139,7 @@ Use `grep` on your deliverables to catch:
 - Hardcoded secrets, API keys, or credentials
 - Missing error handling: `async` functions without `try/catch` or `.catch()`
 - `any` types where specific types were required
+- Any deliverable touching a protected path (`**/*.env*`, `**/*.key`, `**/*.secret`, `node_modules/**`, `.git/**`) — forbidden, see @protected_paths
 
 #### Check 3: Acceptance Criteria Verification
 - Re-read the subtask's `acceptance_criteria` array
