@@ -33,6 +33,22 @@ oac:
   targets:
     - opencode
     - claude-code
+  overrides:
+    claude-code:
+      model: sonnet
+      # Matches what ships today. Bash and Task are scoped in canonical and are DENIED here
+      # rather than widened — this agent cannot run the task router on Claude Code and cannot
+      # delegate to the scouts; it reports back to the caller instead.
+      tools: [Read, Write, Edit, Glob, Grep]
+      unenforced:
+        edit: >-
+          Canonical denies edits to *.env*, *.key, *.secret, node_modules/** and .git/**.
+          Claude Code applies none of them: its Edit is on or off, and permission rules that
+          could express the paths only exist session-wide in settings.json, which a plugin
+          cannot ship. Accepted because a coding agent that cannot edit is not an agent, and
+          the alternative — denying Edit — makes it useless. The user's own settings.json is
+          where these denies can be reinstated, and the secret globs remain enforced on
+          OpenCode.
 ---
 
 # CoderAgent

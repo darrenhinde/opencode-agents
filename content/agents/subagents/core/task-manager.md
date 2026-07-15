@@ -38,6 +38,18 @@ oac:
   targets:
     - opencode
     - claude-code
+  overrides:
+    claude-code:
+      model: sonnet
+      # Matches what ships today. Bash, Edit and Task are all scoped in canonical and are all
+      # DENIED here rather than widened, so no `unenforced:` block is needed.
+      #
+      # The cost is real and accepted: canonical allows this agent `npx ts-node*task-cli*`, so
+      # on Claude Code it cannot drive the task CLI itself and must hand those commands back to
+      # the caller. Granting Bash to buy that back would mean unrestricted shell for a planning
+      # agent — a far worse trade than a planner that writes task JSON and delegates execution.
+      # Write is granted and unscoped in canonical too, so nothing is lost there.
+      tools: [Read, Write, Glob, Grep]
 ---
 
 <context>

@@ -31,7 +31,10 @@ cd "$ROOT"
 
 # The trees `oac build` emits IN PLACE, and therefore everything this gate watches.
 # plugins/claude-code/** is deliberately absent: it stages to .tmp/oac-build/ (gitignored)
-# and is compared only, never emitted. See packages/cli/src/commands/build.ts.
+# and is compared only, never emitted. Permissions no longer block emitting it in place --
+# oac.overrides.claude-code settled those -- but prompt content does: the shipped files carry
+# dispatch <example> blocks and capability-adapted bodies that canonical has no field for.
+# See the docblock in packages/cli/src/commands/build.ts.
 GENERATED=(.opencode/agent registry.json .oac/build-manifest.json)
 
 if [ ! -f packages/cli/dist/index.js ]; then

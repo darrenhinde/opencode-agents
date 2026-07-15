@@ -228,13 +228,22 @@ async function emitAgent(
   }
 
   const adapter = new ClaudeAdapter();
-  const { path, content, warnings } = await adapter.fromCanonical(source);
+
+  // The Claude Code adapter refuses (rather than guesses) when an agent's scoped rules have no
+  // honest flat equivalent. That error is how a security decision reaches a human, so it must
+  // name the file they have to open — the adapter only knows the agent id.
+  const emission = await adapter.fromCanonical(source).catch((cause: unknown) => {
+    throw new Error(`${sourcePath}: ${cause instanceof Error ? cause.message : String(cause)}`, {
+      cause,
+    });
+  });
+
   return {
-    path,
-    content,
+    path: emission.path,
+    content: emission.content,
     target,
     agentId: agent.oac.id,
-    warnings: warnings.map((reason) => ({ source: sourcePath, reason })),
+    warnings: emission.warnings.map((reason) => ({ source: sourcePath, reason })),
   };
 }
 

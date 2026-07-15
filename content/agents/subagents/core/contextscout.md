@@ -42,6 +42,14 @@ oac:
   targets:
     - opencode
     - claude-code
+  overrides:
+    claude-code:
+      # Name only — this agent's rules project EXACTLY onto Claude Code's flat lists (every
+      # capability is a uniform allow or a uniform deny, so nothing is scoped and nothing is
+      # lost). It is the only one of the seven that needs no security decision here, so it
+      # deliberately declares no `tools:`: the projection is authoritative.
+      name: context-scout
+      model: haiku
 ---
 
 # ContextScout

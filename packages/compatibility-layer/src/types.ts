@@ -432,6 +432,77 @@ export const DependencyRefInputSchema = z.union([
 ]);
 
 /**
+ * What one target may override about this component, authored by a human.
+ *
+ * ## Why overrides exist at all
+ *
+ * A canonical `permission:` block is an *enforcement* spec: ordered globs, last-match-wins.
+ * Some targets cannot enforce that. Claude Code is the live example — verified against its
+ * docs on 2026-07-15:
+ *
+ * - subagent frontmatter carries `tools:`/`disallowedTools:` and nothing else
+ *   (`sub-agents.md`, "Supported frontmatter fields");
+ * - permission RULES exist, but only in `settings.json`, and they "apply to the entire
+ *   session, not only the plugin subagent" (`sub-agents.md`) — there is no per-agent scope;
+ * - a plugin's own `settings.json` supports only the `agent` and `subagentStatusLine` keys
+ *   (`plugins-reference.md`), so a plugin cannot ship permission rules even session-wide;
+ * - precedence is category-based (deny → ask → allow, specificity-blind, `permissions.md`),
+ *   which cannot express last-match-wins even in principle.
+ *
+ * So for an agent whose canonical rules are scoped, *no emission is both faithful and useful*.
+ * Fail-closed yields a documentation scout that cannot read; widening is how the shipped
+ * agents came to leak. That is not a question an adapter can answer — it is a security
+ * decision. This block is where a human answers it, once, in the source, visible in a diff.
+ *
+ * @see {@link TargetOverridesSchema} for the rule that makes a widening un-silenceable.
+ */
+export const TargetOverrideSchema = z
+  .object({
+    /** Component name on this target. Defaults to {@link OacBlockSchema}'s `id`. */
+    name: z.string().min(1).optional(),
+    /** Target-native model id (e.g. Claude Code's `sonnet`), distinct from OpenCode's. */
+    model: z.string().min(1).optional(),
+    /**
+     * The tools this component is granted on this target, in the target's own vocabulary.
+     * Deliberately `string[]`, not an enum: each target names its tools differently, and the
+     * adapter that owns those names validates them. A schema-level enum here would make
+     * `types.ts` know about every target's tool list.
+     */
+    tools: z.array(z.string().min(1)).optional(),
+    /**
+     * Why it is acceptable that this target will not enforce a capability's canonical scope,
+     * keyed by capability (`bash`, `edit`, …).
+     *
+     * This is the honest field, and the one that keeps the whole mechanism from rotting. When
+     * an override grants a tool whose canonical rules are scoped, the scope is simply not
+     * applied on the target — it survives as prompt text at best. That is a real widening, and
+     * the author is asserting it is acceptable.
+     *
+     * Keyed rather than free-form prose **so the adapter can check it**: every granted-but-
+     * scoped capability must have an entry, and every entry must correspond to one. A prose
+     * blob would decay into a rubber stamp that nothing verifies; this cannot silently fall
+     * out of date, because the build fails when it does.
+     */
+    unenforced: z.record(z.string().min(1), z.string().min(1)).default({}),
+  })
+  .strict();
+
+/**
+ * Per-target overrides, keyed by target.
+ *
+ * A closed object rather than `z.record(BuildTargetSchema, …)` so a typo'd or unknown target
+ * key is a parse error instead of a silently-ignored block that never takes effect.
+ */
+export const TargetOverridesSchema = z
+  .object({
+    opencode: TargetOverrideSchema.optional(),
+    "claude-code": TargetOverrideSchema.optional(),
+    cursor: TargetOverrideSchema.optional(),
+    windsurf: TargetOverrideSchema.optional(),
+  })
+  .strict();
+
+/**
  * The canonical `oac:` frontmatter block — everything a component needs that OpenCode's
  * frontmatter schema rejects as an unknown field. This is precisely the content of
  * `.opencode/config/agent-metadata.json`; carrying it here is what lets that sidecar be
@@ -439,7 +510,7 @@ export const DependencyRefInputSchema = z.union([
  *
  * Strict: an unknown key is an error, never silently dropped.
  */
-export const OacBlockSchema = z
+export const OacBlockFieldsSchema = z
   .object({
     id: OacIdSchema,
     name: z.string().min(1),
@@ -450,8 +521,32 @@ export const OacBlockSchema = z
     tags: z.array(z.string()).default([]),
     dependencies: z.array(DependencyRefInputSchema).default([]),
     targets: BuildTargetsSchema,
+    overrides: TargetOverridesSchema.default({}),
   })
   .strict();
+
+/**
+ * The `oac:` block as parsed. {@link OacBlockFieldsSchema} plus the cross-field checks.
+ *
+ * This is a `ZodEffects`, so it has no `.shape`; reach for {@link OacBlockFieldsSchema} when
+ * you need the field list itself.
+ */
+export const OacBlockSchema = OacBlockFieldsSchema
+  .superRefine((oac, ctx) => {
+    // An override for a target this component does not emit to is dead config: it looks like
+    // it is doing something and never runs. Almost always a half-finished edit to `targets`.
+    for (const target of Object.keys(oac.overrides)) {
+      if (!oac.targets.includes(target as z.infer<typeof BuildTargetSchema>)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["overrides", target],
+          message:
+            `override declared for target "${target}", which is not in targets ` +
+            `[${oac.targets.join(", ")}] — it would never be applied`,
+        });
+      }
+    }
+  });
 
 // ============================================================================
 // Canonical Agent Schema
@@ -566,6 +661,8 @@ export type AgentFrontmatter = z.infer<typeof AgentFrontmatterSchema>;
 export type OacId = z.infer<typeof OacIdSchema>;
 export type OacCategory = z.infer<typeof OacCategorySchema>;
 export type BuildTarget = z.infer<typeof BuildTargetSchema>;
+export type TargetOverride = z.infer<typeof TargetOverrideSchema>;
+export type TargetOverrides = z.infer<typeof TargetOverridesSchema>;
 export type OacBlock = z.infer<typeof OacBlockSchema>;
 /** Authored `oac:` block, before defaults are applied. */
 export type OacBlockInput = z.input<typeof OacBlockSchema>;

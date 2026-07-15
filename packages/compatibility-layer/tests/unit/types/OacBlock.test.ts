@@ -14,6 +14,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  OacBlockFieldsSchema,
   OacBlockSchema,
   CanonicalAgentSchema,
   OacCategorySchema,
@@ -95,7 +96,7 @@ describe("OacBlockSchema", () => {
       ]);
     });
 
-    it("defaults version, author, tags, dependencies and targets", () => {
+    it("defaults version, author, tags, dependencies, targets and overrides", () => {
       const result = OacBlockSchema.parse({
         id: "contextscout",
         name: "ContextScout",
@@ -113,7 +114,71 @@ describe("OacBlockSchema", () => {
         tags: [],
         dependencies: [],
         targets: ["opencode"],
+        // Overrides are opt-in: the common case is a component with nothing target-specific
+        // to say, and it must stay writable without an empty ceremonial block.
+        overrides: {},
       });
+    });
+  });
+
+  describe("per-target overrides", () => {
+    it("accepts a claude-code override", () => {
+      const result = OacBlockSchema.safeParse({
+        ...VALID_BLOCK,
+        targets: ["opencode", "claude-code"],
+        overrides: {
+          "claude-code": {
+            name: "code-reviewer",
+            model: "sonnet",
+            tools: ["Read", "Glob", "Grep"],
+            unenforced: { bash: "Claude Code cannot scope Bash per-agent" },
+          },
+        },
+      });
+
+      expect(result.success ? [] : result.error.issues).toEqual([]);
+    });
+
+    it("defaults unenforced to an empty record", () => {
+      const result = OacBlockSchema.parse({
+        ...VALID_BLOCK,
+        targets: ["opencode", "claude-code"],
+        overrides: { "claude-code": { name: "code-reviewer" } },
+      });
+
+      expect(result.overrides["claude-code"]?.unenforced).toEqual({});
+    });
+
+    it("rejects an unknown key inside an override (strict)", () => {
+      const result = OacBlockSchema.safeParse({
+        ...VALID_BLOCK,
+        targets: ["opencode", "claude-code"],
+        overrides: { "claude-code": { toolz: ["Read"] } },
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects an override for an unknown target", () => {
+      const result = OacBlockSchema.safeParse({
+        ...VALID_BLOCK,
+        overrides: { emacs: { name: "whatever" } },
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects an override for a target this component does not emit to", () => {
+      // Dead config: it looks like it is doing something and never runs. Almost always a
+      // half-finished edit to `targets`, and silently ignoring it is how that ships.
+      const result = OacBlockSchema.safeParse({
+        ...VALID_BLOCK,
+        targets: ["opencode"],
+        overrides: { "claude-code": { name: "code-reviewer" } },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.success ? "" : result.error.issues[0]?.message).toContain("not in targets");
     });
   });
 
@@ -192,7 +257,9 @@ describe("OacBlockSchema", () => {
 
     it("covers every field the sidecar uses, so nothing is lost dissolving it", () => {
       const used = new Set(Object.values(corpus()).flatMap((entry) => Object.keys(entry)));
-      const known = new Set(Object.keys(OacBlockSchema.shape));
+      // OacBlockSchema carries cross-field refinements, which makes it a ZodEffects with no
+      // `.shape`. The field list lives on the object it wraps.
+      const known = new Set(Object.keys(OacBlockFieldsSchema.shape));
 
       expect([...used].filter((field) => !known.has(field))).toEqual([]);
     });

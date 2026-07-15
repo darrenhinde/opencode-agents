@@ -176,18 +176,43 @@ describe.each(TARGETS)("%s adapter goldens", (target) => {
 describe("claude-code adapter against the live corpus", () => {
   const OWED_BY = "subtasks 07 + 09 (ClaudeAdapter + content/agents/)";
 
-  it("warns when it degrades an ordered bash allowlist to a binary deny", async () => {
+  it("refuses an ordered bash allowlist that no override has ruled on", async () => {
+    // This used to assert that degrading an ordered rule list emitted a warning. It no longer
+    // degrades: Claude Code cannot enforce a per-agent scope by any route (flat frontmatter
+    // lists; session-wide settings.json rules; plugins barred from shipping rules at all), so
+    // neither available emission is right — fail-closed cripples the agent, widening leaks —
+    // and choosing between them is a security decision the adapter has no standing to make.
+    // It refuses, and a human rules on it in `oac.overrides.claude-code`. A warning would be
+    // the wrong instrument: warnings are advisory, and this must not be possible to ignore.
     const adapter = await adapterFor(
       "claude-code",
-      "degrading an ordered rule list to Claude Code's binary model emits a warning rather " +
-        "than silently dropping the allowlist"
+      "an ordered rule list Claude Code cannot enforce is refused, not silently degraded"
     );
 
-    const { warnings } = await adapter.fromCanonical(fixture("fixture-planner"));
-
-    expect(warnings ?? []).toEqual(
-      expect.arrayContaining([expect.stringMatching(/bash/i)])
+    // fixture-planner itself now carries an override, so build the un-ruled-on case here.
+    const unruled = fixture("fixture-planner").replace(
+      /  overrides:\n    claude-code:\n(?:      .*\n|      #.*\n)*/,
+      ""
     );
+
+    expect(unruled, "the override block must actually be gone").not.toContain("overrides:");
+
+    await expect(adapter.fromCanonical(unruled)).rejects.toThrow(/bash/i);
+  });
+
+  it("emits fixture-planner once its override rules on that bash block", async () => {
+    const adapter = await adapterFor(
+      "claude-code",
+      "an authored override unblocks emission and is honoured verbatim"
+    );
+
+    const { content, warnings } = await adapter.fromCanonical(fixture("fixture-planner"));
+
+    // The override denies Bash. Denying is a tightening, not a widening, so no permission
+    // warning is owed. (The fixture's `temperature: 0.3` still warns — Claude Code's agent
+    // frontmatter has no temperature — which is a real and unrelated loss.)
+    expect(content).toMatch(/^disallowedTools:.*\bBash\b/m);
+    expect((warnings ?? []).filter((w) => /permission|enforce/i.test(w))).toEqual([]);
   });
 
   // SKIPPED — blocked on a deferred product decision, not a bug. Two things must be settled

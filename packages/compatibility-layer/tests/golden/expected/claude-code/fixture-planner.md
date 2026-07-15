@@ -2,7 +2,7 @@
 name: fixture-planner
 description: Plans work before implementation. A golden-file fixture, not a shipped agent.
 tools: Read
-disallowedTools: Write, Edit, Bash
+disallowedTools: Write, Edit, Glob, Grep, Bash, WebFetch, Task
 model: sonnet
 ---
 

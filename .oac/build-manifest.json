@@ -166,38 +166,38 @@
       "target": "opencode",
       "root": ".opencode/agent"
     },
+    ".tmp/oac-build/plugins/claude-code/agents/code-reviewer.md": {
+      "sha256": "985896d8123330aa28ccb45fa23583de44c416a39f1cee09b282eb15b56b04f1",
+      "target": "claude-code",
+      "root": ".tmp/oac-build/plugins/claude-code/agents"
+    },
     ".tmp/oac-build/plugins/claude-code/agents/coder-agent.md": {
-      "sha256": "c36053af5518c75748ea0d39e55fbc27e2c976339d960798ce5b62bb011560b2",
+      "sha256": "bc56a4e8868093d37ada634c2c0979b45813384621f60300f072a0cab11189e5",
       "target": "claude-code",
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
     ".tmp/oac-build/plugins/claude-code/agents/context-manager.md": {
-      "sha256": "c9903a9cc5b7a91c76ca725f6d1d1d92a31a2c0e9a53230ccb0202c2ea1af9e7",
+      "sha256": "61f07dd83ca55afb6d72cc58094f6753aa71dfb84505fe628343badfd4310b98",
       "target": "claude-code",
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
-    ".tmp/oac-build/plugins/claude-code/agents/contextscout.md": {
-      "sha256": "2f604e2d2b531c81ec658d732505e95e1e4f9b29f8033c26ddd23225f55139a6",
+    ".tmp/oac-build/plugins/claude-code/agents/context-scout.md": {
+      "sha256": "34e97512b3007d994c1c705d796842b493d54cdc0d63bf42b394d87a8f2185de",
       "target": "claude-code",
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
-    ".tmp/oac-build/plugins/claude-code/agents/externalscout.md": {
-      "sha256": "3fbc39537ad6ca270f8bed8997e64c56527bc1cafc54d85b41f35689cafba6d7",
-      "target": "claude-code",
-      "root": ".tmp/oac-build/plugins/claude-code/agents"
-    },
-    ".tmp/oac-build/plugins/claude-code/agents/reviewer.md": {
-      "sha256": "840172fc68aed647dc65d666707d5d89e9cccdddba58520317de8725b154a2fa",
+    ".tmp/oac-build/plugins/claude-code/agents/external-scout.md": {
+      "sha256": "9656405d4fa8e81397f9b0228770abe8bae63f44cc9a5ff2d66999534d428b7a",
       "target": "claude-code",
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
     ".tmp/oac-build/plugins/claude-code/agents/task-manager.md": {
-      "sha256": "33a52102790c7ccdae75269e095d44ccde9655b249ab77907a168c5b38c5e0f6",
+      "sha256": "b74bd22e51b9566752e5d4debc3a49cfe39a58debe3d0e1671e2556e17cf2281",
       "target": "claude-code",
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
-    ".tmp/oac-build/plugins/claude-code/agents/tester.md": {
-      "sha256": "838e023fbbb06f75d37778751f76e37831af2f99586e63ac1bb3410ed3155990",
+    ".tmp/oac-build/plugins/claude-code/agents/test-engineer.md": {
+      "sha256": "01332fdd48dcf47008d150c42ffe794366b14ce5f05babf9fd94c0001d43d811",
       "target": "claude-code",
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },

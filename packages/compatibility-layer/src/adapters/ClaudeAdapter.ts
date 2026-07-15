@@ -1,7 +1,12 @@
 import matter from "gray-matter";
 import { dump } from "js-yaml";
 import { BaseAdapter } from "./BaseAdapter.js";
-import { projectToFlatTools, rulesFor, type ToolBinding } from "../core/Capabilities.js";
+import {
+  lossyCapabilities,
+  projectToFlatTools,
+  rulesFor,
+  type ToolBinding,
+} from "../core/Capabilities.js";
 import { getToolCapabilities } from "../core/CapabilityMatrix.js";
 import {
   CanonicalAgentSchema,
@@ -13,6 +18,7 @@ import {
   type HookEvent,
   type OpenAgent,
   type SkillReference,
+  type TargetOverride,
   type ToolCapabilities,
   type ToolConfig,
 } from "../types.js";
@@ -49,6 +55,19 @@ import {
  * Concretely, `PermissionMapper.mapPermissionsFromOAC` must never be used here: it defaults
  * to `strategy="permissive"` (`hasAllow || !hasDeny`), which answers `bash: true` for
  * coder-agent's deny-all-then-allowlist block and would hand Claude Code unrestricted Bash.
+ *
+ * ## When there is no honest answer, this adapter REFUSES
+ *
+ * For an agent whose canonical rules are scoped, neither available emission is right:
+ * fail-closed denies the tool outright (a documentation scout that cannot read), and widening
+ * hands over the tool with none of the scoping — which is how the shipped agents came to leak.
+ * The adapter cannot choose between those; the question is "how much access should this agent
+ * really have on a target that cannot enforce scopes", and only a human can answer it.
+ *
+ * So it throws, naming the agent and the capabilities, and points at
+ * `oac.overrides.claude-code`. A build error is the correct output here: it costs one authored
+ * decision, once, recorded in the source and visible in a diff — versus a guess that silently
+ * ships. See {@link TargetOverride}.
  *
  * @see https://code.claude.com/docs/en/sub-agents
  */
@@ -92,36 +111,57 @@ export class ClaudeAdapter extends BaseAdapter {
     const agent = parsed.data;
     const warnings: string[] = [];
     const body = matter(source).content.trim();
+    const override = agent.oac.overrides["claude-code"];
+
+    // `oac.id` is machine identity; the Claude Code component name is a separate, authored
+    // fact (`reviewer` ships as `code-reviewer`). Without the override the two silently
+    // diverge and a rebuild ADDS a file rather than replacing the one on disk.
+    const name = override?.name ?? agent.oac.id;
 
     const frontmatter = this.buildAgentFrontmatter(
       {
-        name: agent.oac.id,
+        agentId: agent.oac.id,
+        name,
         description: agent.description,
-        model: agent.model,
+        // Claude Code names models in its own vocabulary (`sonnet`), so an override wins over
+        // the canonical `model:`, which is OpenCode's.
+        model: override?.model ?? agent.model,
         temperature: agent.temperature,
         maxSteps: agent.maxSteps,
         permission: agent.permission,
+        override,
+        refuseOnLoss: true,
       },
       warnings
     );
 
+    // Surface every accepted-but-unenforceable semantic on every build, rather than only in
+    // the source. An override records the loss; it does not make the loss stop existing.
+    warnings.push(
+      ...Object.entries(override?.unenforced ?? {}).map(
+        ([capability, reason]) =>
+          `⚠️  Claude Code will not enforce '${capability}' scoping for "${name}" — granted ` +
+          `unscoped by an authored override: ${reason}`
+      )
+    );
+
     return {
-      path: this.agentPath(agent.oac.id),
+      path: this.agentPath(name),
       content: `---\n${frontmatter}---\n\n${body}\n`,
       warnings,
     };
   }
 
   /**
-   * Where a canonical id lands in the plugin tree.
+   * Where a Claude Code component name lands in the plugin tree.
    *
-   * Keyed by `oac.id`, never by source filename or display name: the canonical ids and the
-   * Claude Code filenames genuinely differ (`contextscout` → `context-scout.md`,
-   * `reviewer` → `code-reviewer.md`, `tester` → `test-engineer.md`), and only the id is
-   * stable identity.
+   * Takes the emitted NAME, not `oac.id` — Claude Code requires an agent's `name` to match its
+   * filename, and the two genuinely differ from canonical ids (`reviewer` → `code-reviewer`,
+   * `tester` → `test-engineer`). {@link fromCanonical} resolves the name from
+   * `oac.overrides.claude-code.name`, falling back to the id.
    */
-  agentPath(id: string): string {
-    return `plugins/claude-code/agents/${id}.md`;
+  agentPath(name: string): string {
+    return `plugins/claude-code/agents/${name}.md`;
   }
 
   // ============================================================================
@@ -159,6 +199,7 @@ export class ClaudeAdapter extends BaseAdapter {
 
     const frontmatter = this.buildAgentFrontmatter(
       {
+        agentId: agent.frontmatter.name,
         name: agent.frontmatter.name,
         description: agent.frontmatter.description,
         model: agent.frontmatter.model,
@@ -289,20 +330,43 @@ export class ClaudeAdapter extends BaseAdapter {
   /**
    * Decide which Claude Code tools an agent gets, and which it is explicitly denied.
    *
-   * The allow/deny decision is entirely {@link projectToFlatTools}'s; this method only picks
-   * which tools are in play and hands back the two lists in {@link CLAUDE_TOOL_BINDINGS}
-   * order.
+   * Three cases, in order:
+   *
+   * 1. **An authored override** — the human already answered. Use it verbatim.
+   * 2. **A permission block that projects EXACTLY** — no scoping to lose, so
+   *    {@link projectToFlatTools} is faithful and needs no human.
+   * 3. **A permission block that does not** — refuse. See the class docblock.
+   *
+   * The allow/deny decision in case 2 is entirely {@link projectToFlatTools}'s; this method
+   * only picks which tools are in play and orders the two lists by
+   * {@link CLAUDE_TOOL_BINDINGS}.
    */
   private resolveTools(
     input: ClaudeAgentInput,
     warnings: string[]
   ): { tools: string[]; disallowedTools: string[] } {
     if (input.permission) {
+      warnings.push(...unmappableCapabilityWarnings(input.permission));
+    }
+
+    if (input.override?.tools) {
+      return this.applyOverride(input.override, input.permission, input.agentId);
+    }
+
+    if (input.permission) {
+      if (input.refuseOnLoss) {
+        const lossy = lossyCapabilities(input.permission, CLAUDE_TOOL_BINDINGS, {
+          target: "Claude Code",
+        });
+
+        if (lossy.length > 0) {
+          throw new Error(overrideRequired(input.agentId, input.permission, lossy));
+        }
+      }
+
       const bindings = CLAUDE_TOOL_BINDINGS.filter(
         (binding) => rulesFor(input.permission!, binding.capability).length > 0
       );
-
-      warnings.push(...unmappableCapabilityWarnings(input.permission));
 
       const projection = projectToFlatTools(input.permission, bindings, {
         target: "Claude Code",
@@ -328,6 +392,89 @@ export class ClaudeAdapter extends BaseAdapter {
     }
 
     return { tools: [], disallowedTools: [] };
+  }
+
+  /**
+   * Apply an authored `oac.overrides.claude-code` grant, and hold it to its own justification.
+   *
+   * Every bound tool lands in exactly one of the two lists — the granted ones in `tools:`,
+   * every other in `disallowedTools:`. Nothing is omitted, because an omitted tool reads as
+   * "Claude Code's default" and that is precisely the ambiguity an override exists to end.
+   *
+   * The `unenforced` cross-check is what makes an override a decision rather than a mute.
+   * Granting a tool whose canonical rules are scoped IS a widening; the author must say why it
+   * is acceptable, and the reverse must hold too — a justification for something no longer
+   * granted (or no longer scoped) is stale, and stale security notes are worse than none,
+   * because they read as current. Both directions are enforced so the file cannot quietly
+   * drift away from what it claims.
+   *
+   * @throws {Error} on an unknown tool name (a typo like `Reed` would silently fail open), an
+   * unjustified widening, or a stale justification.
+   */
+  private applyOverride(
+    override: TargetOverride,
+    permission: GranularPermission | undefined,
+    agentId: string
+  ): { tools: string[]; disallowedTools: string[] } {
+    const granted = override.tools ?? [];
+    const known = new Map(CLAUDE_TOOL_BINDINGS.map((binding) => [binding.tool, binding]));
+    const unknown = granted.filter((tool) => !known.has(tool));
+
+    if (unknown.length > 0) {
+      throw new Error(
+        `ClaudeAdapter: agent "${agentId}" overrides claude-code tools with ` +
+          `${unknown.map((tool) => `"${tool}"`).join(", ")}, which Claude Code has no such ` +
+          `tool for. Valid tools: ${[...known.keys()].join(", ")}.`
+      );
+    }
+
+    const grant = new Set(granted);
+    const lossy = new Set(
+      lossyCapabilities(permission ?? [], CLAUDE_TOOL_BINDINGS, { target: "Claude Code" })
+    );
+
+    // A widening: granted here, scoped in canonical, unenforceable there.
+    const needsReason = CLAUDE_TOOL_BINDINGS.filter(
+      (binding) => grant.has(binding.tool) && lossy.has(binding.capability)
+    ).map((binding) => binding.capability);
+
+    const justified = new Set(Object.keys(override.unenforced));
+    const missing = needsReason.filter((capability) => !justified.has(capability));
+    const stale = [...justified].filter((capability) => !needsReason.includes(capability));
+
+    if (missing.length > 0) {
+      throw new Error(
+        `ClaudeAdapter: agent "${agentId}" grants ${missing
+          .map((c) => `"${CAPABILITY_TO_TOOL.get(c) ?? c}"`)
+          .join(", ")} on claude-code, but canonical scopes ${missing
+          .map((c) => `"${c}"`)
+          .join(", ")} with ordered rules that Claude Code cannot enforce.\n\n` +
+          `  That is a widening: the tool is handed over with none of the scoping. It may well ` +
+          `be the right call — but it has to be stated, not assumed.\n\n` +
+          `  Add to ${agentId}'s oac.overrides.claude-code:\n\n` +
+          `    unenforced:\n` +
+          missing.map((c) => `      ${c}: "<why granting this unscoped is acceptable>"\n`).join("")
+      );
+    }
+
+    if (stale.length > 0) {
+      throw new Error(
+        `ClaudeAdapter: agent "${agentId}" justifies ${stale
+          .map((c) => `"${c}"`)
+          .join(", ")} under oac.overrides.claude-code.unenforced, but ${
+          stale.length === 1 ? "that capability is" : "those capabilities are"
+        } not a widening: ${
+          stale.length === 1 ? "it is" : "they are"
+        } either not granted on claude-code, or not scoped in canonical.\n\n` +
+          `  Remove the entr${stale.length === 1 ? "y" : "ies"} — a justification for a risk ` +
+          `that no longer exists reads as current and hides the ones that do.`
+      );
+    }
+
+    return {
+      tools: CLAUDE_TOOL_BINDINGS.filter((b) => grant.has(b.tool)).map((b) => b.tool),
+      disallowedTools: CLAUDE_TOOL_BINDINGS.filter((b) => !grant.has(b.tool)).map((b) => b.tool),
+    };
   }
 
   /**
@@ -582,6 +729,8 @@ export interface ClaudeEmission {
 
 /** The frontmatter inputs both emit paths share. */
 interface ClaudeAgentInput {
+  /** Canonical `oac.id`. Used for diagnostics only — {@link ClaudeAgentInput.name} is emitted. */
+  agentId: string;
   name: string;
   description: string;
   model?: string;
@@ -589,6 +738,66 @@ interface ClaudeAgentInput {
   maxSteps?: number;
   permission?: GranularPermission;
   tools?: Record<string, boolean | undefined>;
+  override?: TargetOverride;
+  /**
+   * Refuse to emit rather than degrade a scoped rule set. See {@link overrideRequired}.
+   *
+   * True only on the {@link ClaudeAdapter.fromCanonical} (`oac build`) path, and the asymmetry
+   * is the point. `oac build` compiles OUR corpus: the source is in this repo, an override can
+   * be authored in it, and a wrong guess ships to users — so it must not guess.
+   * {@link ClaudeAdapter.fromOAC} converts an agent someone already has, from a format with no
+   * `oac:` block and therefore nowhere to record an answer. There is no human to ask and no
+   * file to ask them to edit, so it degrades fail-closed and warns, which is the best available
+   * behaviour rather than a lesser standard.
+   */
+  refuseOnLoss?: boolean;
+}
+
+/**
+ * The message for an agent whose scoped rules Claude Code cannot express and whose author has
+ * not yet said what to do about it.
+ *
+ * It is deliberately long. This error is the entire mechanism by which a security decision
+ * reaches a human, and it fires at most once per agent, so it must carry everything needed to
+ * decide: which capabilities are lossy, what the author actually wrote, and the exact shape of
+ * the answer. A terse "cannot project permissions" would just get worked around.
+ */
+function overrideRequired(
+  agentId: string,
+  permission: GranularPermission,
+  lossy: readonly string[]
+): string {
+  const detail = lossy
+    .map((capability) => {
+      const rules = rulesFor(permission, capability)
+        .map((rule) => `"${rule.pattern}": ${rule.action}`)
+        .join(", ");
+      return `    ${capability}: ${rules}`;
+    })
+    .join("\n");
+
+  const suggestion = CLAUDE_TOOL_BINDINGS.filter((b) => lossy.includes(b.capability))
+    .map((b) => b.tool)
+    .join(", ");
+
+  return (
+    `ClaudeAdapter: agent "${agentId}" cannot be emitted for claude-code without an ` +
+    `explicit override.\n\n` +
+    `  These capabilities are scoped by ordered rules:\n${detail}\n\n` +
+    `  Claude Code cannot enforce them. Its subagent frontmatter carries only flat ` +
+    `tools:/disallowedTools:; its permission rules live in settings.json and apply to the whole ` +
+    `session, not one subagent; and a plugin cannot ship permission rules at all.\n\n` +
+    `  There is no emission that is both faithful and useful, so this build will not guess: ` +
+    `denying [${suggestion}] outright may leave the agent unable to do its job, and granting ` +
+    `them hands over the tools with none of the scoping.\n\n` +
+    `  Decide in the source — in ${agentId}'s oac: block:\n\n` +
+    `    oac:\n` +
+    `      overrides:\n` +
+    `        claude-code:\n` +
+    `          tools: [Read, Glob, Grep]     # what this agent gets on Claude Code\n` +
+    `          unenforced:\n` +
+    `            - "<which canonical scope Claude Code will not enforce, and why that is ok>"\n`
+  );
 }
 
 /**
@@ -615,6 +824,11 @@ const CLAUDE_TOOL_BINDINGS: readonly ToolBinding[] = [
 
 /** Capabilities that bind to a Claude Code tool. Anything else cannot be carried. */
 const MAPPED_CAPABILITIES = new Set(CLAUDE_TOOL_BINDINGS.map((binding) => binding.capability));
+
+/** Canonical capability -> the Claude Code tool it governs, for diagnostics. */
+const CAPABILITY_TO_TOOL = new Map(
+  CLAUDE_TOOL_BINDINGS.map((binding) => [binding.capability, binding.tool])
+);
 
 /**
  * Warn for each authored capability Claude Code has no tool for.

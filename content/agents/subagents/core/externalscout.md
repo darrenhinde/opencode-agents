@@ -34,6 +34,32 @@ oac:
   targets:
     - opencode
     - claude-code
+  overrides:
+    claude-code:
+      name: external-scout
+      model: haiku
+      # Matches what ships today. Task is denied (canonical denies it outright).
+      #
+      # This agent is why per-target overrides exist. Canonical scopes its `read` to two
+      # directories, so a fail-closed projection emits `disallowedTools: Read` — a
+      # documentation scout that cannot read. Widening was the only other option an adapter
+      # had, and it is what silently happened here before. Now it is a decision, in writing.
+      tools: [Read, Write, Bash, WebFetch]
+      unenforced:
+        read: >-
+          Canonical confines reads to .opencode/skills/context7/** and .tmp/external-context/**
+          — i.e. its own skill and its own cache. Claude Code grants unscoped Read instead:
+          this agent can read the whole repo. Accepted because Read is the least dangerous of
+          the two widenings here and the agent is otherwise inert, but it is a real loss of
+          confinement, not a formality.
+        bash: >-
+          Canonical allows exactly `curl -s https://context7.com/*` and `jq *`, denying all
+          else. Claude Code cannot scope Bash per-agent, so this becomes unrestricted shell for
+          an agent whose whole job is fetching untrusted documentation off the internet — the
+          worst combination in this corpus. Accepted ONLY because the shipped agent already
+          works this way and this change is deliberately behaviour-neutral. This is the first
+          thing to fix: Claude Code's WebFetch (already granted) covers the curl half natively,
+          so Bash may well be removable outright once the prompt body stops instructing curl.
 ---
 
 

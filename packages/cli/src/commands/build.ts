@@ -15,14 +15,32 @@
  * `.opencode/agent/**` and `registry.json` are emitted IN PLACE: they are build output, and
  * the subtask-11 CI gate rebuilds them and diffs.
  *
- * `plugins/claude-code/agents/**` is NOT. Regenerating it today would change what 4 shipped
- * agents are allowed to do — `coder-agent`, `context-manager`, `external-scout` and
- * `test-engineer` currently ship `Bash`/`Edit` unscoped, and the canonical sources project
- * those to a fail-closed deny (correctly: see `degradeToBinary`). That is a real security
- * tightening and a real behavioural change, and it is pending review rather than something a
- * build command should slip into a diff. So the target builds to {@link CLAUDE_STAGING_ROOT}
- * and the command REPORTS the comparison. There is deliberately no flag to emit it in place;
- * when the change is approved, the staging default is removed in one reviewed commit.
+ * `plugins/claude-code/agents/**` is NOT — and the original reason for that is now GONE, so
+ * do not remove this staging on the strength of the old comment. What used to block it was
+ * permissions: the canonical sources scope `Bash`/`Edit`, the shipped files granted them
+ * unscoped, and the adapter had to guess. `oac.overrides.claude-code` fixed exactly that.
+ * Every override reproduces its agent's shipped `tools:` list byte-for-byte; permissions no
+ * longer block anything.
+ *
+ * What blocks it now is PROMPT CONTENT, found 2026-07-15 by running the emission and reading
+ * the diff. The shipped Claude files are not stale copies of the canonical ones — they are
+ * target-adapted, in two ways a rebuild would silently destroy:
+ *
+ * 1. **`description:` carries agent-dispatch examples.** 4 of the 7 (`code-reviewer`,
+ *    `coder-agent`, `context-scout`, plus `context-manager`'s body) embed `<example>` blocks
+ *    that are how Claude Code SELECTS an agent. Canonical's `description` is OpenCode's — a
+ *    single line, with no examples anywhere in the corpus. Emitting would replace a dispatch
+ *    spec with a summary.
+ * 2. **The body is written against the target's capabilities.** Claude's `code-reviewer` has
+ *    `disallowedTools: Task`, so its prompt says context is "pre-loaded by the main agent".
+ *    The canonical body says "ALWAYS call ContextScout BEFORE reviewing any code" — an
+ *    instruction that agent cannot follow, because it cannot delegate.
+ *
+ * Both are the same shape as the permission problem: content that is a function of the target,
+ * with no canonical field to carry the variance. The fix is the same shape too — extend
+ * `oac.overrides` to the prompt — but it is a real design decision, not a default a build
+ * command should pick. So this target keeps staging to {@link CLAUDE_STAGING_ROOT} and
+ * REPORTING the comparison, and there is deliberately no flag to emit it in place.
  */
 
 import { type Command } from 'commander'

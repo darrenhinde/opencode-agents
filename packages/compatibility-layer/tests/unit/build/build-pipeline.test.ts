@@ -318,7 +318,12 @@ describe("failure handling", () => {
     await expect(plan({ root })).rejects.toThrow();
   });
 
-  it("warns rather than silently widening when a target cannot carry a scoped rule", async () => {
+  it("fails the build rather than silently widening when a target cannot carry a scoped rule", async () => {
+    // Previously this asserted a warning. A warning was the wrong instrument: it is advisory,
+    // and the two things it could be advising are both wrong (fail-closed cripples the agent,
+    // widening leaks the tool). Claude Code cannot enforce a per-agent scope by any route, so
+    // there is no correct emission to warn ABOUT — a human has to rule on it in
+    // `oac.overrides.claude-code`, and a build that keeps going does not get one.
     put(
       "content/agents/subagents/test/gamma.md",
       canonicalAgent("gamma", ["claude-code"]).replace(
@@ -327,12 +332,24 @@ describe("failure handling", () => {
       ),
     );
 
-    const built = await plan({ root, targets: ["claude-code"], skipRegistry: true });
-    const emitted = built.files.find((file) => file.agentId === "gamma");
+    await expect(plan({ root, targets: ["claude-code"], skipRegistry: true })).rejects.toThrow(
+      /without an explicit override/,
+    );
+  });
 
-    expect(emitted?.content).toMatch(/^disallowedTools:.*\bBash\b/m);
-    expect(emitted?.content).not.toMatch(/^tools:.*\bBash\b/m);
-    expect(built.warnings.map((warning) => warning.reason).join("\n")).toMatch(/bash/i);
+  it("names the source file in a refusal, not just the agent id", async () => {
+    // The adapter only knows `gamma`. The person who has to make the decision needs the path.
+    put(
+      "content/agents/subagents/test/gamma.md",
+      canonicalAgent("gamma", ["claude-code"]).replace(
+        '  read:\n    "*": "allow"',
+        '  bash:\n    "*": "deny"\n    "git status": "allow"',
+      ),
+    );
+
+    await expect(plan({ root, targets: ["claude-code"], skipRegistry: true })).rejects.toThrow(
+      /content\/agents\/subagents\/test\/gamma\.md:/,
+    );
   });
 
   it("attaches the source path to every warning, so a warning is actionable", async () => {

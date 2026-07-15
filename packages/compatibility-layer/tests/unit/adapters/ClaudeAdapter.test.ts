@@ -34,7 +34,7 @@ function fixture(path: string): string {
 }
 
 /** A canonical agent file built around one permission block, for targeted projection tests. */
-function canonical(permission: string, extra = ""): string {
+function canonical(permission: string, extra = "", override = ""): string {
   return `---
 name: ProbeAgent
 description: A probe agent.
@@ -48,12 +48,41 @@ oac:
   type: subagent
   targets:
     - claude-code
----
+${override}---
 
 # ProbeAgent
 
 Body.
 `;
+}
+
+/** An `oac.overrides.claude-code` block, indented to sit inside {@link canonical}'s oac block. */
+function override(body: string): string {
+  return `  overrides:\n    claude-code:\n${body}`;
+}
+
+/**
+ * An in-memory OpenAgent carrying an authored permission map — the `fromOAC` (legacy
+ * `oac-compat convert`) path.
+ *
+ * The degradation warnings live here rather than on the canonical path, and that is by design:
+ * `fromCanonical` refuses to degrade a scoped rule set at all (it demands an authored
+ * override), whereas `fromOAC` converts an agent from a format with no `oac:` block, so there
+ * is nowhere to record a decision and nobody to ask. Fail-closed-and-warn is the best it can
+ * do, so it is still exactly what these assert.
+ */
+function legacy(permission: Record<string, unknown>): OpenAgent {
+  return {
+    frontmatter: {
+      name: "probe-agent",
+      description: "A probe agent.",
+      mode: "subagent",
+      permission,
+    } as AgentFrontmatter,
+    metadata: { name: "probe-agent", category: "core", type: "subagent" },
+    systemPrompt: "Body.",
+    contexts: [],
+  };
 }
 
 describe("ClaudeAdapter", () => {
@@ -290,32 +319,6 @@ describe("ClaudeAdapter", () => {
   // ============================================================================
 
   describe("permission projection", () => {
-    it("fails closed on a deny-all-then-allowlist bash block", async () => {
-      // The live shape: `bash: {"*": deny, "git log*": allow}`. Claude Code has no ordered
-      // -glob equivalent. Answering `tools: Bash` because "an allow rule exists" would hand
-      // it unrestricted shell — the precise failure PermissionMapper's permissive default
-      // produces, and the reason this adapter does not use it.
-      const { content } = await adapter.fromCanonical(fixture(FIXTURE_PLANNER));
-
-      expect(content).toMatch(/^disallowedTools:.*\bBash\b/m);
-      expect(content).not.toMatch(/^tools:.*\bBash\b/m);
-    });
-
-    it("degrades 'ask' to deny, never to allow", async () => {
-      const { content } = await adapter.fromCanonical(canonical(`  bash:\n    "*": "ask"\n`));
-
-      expect(content).toMatch(/^disallowedTools: Bash$/m);
-      expect(content).not.toMatch(/^tools:.*Bash/m);
-    });
-
-    it("does not treat an allow-with-exceptions as a plain allow", async () => {
-      const { content } = await adapter.fromCanonical(
-        canonical(`  edit:\n    "*": "allow"\n    "**/*.env*": "deny"\n`)
-      );
-
-      expect(content).toMatch(/^disallowedTools: Edit$/m);
-    });
-
     it("carries a provably uniform allow through as a grant", async () => {
       const { content, warnings } = await adapter.fromCanonical(
         canonical(`  read:\n    "*": "allow"\n`)
@@ -336,21 +339,179 @@ describe("ClaudeAdapter", () => {
       expect(warnings).toEqual([]);
     });
 
-    it("never grants a tool whose rules contain any deny", async () => {
-      // Property check over every mixed shape in the live corpus.
+  });
+
+  // ============================================================================
+  // REFUSAL — the canonical path will not guess at a security decision
+  // ============================================================================
+
+  describe("refuses rather than guessing", () => {
+    // Claude Code cannot enforce a scoped rule per-agent (frontmatter is two flat lists;
+    // permission rules are session-wide in settings.json; a plugin cannot ship them at all).
+    // So for a scoped capability there is no emission that is both faithful and useful:
+    // fail-closed yields a scout that cannot read, and widening is the leak this whole module
+    // exists to prevent. That is a product decision, not a projection — so `oac build` stops
+    // and makes a human author it. These tests pin THAT, because a future "helpful" default
+    // here would silently ship one of the two wrong answers.
+
+    it("refuses a deny-all-then-allowlist bash block with no override", async () => {
+      // The live shape: `bash: {"*": deny, "git log*": allow}`. Answering `tools: Bash`
+      // because "an allow rule exists" would hand over unrestricted shell — the precise
+      // failure PermissionMapper's permissive default produces.
+      await expect(
+        adapter.fromCanonical(
+          canonical(`  bash:\n    "*": "deny"\n    "git status": "allow"\n`)
+        )
+      ).rejects.toThrow(/cannot be emitted for claude-code without an explicit override/);
+    });
+
+    it("names the offending capability and its rules, so the error is actionable", async () => {
+      await expect(
+        adapter.fromCanonical(canonical(`  bash:\n    "*": "deny"\n    "git log*": "allow"\n`))
+      ).rejects.toThrow(/bash: "\*": deny, "git log\*": allow/);
+    });
+
+    it("points at the exact place the decision belongs", async () => {
+      await expect(
+        adapter.fromCanonical(canonical(`  bash:\n    "*": "deny"\n    "git log*": "allow"\n`))
+      ).rejects.toThrow(/oac:\s*\n\s*overrides:\s*\n\s*claude-code:/);
+    });
+
+    it("refuses every mixed shape in the live corpus", async () => {
+      // Property check: no scoped shape may slip through to an emission either way.
       const shapes = [
         `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
         `  bash:\n    "git log*": "allow"\n    "*": "deny"\n`,
+        `  bash:\n    "*": "ask"\n`,
+        `  edit:\n    "*": "allow"\n    "**/*.env*": "deny"\n`,
         `  edit:\n    "**/*.env*": "deny"\n    "**/*.key": "deny"\n`,
         `  read:\n    "**/*": "deny"\n    ".tmp/**": "allow"\n`,
       ];
 
       for (const shape of shapes) {
-        const { content } = await adapter.fromCanonical(canonical(shape));
-        const tools = /^tools: (.*)$/m.exec(content)?.[1] ?? "";
-
-        expect(tools, `${shape} leaked a grant`).toBe("");
+        await expect(
+          adapter.fromCanonical(canonical(shape)),
+          `${shape} was emitted instead of refused`
+        ).rejects.toThrow(/without an explicit override/);
       }
+    });
+
+    it("emits without complaint once a scoped capability is denied by an override", async () => {
+      // Denying is not a widening, so it needs no justification — the tools list says it.
+      const { content, warnings } = await adapter.fromCanonical(
+        canonical(
+          `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
+          "",
+          override(`      tools: [Read]\n`)
+        )
+      );
+
+      expect(content).toMatch(/^tools: Read$/m);
+      expect(content).toMatch(/^disallowedTools:.*\bBash\b/m);
+      expect(warnings).toEqual([]);
+    });
+  });
+
+  // ============================================================================
+  // OVERRIDES — an authored decision, held to its own justification
+  // ============================================================================
+
+  describe("per-target overrides", () => {
+    it("grants a scoped tool when the widening is justified", async () => {
+      const { content } = await adapter.fromCanonical(
+        canonical(
+          `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
+          "",
+          override(`      tools: [Read, Bash]\n      unenforced:\n        bash: "why not"\n`)
+        )
+      );
+
+      expect(content).toMatch(/^tools: Read, Bash$/m);
+    });
+
+    it("warns on every build about a widening, not just in the source", async () => {
+      // An override records the loss; it does not make the loss stop existing. A reader of
+      // the build output must see it too, or the decision is invisible outside the file.
+      const { warnings } = await adapter.fromCanonical(
+        canonical(
+          `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
+          "",
+          override(`      tools: [Bash]\n      unenforced:\n        bash: "needs the shell"\n`)
+        )
+      );
+
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toMatch(/will not enforce 'bash'/);
+      expect(warnings[0]).toMatch(/needs the shell/);
+    });
+
+    it("refuses a widening with no justification", async () => {
+      await expect(
+        adapter.fromCanonical(
+          canonical(
+            `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
+            "",
+            override(`      tools: [Read, Bash]\n`)
+          )
+        )
+      ).rejects.toThrow(/grants "Bash" on claude-code, but canonical scopes "bash"/);
+    });
+
+    it("refuses a justification for something that is not a widening", async () => {
+      // Stale security notes are worse than none: they read as current and mask the real
+      // ones. Bash is denied here, so justifying it is describing a risk that does not exist.
+      await expect(
+        adapter.fromCanonical(
+          canonical(
+            `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
+            "",
+            override(`      tools: [Read]\n      unenforced:\n        bash: "stale"\n`)
+          )
+        )
+      ).rejects.toThrow(/not a widening/);
+    });
+
+    it("refuses a tool name Claude Code does not have", async () => {
+      // A typo fails OPEN — `Reed` would silently just not be granted — so it must not pass.
+      await expect(
+        adapter.fromCanonical(
+          canonical(`  read:\n    "*": "allow"\n`, "", override(`      tools: [Reed]\n`))
+        )
+      ).rejects.toThrow(/Claude Code has no such tool for/);
+    });
+
+    it("emits the override name, and keys the path on it", async () => {
+      const { path, content } = await adapter.fromCanonical(
+        canonical(`  read:\n    "*": "allow"\n`, "", override(`      name: probe-scout\n`))
+      );
+
+      expect(path).toBe("plugins/claude-code/agents/probe-scout.md");
+      expect(content).toMatch(/^name: probe-scout$/m);
+    });
+
+    it("prefers the override model over the canonical one", async () => {
+      const { content } = await adapter.fromCanonical(
+        canonical(
+          `  read:\n    "*": "allow"\n`,
+          "model: claude-sonnet-4\n",
+          override(`      model: haiku\n`)
+        )
+      );
+
+      expect(content).toMatch(/^model: haiku$/m);
+    });
+
+    it("puts every bound tool in exactly one list, leaving nothing to a default", async () => {
+      // An omitted tool reads as "Claude Code's default", which is the ambiguity an override
+      // exists to end.
+      const { content } = await adapter.fromCanonical(
+        canonical(`  read:\n    "*": "allow"\n`, "", override(`      tools: [Read, Glob]\n`))
+      );
+
+      expect(/^tools: (.*)$/m.exec(content)?.[1]).toBe("Read, Glob");
+      expect(/^disallowedTools: (.*)$/m.exec(content)?.[1]).toBe(
+        "Write, Edit, Grep, Bash, WebFetch, Task"
+      );
     });
   });
 
@@ -359,51 +520,55 @@ describe("ClaudeAdapter", () => {
   // ============================================================================
 
   describe("warnings", () => {
+    // The degradation warnings below are asserted through `fromOAC`, not `fromCanonical`.
+    // That is not a workaround — after the override work, `fromCanonical` never degrades a
+    // scoped rule set at all (it refuses; see "refuses rather than guessing"), so there is no
+    // canonical-path behaviour left to assert. `fromOAC` still degrades, because it converts
+    // an agent from a format with no `oac:` block: no override can be authored and no human
+    // can be asked, so fail-closed-and-warn remains the best available answer there.
+
     it("emits exactly one warning for a single unrepresentable capability", async () => {
-      const { warnings } = await adapter.fromCanonical(
-        canonical(`  bash:\n    "*": "deny"\n    "git log*": "allow"\n`)
+      const { warnings } = await adapter.fromOAC(
+        legacy({ bash: { "*": "deny", "git log*": "allow" } })
       );
 
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toMatch(/bash/i);
-      expect(warnings[0]).toMatch(/fail-closed/);
+      expect(warnings.filter((w) => /has no equivalent/.test(w))).toHaveLength(1);
+      expect(warnings.some((w) => /'bash'/.test(w) && /fail-closed/.test(w))).toBe(true);
     });
 
     it("counts one warning per lossy capability, and none for the lossless ones", async () => {
       // read/glob are exact; bash and edit are not. Two losses, two warnings.
-      const { warnings } = await adapter.fromCanonical(
-        canonical(
-          `  read:\n    "*": "allow"\n` +
-            `  glob:\n    "*": "allow"\n` +
-            `  bash:\n    "*": "deny"\n    "git log*": "allow"\n` +
-            `  edit:\n    "*": "allow"\n    "**/*.key": "deny"\n`
-        )
+      const { warnings } = await adapter.fromOAC(
+        legacy({
+          read: { "*": "allow" },
+          glob: { "*": "allow" },
+          bash: { "*": "deny", "git log*": "allow" },
+          edit: { "*": "allow", "**/*.key": "deny" },
+        })
       );
 
-      expect(warnings).toHaveLength(2);
-      expect(warnings.filter((w) => /'bash'/.test(w))).toHaveLength(1);
-      expect(warnings.filter((w) => /'edit'/.test(w))).toHaveLength(1);
+      const lossy = warnings.filter((w) => /has no equivalent/.test(w));
+
+      expect(lossy).toHaveLength(2);
+      expect(lossy.filter((w) => /'bash'/.test(w))).toHaveLength(1);
+      expect(lossy.filter((w) => /'edit'/.test(w))).toHaveLength(1);
     });
 
     it("adds a second warning naming 'ask' when a mixed list contains one", async () => {
       // test-engineer's real block: a test-runner allowlist plus `rm -rf *: ask`.
-      const { warnings } = await adapter.fromCanonical(
-        canonical(`  bash:\n    "npx vitest *": "allow"\n    "rm -rf *": "ask"\n    "*": "deny"\n`)
+      const { warnings } = await adapter.fromOAC(
+        legacy({ bash: { "npx vitest *": "allow", "rm -rf *": "ask", "*": "deny" } })
       );
 
-      expect(warnings).toHaveLength(2);
       expect(warnings.some((w) => /cannot express/.test(w) && /ask/.test(w))).toBe(true);
     });
 
     it("warns when a rule list has no recoverable default", async () => {
       // context-manager's real `write` block: allow + deny with no "*" rule.
-      const { warnings } = await adapter.fromCanonical(
-        canonical(
-          `  write:\n    ".opencode/context/**/*.md": "allow"\n    "**/*.env*": "deny"\n`
-        )
+      const { warnings } = await adapter.fromOAC(
+        legacy({ write: { ".opencode/context/**/*.md": "allow", "**/*.env*": "deny" } })
       );
 
-      expect(warnings).toHaveLength(2);
       expect(warnings.some((w) => /ambiguous/.test(w))).toBe(true);
     });
 
