@@ -40,10 +40,10 @@
   "author": "OpenAgents Control",
   "license": "MIT",
   "dependencies": {
-    "@opencode-ai/plugin": "^1.0.223",
-    "glob": "^10.3.10",
-    "yaml": "^2.3.4",
-    "zod": "^3.22.4"
+    "@opencode-ai/plugin": "1.0.223",
+    "glob": "10.5.0",
+    "yaml": "2.8.2",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@types/bun": "^1.0.0",

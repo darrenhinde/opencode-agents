@@ -93,6 +93,31 @@ describe('classifyChangedPaths', () => {
     })
   })
 
+  test('detects shared workspace dependency changes', () => {
+    for (const path of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']) {
+      expect(classifyChangedPaths([path])).toEqual({
+        ...NO_CHANGES,
+        'has-evals': true,
+        'has-packages': true,
+      })
+    }
+  })
+
+  test('detects package automation changes', () => {
+    for (const path of [
+      '.github/dependabot.yml',
+      '.github/workflows/packages-checks.yml',
+      'scripts/validation/detect-pr-changes.ts',
+      'scripts/validation/detect-pr-changes.test.ts',
+    ]) {
+      expect(classifyChangedPaths([path])).toEqual({
+        ...NO_CHANGES,
+        'has-packages': true,
+        ...(path.startsWith('.github/workflows/') ? { 'has-workflows': true } : {}),
+      })
+    }
+  })
+
   test('detects mixed changes', () => {
     expect(
       classifyChangedPaths([

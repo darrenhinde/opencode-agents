@@ -14,11 +14,21 @@ export function parseChangedPaths(input: string): string[] {
 }
 
 export function classifyChangedPaths(paths: readonly string[]): ChangeFlags {
+  const hasWorkspaceChange = paths.some((path) =>
+    ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'].includes(path),
+  )
+
   return {
-    'has-evals': paths.some((path) => path.startsWith('evals/')),
+    'has-evals': hasWorkspaceChange || paths.some((path) => path.startsWith('evals/')),
     'has-docs': paths.some((path) => path.startsWith('docs/')),
     'has-workflows': paths.some((path) => path.startsWith('.github/workflows/')),
-    'has-packages': paths.some((path) => path.startsWith('packages/')),
+    'has-packages': hasWorkspaceChange || paths.some((path) =>
+      path.startsWith('packages/') ||
+      path === '.github/dependabot.yml' ||
+      path === '.github/workflows/packages-checks.yml' ||
+      path === 'scripts/validation/detect-pr-changes.ts' ||
+      path === 'scripts/validation/detect-pr-changes.test.ts',
+    ),
   }
 }
 
