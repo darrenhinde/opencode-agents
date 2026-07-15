@@ -55,7 +55,14 @@ describe("CursorAdapter", () => {
       expect(capabilities.supportsSkills).toBe(false);
       expect(capabilities.supportsHooks).toBe(false);
       expect(capabilities.supportsGranularPermissions).toBe(false);
-      expect(capabilities.supportsContexts).toBe(true);
+      // Was `true` until 2026-07-15, pinning the wrong side of a live contradiction: the
+      // adapter hand-wrote `supportsContexts: true` ("✅ Can inline context") while the matrix
+      // said `externalContext: "none"` ("context must be inline in .cursorrules"). This
+      // assertion is why that survived — it froze the adapter's answer instead of comparing it
+      // to the matrix's. Ruled for the matrix: inlining delivers the bytes but loses the
+      // reference, the file boundary and the priority, so it is degradation, not support.
+      // The comparison this test should have been making now lives in capability-agreement.test.ts.
+      expect(capabilities.supportsContexts).toBe(false);
       expect(capabilities.supportsCustomModels).toBe(true);
       expect(capabilities.supportsTemperature).toBe(true);
       expect(capabilities.supportsMaxSteps).toBe(false);

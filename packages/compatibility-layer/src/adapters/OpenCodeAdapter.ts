@@ -60,6 +60,7 @@
 
 import * as yaml from "js-yaml";
 import { BaseAdapter } from "./BaseAdapter.js";
+import { getToolCapabilities } from "../core/CapabilityMatrix.js";
 import {
   CanonicalAgentSchema,
   desugarPermission,
@@ -502,18 +503,8 @@ export class OpenCodeAdapter extends BaseAdapter {
    */
   getCapabilities(): ToolCapabilities {
     return {
-      name: this.name,
+      ...getToolCapabilities("opencode"),
       displayName: this.displayName,
-      supportsMultipleAgents: true,
-      supportsSkills: true,
-      supportsHooks: false,
-      supportsGranularPermissions: true,
-      supportsContexts: true,
-      supportsCustomModels: true,
-      supportsTemperature: true,
-      supportsMaxSteps: true,
-      configFormat: "markdown",
-      outputStructure: "directory",
       notes: [
         "Agent files live at .opencode/agent/<category>/<name>.md, mirroring content/agents/.",
         "Emission strips the `oac:` block and preserves every other byte, including comments.",
