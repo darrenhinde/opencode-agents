@@ -17,7 +17,7 @@ import type {
   OpenAgent,
   AgentFrontmatter,
   ToolAccess,
-  GranularPermission,
+  PermissionMap,
   ContextReference,
   SkillReference,
 } from "../types.js";
@@ -282,13 +282,13 @@ export class TranslationEngine {
     }
 
     // Translate permissions
-    let oacPermissions: GranularPermission | undefined;
+    let oacPermissions: PermissionMap | undefined;
     if (source.permissions) {
       const permResult = mapPermissionsToOAC(
         source.permissions,
         platform
       );
-      oacPermissions = permResult.permissions as GranularPermission;
+      oacPermissions = permResult.permissions as PermissionMap;
       warnings.push(...permResult.warnings);
     }
 

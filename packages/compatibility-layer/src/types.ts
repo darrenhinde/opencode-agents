@@ -25,28 +25,163 @@ export const ToolAccessSchema = z.object({
 // ============================================================================
 
 /**
+ * A single permission decision.
+ *
+ * Field name rationale: `action` mirrors OpenCode's own runtime rule shape
+ * (`{ permission, pattern, action }`), verified against the installed resolver in
+ * `docs/architecture/canonical-refactor/10-PRECEDENCE-EXPERIMENT.md` §7.
+ */
+export const PermissionActionSchema = z.enum(["allow", "deny", "ask"]);
+
+/**
  * Permission rules can be:
  * - A literal: "allow", "deny", "ask"
  * - A boolean (true = allow, false = deny)
  * - A record mapping specific operations to permission literals
+ *
+ * This is the *authored* (on-disk YAML) form. It is sugar over the canonical
+ * ordered form below — see {@link desugarPermission}.
  */
 export const PermissionRuleSchema = z.union([
   z.literal("allow"),
   z.literal("deny"),
   z.literal("ask"),
   z.boolean(),
-  z.record(z.string(), z.union([
-    z.literal("allow"),
-    z.literal("deny"),
-    z.literal("ask"),
-  ])),
+  z.record(z.string(), PermissionActionSchema),
 ]);
 
 /**
- * Granular permissions allow fine-grained control over different operations.
- * Maps operation names to permission rules.
+ * The legacy/authored `permission:` mapping exactly as OpenCode accepts it on disk:
+ * capability name -> rule. This is what {@link AgentFrontmatterSchema} still carries,
+ * so existing agent files keep parsing unchanged.
+ *
+ * ⚠️ A JS object is an UNORDERED map as far as any schema is concerned. This shape is
+ * accepted as INPUT only; the canonical representation is {@link GranularPermissionSchema}.
  */
-export const GranularPermissionSchema = z.record(z.string(), PermissionRuleSchema);
+export const PermissionMapSchema = z.record(z.string(), PermissionRuleSchema);
+
+/**
+ * One ordered rule within a capability. `pattern` is a glob whose namespace depends on
+ * the capability (path glob for read/write/edit, command glob for bash, agent id for task).
+ */
+export const PermissionRuleEntrySchema = z
+  .object({
+    pattern: z.string().min(1),
+    action: PermissionActionSchema,
+  })
+  .strict();
+
+/**
+ * Ordered rules for a single capability. **Array order is semantic**: rules are evaluated
+ * in authored order and the LAST matching rule wins.
+ *
+ * Duplicate patterns are representable here by design — the OpenCode serializer, not the
+ * schema, is responsible for refusing to emit them (the map format cannot round-trip them).
+ */
+export const PermissionRuleListSchema = z.array(PermissionRuleEntrySchema);
+
+/**
+ * One capability's ordered rule list. Capability entries are themselves ordered, because
+ * OpenCode flattens the capability map into a single rule list before resolving and
+ * wildcard capability keys (e.g. `"*"`) can match alongside specific ones.
+ */
+export const GranularPermissionEntrySchema = z
+  .object({
+    capability: z.string().min(1),
+    rules: PermissionRuleListSchema,
+  })
+  .strict();
+
+/**
+ * Granular permissions in their canonical, ORDER-PRESERVING representation.
+ *
+ * This deliberately replaces the previous `z.record(...)` map. Last-match-wins precedence
+ * is meaningless without a guaranteed order, and a record only preserved order by accident
+ * of ECMAScript string-key insertion ordering — an accident that demonstrably breaks for
+ * integer-like keys (see {@link desugarPermission}).
+ *
+ * Semantics (confirmed live against OpenCode 1.17.20 —
+ * `docs/architecture/canonical-refactor/10-PRECEDENCE-EXPERIMENT.md`):
+ * flatten entries in order, then resolve with **last-match-wins** (`Array.findLast`).
+ */
+export const GranularPermissionSchema = z.array(GranularPermissionEntrySchema);
+
+/** Scopes that ECMAScript would silently reorder to the front of an object's key list. */
+const INTEGER_LIKE_SCOPE = /^\d+$/;
+
+/**
+ * What an author may write under `permission:` — either the canonical ordered form or the
+ * OpenCode map sugar. Desugars to the canonical ordered form, preserving source order.
+ */
+export const PermissionInputSchema = z
+  .union([GranularPermissionSchema, PermissionMapSchema])
+  .transform((input, ctx) => desugar(input, ctx));
+
+// ----------------------------------------------------------------------------
+// Permission desugaring
+// ----------------------------------------------------------------------------
+
+type PermissionRuleInput = z.infer<typeof PermissionRuleSchema>;
+type PermissionRuleEntryOut = z.infer<typeof PermissionRuleEntrySchema>;
+type GranularPermissionOut = z.infer<typeof GranularPermissionSchema>;
+
+/** Reject scopes ECMAScript key ordering would silently move, invalidating rule order. */
+function reject(scope: string, ctx: z.RefinementCtx, path: (string | number)[]): boolean {
+  if (!INTEGER_LIKE_SCOPE.test(scope.trim())) return false;
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path,
+    message:
+      `integer-like scope "${scope}" is not allowed: ECMAScript reorders integer-like ` +
+      `object keys to the front, which silently changes last-match-wins precedence`,
+  });
+  return true;
+}
+
+/** Expand one authored rule (scalar, boolean or scope map) into ordered rule entries. */
+function expand(
+  rule: PermissionRuleInput,
+  ctx: z.RefinementCtx,
+  path: (string | number)[]
+): PermissionRuleEntryOut[] {
+  if (typeof rule === "boolean") {
+    return [{ pattern: "*", action: rule ? "allow" : "deny" }];
+  }
+  if (typeof rule === "string") {
+    return [{ pattern: "*", action: rule }];
+  }
+  return Object.entries(rule).flatMap(([pattern, action]) =>
+    reject(pattern, ctx, [...path, pattern]) ? [] : [{ pattern, action }]
+  );
+}
+
+/**
+ * Back-compat parser: converts authored `permission:` input into the canonical ordered
+ * form **in source order**.
+ *
+ * - `edit: deny`                     -> [{ capability: "edit", rules: [{ pattern: "*", action: "deny" }] }]
+ * - `bash: { "*": deny, "ls*": allow }` -> rules in exactly that order (the later rule wins)
+ * - already-ordered input            -> identity
+ */
+function desugar(
+  input: GranularPermissionOut | Record<string, PermissionRuleInput>,
+  ctx: z.RefinementCtx
+): GranularPermissionOut {
+  if (Array.isArray(input)) return input;
+  return Object.entries(input).flatMap(([capability, rule]) =>
+    reject(capability, ctx, [capability])
+      ? []
+      : [{ capability, rules: expand(rule, ctx, [capability]) }]
+  );
+}
+
+/**
+ * Desugar authored permission input into the canonical ordered form.
+ * Throws a `ZodError` on integer-like scopes or malformed input.
+ */
+export function desugarPermission(input: unknown): GranularPermissionOut {
+  return PermissionInputSchema.parse(input);
+}
 
 // ============================================================================
 // Context Schemas
@@ -185,9 +320,153 @@ export const AgentFrontmatterSchema = z.object({
   hidden: z.boolean().optional(),
   prompt: z.string().optional(),
   tools: ToolAccessSchema.optional(),
-  permission: GranularPermissionSchema.optional(),
+  permission: PermissionMapSchema.optional(),
   skills: z.array(SkillReferenceSchema).optional(),
   hooks: z.array(HookDefinitionSchema).optional(),
+});
+
+// ============================================================================
+// Canonical `oac:` Frontmatter Block
+// ============================================================================
+
+/**
+ * Stable machine identity. Kebab-case slug — verified against all 28 entries in
+ * `.opencode/config/agent-metadata.json`.
+ */
+export const OacIdSchema = z
+  .string()
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "id must be kebab-case: lowercase alphanumeric words joined by single hyphens"
+  );
+
+/** SemVer of the authored component. Corpus uses 1.0.0 / 2.0.0. */
+export const OacVersionSchema = z
+  .string()
+  .regex(/^\d+\.\d+\.\d+$/, "version must be SemVer (MAJOR.MINOR.PATCH)");
+
+const CATEGORY_ROOTS: readonly string[] = [
+  ...AgentCategorySchema.options,
+  // Present in the real corpus but absent from AgentCategorySchema:
+  "subagents", // 20 entries: subagents/{code,core,development,system-builder,test,utils}
+  "testing", // 1 entry: eval-runner
+];
+
+const CATEGORY_SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * Organizational category. Mirrors the agent's directory under `.opencode/agent/`:
+ * a closed root vocabulary, optionally followed by one `/`-joined sub-segment.
+ *
+ * ⚠️ Deliberately a superset of {@link AgentCategorySchema}, which cannot express the
+ * corpus: 21 of the 28 entries in `.opencode/config/agent-metadata.json` use values that
+ * enum rejects (`subagents/core`, `subagents/code`, …, `testing`). The ratified
+ * "the schema must accept its own corpus" rule (02-canonical-schema.md v3) wins over the
+ * brief's "reuses AgentCategorySchema". The root stays closed so typos are still caught.
+ */
+export const OacCategorySchema = z.string().refine(
+  (value) => {
+    const segments = value.split("/");
+    if (segments.length > 2) return false;
+    const [root = "", sub] = segments;
+    if (!CATEGORY_ROOTS.includes(root)) return false;
+    return sub === undefined || CATEGORY_SEGMENT.test(sub);
+  },
+  {
+    message:
+      `category must be "<root>" or "<root>/<segment>" where root is one of: ` +
+      CATEGORY_ROOTS.join(", "),
+  }
+);
+
+/**
+ * Platforms a component can declare as an emit target. Every value here has a
+ * working adapter; which of them `oac build` actually wires up is a separate,
+ * narrower question — see the build command's target registry.
+ */
+export const BuildTargetSchema = z.enum([
+  "opencode",
+  "claude-code",
+  "cursor",
+  "windsurf",
+]);
+
+/**
+ * Which platforms this component is emitted to. At least one target is required;
+ * `targets: []` is rejected because a component that emits nowhere is dead weight the
+ * build would silently skip. Defaults to `["opencode"]` — true of all 34 agents on disk —
+ * so an `agent-metadata.json` entry validates as an `oac:` block verbatim.
+ */
+export const BuildTargetsSchema = z
+  .array(BuildTargetSchema)
+  .min(1, "targets must list at least one build target")
+  .default(["opencode"]);
+
+/**
+ * A dependency reference in either authored form:
+ * - the flat typed string the corpus uses today (`"subagent:tester"`, `"context:standards-code"`)
+ * - the structured {@link DependencyReferenceSchema} form
+ *
+ * Both normalize to `{ type, id }`, so `.opencode/config/agent-metadata.json` round-trips
+ * byte-for-byte with zero migration.
+ */
+export const DependencyRefInputSchema = z.union([
+  z.string().transform((value, ctx): z.infer<typeof DependencyReferenceSchema> => {
+    const separator = value.indexOf(":");
+    const parsed = DependencyReferenceSchema.safeParse({
+      type: value.slice(0, separator),
+      id: value.slice(separator + 1),
+    });
+    if (separator <= 0 || !parsed.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          `dependency "${value}" must be "<type>:<id>" where type is one of: ` +
+          DependencyReferenceSchema.shape.type.options.join(", "),
+      });
+      return z.NEVER;
+    }
+    return parsed.data;
+  }),
+  DependencyReferenceSchema,
+]);
+
+/**
+ * The canonical `oac:` frontmatter block — everything a component needs that OpenCode's
+ * frontmatter schema rejects as an unknown field. This is precisely the content of
+ * `.opencode/config/agent-metadata.json`; carrying it here is what lets that sidecar be
+ * dissolved. `oac build` strips this block when emitting OpenCode agent files.
+ *
+ * Strict: an unknown key is an error, never silently dropped.
+ */
+export const OacBlockSchema = z
+  .object({
+    id: OacIdSchema,
+    name: z.string().min(1),
+    category: OacCategorySchema,
+    type: AgentTypeSchema,
+    version: OacVersionSchema.default("1.0.0"),
+    author: z.string().min(1).default("opencode"),
+    tags: z.array(z.string()).default([]),
+    dependencies: z.array(DependencyRefInputSchema).default([]),
+    targets: BuildTargetsSchema,
+  })
+  .strict();
+
+// ============================================================================
+// Canonical Agent Schema
+// ============================================================================
+
+/**
+ * A canonical agent file: OpenCode-legal frontmatter PLUS the `oac:` block. One file
+ * fully defines one component — no sidecar, no second source of truth.
+ *
+ * `permission` accepts the authored OpenCode map sugar and desugars it into the ordered
+ * {@link GranularPermissionSchema} form, in source order.
+ */
+export const CanonicalAgentSchema = AgentFrontmatterSchema.extend({
+  oac: OacBlockSchema,
+  permission: PermissionInputSchema.optional(),
 });
 
 // ============================================================================
@@ -261,8 +540,17 @@ export const ToolConfigSchema = z.object({
 // ============================================================================
 
 export type ToolAccess = z.infer<typeof ToolAccessSchema>;
+export type PermissionAction = z.infer<typeof PermissionActionSchema>;
 export type PermissionRule = z.infer<typeof PermissionRuleSchema>;
+/** The authored (OpenCode on-disk) permission map. Unordered — input only. */
+export type PermissionMap = z.infer<typeof PermissionMapSchema>;
+export type PermissionRuleEntry = z.infer<typeof PermissionRuleEntrySchema>;
+export type PermissionRuleList = z.infer<typeof PermissionRuleListSchema>;
+export type GranularPermissionEntry = z.infer<typeof GranularPermissionEntrySchema>;
+/** Canonical ORDERED granular permissions. Array order is semantic (last-match-wins). */
 export type GranularPermission = z.infer<typeof GranularPermissionSchema>;
+/** Authored permission input, before desugaring. */
+export type PermissionInput = z.input<typeof PermissionInputSchema>;
 export type ContextPriority = z.infer<typeof ContextPrioritySchema>;
 export type ContextReference = z.infer<typeof ContextReferenceSchema>;
 export type DependencyReference = z.infer<typeof DependencyReferenceSchema>;
@@ -275,6 +563,13 @@ export type SkillReference = z.infer<typeof SkillReferenceSchema>;
 export type HookEvent = z.infer<typeof HookEventSchema>;
 export type HookDefinition = z.infer<typeof HookDefinitionSchema>;
 export type AgentFrontmatter = z.infer<typeof AgentFrontmatterSchema>;
+export type OacId = z.infer<typeof OacIdSchema>;
+export type OacCategory = z.infer<typeof OacCategorySchema>;
+export type BuildTarget = z.infer<typeof BuildTargetSchema>;
+export type OacBlock = z.infer<typeof OacBlockSchema>;
+/** Authored `oac:` block, before defaults are applied. */
+export type OacBlockInput = z.input<typeof OacBlockSchema>;
+export type CanonicalAgent = z.infer<typeof CanonicalAgentSchema>;
 export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
 export type OpenAgent = z.infer<typeof OpenAgentSchema>;
 export type ToolConfig = z.infer<typeof ToolConfigSchema>;
