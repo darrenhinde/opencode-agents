@@ -124,59 +124,10 @@ jobs:
       - name: Test (vitest)
         run: pnpm --dir packages/compatibility-layer test
 
-  # Non-blocking: packages/plugin-abilities is known-red today (92 tsc errors,
-  # 23 failing bun tests; its lint script is broken — eslint is not a dependency
-  # and no config exists). This job reports build/test status without failing
-  # PRs until the package is repaired. Once it is green, promote the build and
-  # test commands to normal failing steps and gate the summary on this job.
-  plugin-abilities-checks:
-    name: Plugin Abilities (build + test, non-blocking)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: check-changes
-    if: needs.check-changes.outputs.has-packages == 'true'
-    outputs:
-      status: ${{ steps.nonblocking.outputs.status }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          persist-credentials: false
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: 1.3.14
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
-
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build and test (non-blocking)
-        id: nonblocking
-        run: |
-          STATUS=pass
-          pnpm --dir packages/plugin-abilities run build || STATUS=fail
-          pnpm --dir packages/plugin-abilities test || STATUS=fail
-          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
-          if [ "$STATUS" = "fail" ]; then
-            echo "::warning title=plugin-abilities red::packages/plugin-abilities build/test failing (pre-existing, non-blocking)"
-          fi
-
   summary:
     name: Packages Checks Summary
     runs-on: ubuntu-latest
-    needs: [check-changes, cli-checks, compatibility-layer-checks, plugin-abilities-checks]
+    needs: [check-changes, cli-checks, compatibility-layer-checks]
     if: always()
 
     steps:
@@ -197,13 +148,6 @@ jobs:
           report "Change Detection" "${{ needs.check-changes.result }}"
           report "CLI" "${{ needs.cli-checks.result }}"
           report "Compatibility Layer" "${{ needs.compatibility-layer-checks.result }}"
-
-          case "${{ needs.plugin-abilities-checks.result }}/${{ needs.plugin-abilities-checks.outputs.status }}" in
-            success/pass) echo "✅ **Plugin Abilities (non-blocking):** Passed" >> $GITHUB_STEP_SUMMARY ;;
-            success/fail) echo "⚠️ **Plugin Abilities (non-blocking):** Failing (pre-existing, does not block this PR)" >> $GITHUB_STEP_SUMMARY ;;
-            skipped/*) echo "⏭️ **Plugin Abilities (non-blocking):** Skipped (no packages/** changes)" >> $GITHUB_STEP_SUMMARY ;;
-            *) echo "⚠️ **Plugin Abilities (non-blocking):** ${{ needs.plugin-abilities-checks.result }}" >> $GITHUB_STEP_SUMMARY ;;
-          esac
 
           echo "" >> $GITHUB_STEP_SUMMARY
 

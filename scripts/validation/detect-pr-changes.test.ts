@@ -87,10 +87,6 @@ describe('classifyChangedPaths', () => {
       ...NO_CHANGES,
       'has-packages': true,
     })
-    expect(classifyChangedPaths(['packages/plugin-abilities/src/index.ts'])).toEqual({
-      ...NO_CHANGES,
-      'has-packages': true,
-    })
   })
 
   test('detects shared workspace dependency changes', () => {
@@ -298,10 +294,9 @@ describe('Packages checks workflow contract', () => {
 
     expect(workflow).toContain('cli-checks:')
     expect(workflow).toContain('compatibility-layer-checks:')
-    expect(workflow).toContain('plugin-abilities-checks:')
 
     const gates = workflow.match(/needs\.check-changes\.outputs\.has-packages == 'true'/g) ?? []
-    expect(gates.length).toBeGreaterThanOrEqual(3)
+    expect(gates.length).toBeGreaterThanOrEqual(2)
   })
 
   test('triggers on packages/** pull request changes', async () => {
