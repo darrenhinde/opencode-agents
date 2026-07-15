@@ -36,6 +36,10 @@ const IDE_OUTPUT_FILES: Record<IdeType, string> = {
 const dirExists = (p: string): Promise<boolean> =>
   stat(p).then((s) => s.isDirectory()).catch(() => false);
 
+/** Returns true if `p` is an existing file. Never throws. */
+const fileExists = (p: string): Promise<boolean> =>
+  stat(p).then((s) => s.isFile()).catch(() => false);
+
 /** Returns the indicator string and detected status for a single IDE. */
 async function checkIde(
   projectRoot: string,
@@ -57,7 +61,7 @@ async function checkIde(
     const dir = path.join(projectRoot, ".claude");
     const file = path.join(projectRoot, "CLAUDE.md");
     if (await dirExists(dir)) return { detected: true, indicator: ".claude/ directory" };
-    if (await Bun.file(file).exists()) return { detected: true, indicator: "CLAUDE.md file" };
+    if (await fileExists(file)) return { detected: true, indicator: "CLAUDE.md file" };
     return { detected: false, indicator: ".claude/ directory or CLAUDE.md (not found)" };
   }
   // windsurf

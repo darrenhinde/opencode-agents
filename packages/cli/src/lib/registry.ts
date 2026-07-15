@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -171,7 +172,7 @@ export const getBundledSourcePath = (component: RegistryComponent): string =>
 export const readRegistry = async (packageRoot: string): Promise<Registry> => {
   const registryPath = getRegistryPath(packageRoot);
 
-  const exists = await Bun.file(registryPath).exists();
+  const exists = await stat(registryPath).then((s) => s.isFile()).catch(() => false);
   if (!exists) {
     throw new Error(
       `registry.json not found at "${registryPath}".\n` +
@@ -180,13 +181,15 @@ export const readRegistry = async (packageRoot: string): Promise<Registry> => {
     );
   }
 
-  const raw = await Bun.file(registryPath).json().catch((err: unknown) => {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(
-      `Failed to parse registry.json at "${registryPath}": ${msg}\n` +
-        `The file may be corrupted. Try reinstalling: npm install -g @controlstack/oac`,
-    );
-  }) as unknown;
+  const raw = await readFile(registryPath, "utf8")
+    .then((text) => JSON.parse(text) as unknown)
+    .catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `Failed to parse registry.json at "${registryPath}": ${msg}\n` +
+          `The file may be corrupted. Try reinstalling: npm install -g @controlstack/oac`,
+      );
+    });
 
   const result = RegistrySchema.safeParse(raw);
   if (!result.success) {

@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { stat } from 'node:fs/promises';
 import { type Command } from 'commander';
 import semver from 'semver';
 
@@ -78,18 +79,18 @@ const checkOacVersion = async (): Promise<CheckResult> => {
   };
 };
 
-/** Check 2: Bun runtime version >= 1.0.0. */
-const checkBunVersion = (): CheckResult => {
-  const bunVersion = Bun.version; // e.g. "1.1.0" — global provided by @types/bun
-  const MIN_BUN = '1.0.0';
-  const isValid = semver.gte(bunVersion, MIN_BUN);
+/** Check 2: Node runtime version >= 20.0.0. */
+const checkNodeVersion = (): CheckResult => {
+  const nodeVersion = process.versions.node; // e.g. "20.11.0"
+  const MIN_NODE = '20.0.0';
+  const isValid = semver.gte(nodeVersion, MIN_NODE);
 
   return {
-    name: 'Bun runtime',
+    name: 'Node runtime',
     status: isValid ? 'ok' : 'error',
     message: isValid
-      ? `${bunVersion} (>= ${MIN_BUN} required)`
-      : `${bunVersion} is below minimum required ${MIN_BUN} — upgrade Bun`,
+      ? `${nodeVersion} (>= ${MIN_NODE} required)`
+      : `${nodeVersion} is below minimum required ${MIN_NODE} — upgrade Node`,
   };
 };
 
@@ -169,7 +170,7 @@ const checkFilesOnDisk = async (projectRoot: string): Promise<CheckResult> => {
   const missingFiles: string[] = [];
   for (const filePath of trackedFiles) {
     const absPath = join(projectRoot, filePath);
-    const exists = await Bun.file(absPath).exists();
+    const exists = await stat(absPath).then((s) => s.isFile()).catch(() => false);
     if (!exists) missingFiles.push(filePath);
   }
 
@@ -212,7 +213,7 @@ const checkModifiedFiles = async (projectRoot: string): Promise<CheckResult> => 
   const modifiedFiles: string[] = [];
   for (const filePath of trackedFiles) {
     const absPath = join(projectRoot, filePath);
-    const exists = await Bun.file(absPath).exists();
+    const exists = await stat(absPath).then((s) => s.isFile()).catch(() => false);
     if (!exists) continue; // Already reported by checkFilesOnDisk
 
     try {
@@ -347,7 +348,7 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
     ]);
 
   const allResults: CheckResult[] = [
-    checkBunVersion(), // synchronous — call directly
+    checkNodeVersion(), // synchronous — call directly
     configResult,
     manifestResult,
     filesResult,

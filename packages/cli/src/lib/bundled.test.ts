@@ -123,12 +123,18 @@ describe('findPackageRoot', () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
-  // ✅ Positive: finds a directory that has both .opencode/ and package.json
-  test('returns the directory that has both .opencode/ and package.json', async () => {
+  /** Writes a package.json with the given name at `dir`. */
+  const writePackageJson = async (dir: string, name: string): Promise<void> => {
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, 'package.json'), JSON.stringify({ name }), 'utf8');
+  };
+
+  // ✅ Positive: finds the directory whose package.json name is @controlstack/oac
+  test('returns the directory whose package.json is named @controlstack/oac', async () => {
     // Arrange — create a fake package root
     const fakeRoot = join(tmpDir, 'fake-pkg');
     await mkdir(join(fakeRoot, '.opencode'), { recursive: true });
-    await writeFile(join(fakeRoot, 'package.json'), '{}', 'utf8');
+    await writePackageJson(fakeRoot, '@controlstack/oac');
     // Also create a subdirectory to start the walk from
     const startDir = join(fakeRoot, 'dist', 'lib');
     await mkdir(startDir, { recursive: true });
@@ -145,13 +151,49 @@ describe('findPackageRoot', () => {
     // Arrange
     const fakeRoot = join(tmpDir, 'exact-root');
     await mkdir(join(fakeRoot, '.opencode'), { recursive: true });
-    await writeFile(join(fakeRoot, 'package.json'), '{}', 'utf8');
+    await writePackageJson(fakeRoot, '@controlstack/oac');
 
     // Act
     const result = findPackageRoot(fakeRoot);
 
     // Assert
     expect(result).toBe(fakeRoot);
+  });
+
+  // ✅ Regression: the published tarball ships registry.json NEXT TO .opencode/ at
+  // the package root. The previous heuristic excluded any directory containing a
+  // registry.json, so it walked straight past the real root and `oac init` failed
+  // on every `npm i -g` install. The root must still be found.
+  test('finds the package root even when registry.json sits beside .opencode/', async () => {
+    // Arrange — mirror the installed layout exactly
+    const installedRoot = join(tmpDir, 'installed-pkg');
+    await mkdir(join(installedRoot, '.opencode', 'agent'), { recursive: true });
+    await writePackageJson(installedRoot, '@controlstack/oac');
+    await writeFile(join(installedRoot, 'registry.json'), '{"components":[]}', 'utf8');
+    const startDir = join(installedRoot, 'packages', 'cli', 'dist');
+    await mkdir(startDir, { recursive: true });
+
+    // Act
+    const result = findPackageRoot(startDir);
+
+    // Assert
+    expect(result).toBe(installedRoot);
+  });
+
+  // ❌ Negative: a differently-named package.json must not match
+  test('walks past a package.json belonging to a different package', async () => {
+    // Arrange — @controlstack/oac-cli must NOT be mistaken for @controlstack/oac
+    const outer = join(tmpDir, 'named-outer');
+    await mkdir(join(outer, '.opencode'), { recursive: true });
+    await writePackageJson(outer, '@controlstack/oac');
+    const inner = join(outer, 'packages', 'cli');
+    await writePackageJson(inner, '@controlstack/oac-cli');
+
+    // Act — starting inside the CLI package, the walk must reach the outer root
+    const result = findPackageRoot(inner);
+
+    // Assert
+    expect(result).toBe(outer);
   });
 
   // ❌ Negative: throws when no package root is found (isolated tmp dir with no markers)
@@ -181,7 +223,7 @@ describe('findPackageRoot', () => {
     // find the repo root. We therefore test the error *shape* by directly
     // calling with a path that we know will fail: the filesystem root '/'.
     expect(() => findPackageRoot('/')).toThrow(
-      'getPackageRoot: could not find a directory with ".opencode/" and "package.json"',
+      'getPackageRoot: could not find the "@controlstack/oac" package root',
     );
   });
 
@@ -197,27 +239,44 @@ describe('findPackageRoot', () => {
     expect(thrownMessage).toContain('"/"');
   });
 
-  // ❌ Negative: directory with only package.json (no .opencode) does not match
-  test('does not match a directory that has package.json but no .opencode', async () => {
-    // Arrange — a directory with only package.json, no .opencode
-    const noOpencode = join(tmpDir, 'no-opencode');
-    await mkdir(noOpencode, { recursive: true });
-    await writeFile(join(noOpencode, 'package.json'), '{}', 'utf8');
-    // Start from a child — the walk will pass through noOpencode (no match)
-    // and continue upward until it finds the monorepo root or throws.
-    // We just verify it does NOT return noOpencode.
+  // ❌ Negative: an unnamed package.json does not match
+  test('does not match a directory whose package.json has no name', async () => {
+    // Arrange — a directory with an anonymous package.json
+    const unnamed = join(tmpDir, 'unnamed-pkg');
+    await mkdir(unnamed, { recursive: true });
+    await writeFile(join(unnamed, 'package.json'), '{}', 'utf8');
+
+    // Act — the walk passes through and continues upward; it may find the real
+    // monorepo root above tmpdir, or throw. Either is fine.
     let result: string | undefined;
     try {
-      result = findPackageRoot(noOpencode);
+      result = findPackageRoot(unnamed);
     } catch {
       result = undefined;
     }
-    // If it found something, it must NOT be noOpencode (which lacks .opencode)
-    if (result !== undefined) {
-      expect(result).not.toBe(noOpencode);
+
+    // Assert — the key property: it never returns the unnamed directory
+    expect(result).not.toBe(unnamed);
+  });
+
+  // ❌ Negative: a malformed package.json is skipped rather than throwing
+  test('walks past a malformed package.json without throwing a parse error', async () => {
+    // Arrange
+    const broken = join(tmpDir, 'broken-pkg');
+    await mkdir(broken, { recursive: true });
+    await writeFile(join(broken, 'package.json'), '{ not json', 'utf8');
+
+    // Act & Assert — must not surface a JSON.parse error
+    let thrownMessage = '';
+    try {
+      const found = findPackageRoot(broken);
+      expect(found).not.toBe(broken);
+    } catch (err) {
+      thrownMessage = err instanceof Error ? err.message : String(err);
     }
-    // Either it threw (correct) or found a higher-level root (also acceptable)
-    expect(true).toBe(true); // test passes either way — the key is it didn't return noOpencode
+    if (thrownMessage !== '') {
+      expect(thrownMessage).toContain('could not find the "@controlstack/oac" package root');
+    }
   });
 });
 

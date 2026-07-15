@@ -1,6 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // --- Types ---
 
@@ -23,7 +24,6 @@ const BUNDLED_SUBDIRS = [
  * that contains both `.opencode/` and `package.json` — the npm package root.
  *
  * Works in both development (monorepo) and when installed via npm.
- * import.meta.dir is Bun's native equivalent of __dirname.
  */
 export function getPackageRoot(): string {
   // Allow dev/monorepo override via environment variable.
@@ -33,18 +33,41 @@ export function getPackageRoot(): string {
   if (envOverride) {
     return envOverride;
   }
-  // import.meta.dir is Bun's native equivalent of __dirname — points to packages/cli/dist/ at runtime
-  return findPackageRoot(import.meta.dir);
+  // Resolves to packages/cli/dist/ at runtime — the ESM equivalent of __dirname.
+  return findPackageRoot(dirname(fileURLToPath(import.meta.url)));
+}
+
+/** The published package whose root holds the bundled `.opencode/` tree. */
+const PACKAGE_NAME = "@controlstack/oac";
+
+/**
+ * Returns true when `dir` is the root of the OAC package itself — i.e. it holds
+ * a `package.json` whose `name` is exactly {@link PACKAGE_NAME}.
+ *
+ * The name is the only reliable anchor. Structural heuristics do not survive both
+ * layouts: an earlier version required `.opencode/` + `package.json` and the ABSENCE
+ * of `registry.json` (to skip the monorepo root in dev), but the published tarball
+ * ships `registry.json` NEXT TO `.opencode/` at its root — so that rule rejected the
+ * very directory it needed to find, and `oac init` could not locate its bundled files
+ * on a real `npm i -g` install.
+ */
+function isPackageRoot(dir: string): boolean {
+  const packageJsonPath = join(dir, "package.json");
+  if (!existsSync(packageJsonPath)) return false;
+
+  try {
+    const parsed = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { name?: unknown };
+    return parsed.name === PACKAGE_NAME;
+  } catch {
+    // Unreadable or malformed package.json — not a match; keep walking.
+    return false;
+  }
 }
 
 /**
- * Synchronously walks up from `dir` until finding a directory that has
- * all three anchors:
- *   1. `.opencode/`   — OAC configuration directory
- *   2. `package.json` — npm package manifest
- *   3. No `registry.json` at the same level — `registry.json` is present at
- *      the monorepo root but NOT at the CLI package root, so its absence
- *      distinguishes the CLI package from the repo root in a monorepo layout.
+ * Synchronously walks up from `dir` until it finds the OAC package root, as
+ * identified by {@link isPackageRoot}. Works identically in the monorepo (where
+ * the repo root is the package) and in an installed tree.
  *
  * Throws if the filesystem root is reached without finding a match.
  *
@@ -54,14 +77,7 @@ export function findPackageRoot(dir: string): string {
   let current = dir;
 
   while (true) {
-    const hasOpencode = existsSync(join(current, ".opencode"));
-    const hasPackageJson = existsSync(join(current, "package.json"));
-    // registry.json exists at the monorepo root but NOT at the CLI package root.
-    // Excluding directories that have it prevents the walk from stopping at the
-    // repo root instead of the actual CLI package root.
-    const hasRegistryJson = existsSync(join(current, "registry.json"));
-
-    if (hasOpencode && hasPackageJson && !hasRegistryJson) {
+    if (isPackageRoot(current)) {
       return current;
     }
 
@@ -69,9 +85,9 @@ export function findPackageRoot(dir: string): string {
     // Reached filesystem root — no package root found
     if (parent === current) {
       throw new Error(
-        `getPackageRoot: could not find a directory with ".opencode/" and "package.json" ` +
-          `(without a "registry.json" at the same level) walking up from "${dir}". ` +
-          `Is @controlstack/oac installed correctly? ` +
+        `getPackageRoot: could not find the "${PACKAGE_NAME}" package root ` +
+          `walking up from "${dir}". ` +
+          `Is ${PACKAGE_NAME} installed correctly? ` +
           `In dev/monorepo mode, set OAC_PACKAGE_ROOT env var to the repo root.`,
       );
     }
@@ -142,7 +158,10 @@ export async function listBundledFiles(packageRoot: string): Promise<string[]> {
 export const bundledFileExists = async (
   packageRoot: string,
   relativePath: string,
-): Promise<boolean> => Bun.file(getBundledFilePath(packageRoot, relativePath)).exists();
+): Promise<boolean> =>
+  stat(getBundledFilePath(packageRoot, relativePath))
+    .then((s) => s.isFile())
+    .catch(() => false);
 
 // --- Classification ---
 

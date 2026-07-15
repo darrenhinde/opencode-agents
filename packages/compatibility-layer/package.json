@@ -1,6 +1,7 @@
 {
   "name": "@controlstack/compatibility-layer",
   "version": "1.1.0",
+  "private": true,
   "type": "module",
   "description": "Compatibility layer for converting OpenAgents Control agents to/from other AI coding tools (Cursor, Claude Code, Windsurf)",
   "main": "dist/index.js",
