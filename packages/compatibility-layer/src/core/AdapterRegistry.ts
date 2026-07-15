@@ -336,6 +336,14 @@ export class AdapterRegistry {
     } catch (error) {
       // Adapter not yet implemented - skip silently
     }
+
+    try {
+      // OpenCode — the canonical target
+      const { OpenCodeAdapter } = await import("../adapters/OpenCodeAdapter.js");
+      this.register(new OpenCodeAdapter(), ["open-code"]);
+    } catch (error) {
+      // Adapter not yet implemented - skip silently
+    }
   }
 }
 
