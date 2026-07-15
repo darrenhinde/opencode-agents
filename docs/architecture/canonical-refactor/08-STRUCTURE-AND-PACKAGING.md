@@ -44,7 +44,7 @@ OpenAgentsControl/
 
 Mapping from today: `packages/compatibility-layer/{types,core,mappers}` → `packages/core`;
 `packages/compatibility-layer/adapters` → `packages/adapters`; `packages/cli` stays (de-Bunned);
-`packages/plugin-abilities` unchanged for now (CC plugin runtime, revisit post-Stage 6);
+`packages/plugin-abilities` deleted (commit `cce5255`) — dead code, no consumers, did not build;
 `.opencode/` demoted from source to build output. The `skill`/`skills`, `plugin`/`plugins`
 singular-plural schism dies with `.opencode/`-as-source.
 

@@ -43,7 +43,9 @@ STOP and report — do not guess.
   runs cli tests with Bun installed via setup action. Do NOT introduce new Bun APIs anywhere.
 - `packages/compatibility-layer` — **vitest**, Node-clean (zero Bun usage). New packages
   (`packages/core`, `packages/adapters`) use **vitest** (locked, `05` Q1).
-- `packages/plugin-abilities` — check its `package.json` scripts before wiring CI; do not assume.
+- `packages/plugin-abilities` — **deleted** (commit `cce5255`). It had zero consumers in its
+  entire history, did not compile, and failed 23 of its own tests. `packages/` is now exactly
+  `cli` and `compatibility-layer`. Do not re-add it or reference it.
 - `evals/framework` — has NO ESLint config; its deterministic baseline = build + the
   `test:ci` vitest allowlist + `validate:suites:all`. Do not add lint gates to it in Stage 0.
 - Context census is recorded from disk in `09-MERGE-RULES.md` §9. Recount before asserting it
