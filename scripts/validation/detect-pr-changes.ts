@@ -7,6 +7,17 @@ export type ChangeFlags = {
   'has-docs': boolean
   'has-workflows': boolean
   'has-packages': boolean
+  /**
+   * Anything that can move the generated trees, and therefore must re-run the drift gate:
+   * the canonical source, the build that reads it, and the committed output itself.
+   *
+   * Separate from `has-packages` on purpose. A content-only edit must run the drift gate but
+   * has no reason to run the cli/compatibility-layer test suites, and a PR that hand-edits
+   * `.opencode/agent/**` alone touches no `packages/**` path at all — folding this into
+   * `has-packages` would either skip the gate on exactly the change it exists to catch, or
+   * run every package suite on every prose tweak.
+   */
+  'has-canonical': boolean
 }
 
 export function parseChangedPaths(input: string): string[] {
@@ -29,6 +40,20 @@ export function classifyChangedPaths(paths: readonly string[]): ChangeFlags {
       path === 'scripts/validation/detect-pr-changes.ts' ||
       path === 'scripts/validation/detect-pr-changes.test.ts',
     ),
+    'has-canonical': hasWorkspaceChange || paths.some((path) =>
+      // The canonical source.
+      path.startsWith('content/') ||
+      // The build that turns it into output.
+      path.startsWith('packages/') ||
+      // The committed output — a hand-edit here is precisely what the gate exists to catch.
+      path.startsWith('.opencode/agent/') ||
+      path.startsWith('.oac/') ||
+      path === 'registry.json' ||
+      // The gate's own machinery.
+      path === 'Makefile' ||
+      path === 'scripts/validation/check-build-drift.sh' ||
+      path === '.github/workflows/packages-checks.yml',
+    ),
   }
 }
 
@@ -38,6 +63,7 @@ export function formatGitHubOutput(flags: ChangeFlags): string {
     `has-docs=${flags['has-docs']}`,
     `has-workflows=${flags['has-workflows']}`,
     `has-packages=${flags['has-packages']}`,
+    `has-canonical=${flags['has-canonical']}`,
   ].join('\n') + '\n'
 }
 

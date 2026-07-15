@@ -7,6 +7,7 @@ OWNER := darrenhinde
 
 .PHONY: help idea ideas board labels project-info issue-view issue-comment issue-close bug feature
 .PHONY: test-evals test-golden test-smoke test-verbose build-evals validate-evals
+.PHONY: build-canonical check-canonical-drift oac-cli
 
 help: ## Show this help message
 	@echo "OpenAgents GitHub Project Management"
@@ -156,6 +157,21 @@ high-priority: ## List all high priority items
 # =============================================================================
 # Evaluation Framework Commands
 # =============================================================================
+
+# The canonical build: content/agents/** is the source, .opencode/agent/**, registry.json and
+# .oac/build-manifest.json are its committed output. `check-canonical-drift` is exactly what CI
+# runs (.github/workflows/packages-checks.yml), so a contributor can reproduce a red gate here.
+oac-cli: ## Build the oac CLI and its compatibility-layer dependency
+	@pnpm --dir packages/compatibility-layer run build
+	@pnpm --dir packages/cli run build
+
+build-canonical: oac-cli ## Regenerate the committed trees from content/agents/**
+	@echo "🔨 Building canonical trees..."
+	@bun packages/cli/dist/index.js build
+
+check-canonical-drift: oac-cli ## Fail if the generated trees drift from content/agents/** (CI gate)
+	@echo "🔍 Checking for generated-tree drift..."
+	@bash scripts/validation/check-build-drift.sh
 
 build-evals: ## Build the evaluation framework
 	@echo "🔨 Building evaluation framework..."
