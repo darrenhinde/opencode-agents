@@ -13,6 +13,16 @@
 
 import type { OpenAgent, ToolCapabilities } from "../types.js";
 
+/**
+ * Re-export only. The ordered-rule collapse lives in `Capabilities.ts`, which owns
+ * last-match-wins; this file is a static per-platform support matrix and must not grow a
+ * second, divergent resolver. Callers reach `degradeToBinary` here because a per-capability
+ * grant is the matrix's own question ("what survives on this platform?"), answered by the
+ * resolver rather than duplicated against it.
+ */
+export { degradeToBinary } from "./Capabilities.js";
+export type { BinaryProjection } from "./Capabilities.js";
+
 // ============================================================================
 // Types
 // ============================================================================
