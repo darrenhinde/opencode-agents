@@ -304,6 +304,9 @@ export class OpenCodeAdapter extends BaseAdapter {
    * @throws {OpenCodeEmitError} when the source is malformed, carries no `oac:` block, or when
    * the emitted result would not round-trip its permissions.
    */
+  // `async` turns a malformed source into a rejection rather than a synchronous throw past
+  // the caller's .catch(), so require-await's assumption does not hold here.
+  // eslint-disable-next-line @typescript-eslint/require-await
   async fromCanonical(
     source: string,
     options: FromCanonicalOptions = {}

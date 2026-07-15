@@ -75,6 +75,9 @@ export class ClaudeAdapter extends BaseAdapter {
    * @returns the emitted path, its exact bytes, and one warning per semantic actually lost
    * @throws {Error} if the source does not parse against {@link CanonicalAgentSchema}
    */
+  // The `async` carries the rejection semantics documented above. It is load-bearing, not an
+  // accidental keyword, so require-await's assumption does not hold here.
+  // eslint-disable-next-line @typescript-eslint/require-await
   async fromCanonical(source: string): Promise<ClaudeEmission> {
     const parsed = CanonicalAgentSchema.safeParse(structuredClone(matter(source).data));
 
