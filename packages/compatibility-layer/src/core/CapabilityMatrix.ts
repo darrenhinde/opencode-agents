@@ -19,6 +19,16 @@ import type { OpenAgent, ToolCapabilities } from "../types.js";
  * second, divergent resolver. Callers reach `degradeToBinary` here because a per-capability
  * grant is the matrix's own question ("what survives on this platform?"), answered by the
  * resolver rather than duplicated against it.
+ *
+ * ## Ownership (settled by subtask 07; subtask 04 flagged the overlap)
+ *
+ * `Capabilities.ts` is the sole IMPLEMENTATION — one resolver, one fail-closed projection.
+ * This module is a re-export SURFACE and nothing more: no logic, no wrapper, no defaults.
+ * The re-export is load-bearing rather than convenience —
+ * `tests/unit/build/permission-ordering.test.ts` imports `degradeToBinary` from this path by
+ * name and pins it to subtask 07, so deleting it would break a green gate. New code should
+ * prefer importing from `./Capabilities.js` directly; adapters that need the flat-list
+ * projection want `projectToFlatTools`, which is only exported there.
  */
 export { degradeToBinary } from "./Capabilities.js";
 export type { BinaryProjection } from "./Capabilities.js";
@@ -103,7 +113,11 @@ const CAPABILITY_MATRIX: FeatureDefinition[] = [
     name: "agentCategories",
     category: "agents",
     description: "Agent categorization (core, development, etc.)",
-    support: { oac: "full", claude: "partial", cursor: "none", windsurf: "partial" },
+    // Claude Code agent frontmatter has no category field — the canonical `oac.category`
+    // survives only as the directory an author happens to file the source under, and is not
+    // carried into the emitted agent at all.
+    support: { oac: "full", claude: "none", cursor: "none", windsurf: "partial" },
+    notes: { claude: "No category field in agent frontmatter — dropped on emit" },
   },
 
   // Permission Features
@@ -113,9 +127,24 @@ const CAPABILITY_MATRIX: FeatureDefinition[] = [
     description: "Fine-grained allow/deny/ask patterns",
     support: { oac: "full", claude: "none", cursor: "none", windsurf: "none" },
     notes: {
-      claude: "Binary on/off only",
+      claude:
+        "tools/disallowedTools are flat name lists — a capability is wholly granted or " +
+        "wholly denied, so anything scoped degrades fail-closed to disallowedTools",
       cursor: "Binary on/off only",
       windsurf: "Binary on/off only",
+    },
+  },
+  {
+    name: "orderedPermissionRules",
+    category: "permissions",
+    description: "Ordered rule lists resolved last-match-wins (deny-all-then-allowlist)",
+    // The central fact of the canonical refactor, and previously unrepresented here: the
+    // shipped agents' security posture IS the rule order (`bash: {"*": deny, "git log*":
+    // allow}`). A target scoring "none" cannot carry that shape at all, which is why
+    // Capabilities.degradeToBinary refuses it rather than picking a winning rule.
+    support: { oac: "full", claude: "none", cursor: "none", windsurf: "none" },
+    notes: {
+      claude: "No rule ordering concept — the allowlist cannot be carried, so Bash is denied",
     },
   },
   {
@@ -123,15 +152,29 @@ const CAPABILITY_MATRIX: FeatureDefinition[] = [
     category: "permissions",
     description: "Interactive permission requests",
     support: { oac: "full", claude: "none", cursor: "none", windsurf: "none" },
+    notes: {
+      claude: "No 'ask' in agent frontmatter — degrades to deny, never to allow",
+    },
   },
   {
     name: "pathPatterns",
     category: "permissions",
     description: "Glob patterns for file permissions",
     support: { oac: "full", claude: "none", cursor: "none", windsurf: "partial" },
+    notes: {
+      claude: "Tool grants carry no path scope — secret-file denies cannot be expressed",
+    },
   },
 
   // Tool Features
+  {
+    name: "binaryToolGrants",
+    category: "tools",
+    description: "Flat allow/deny lists of tool names (tools / disallowedTools)",
+    // What Claude Code DOES support, stated positively — this is the entire target surface
+    // ClaudeAdapter emits into, and the matrix previously described only what was missing.
+    support: { oac: "full", claude: "full", cursor: "none", windsurf: "partial" },
+  },
   {
     name: "taskDelegation",
     category: "tools",
@@ -222,14 +265,20 @@ const CAPABILITY_MATRIX: FeatureDefinition[] = [
     name: "dependencies",
     category: "advanced",
     description: "Agent dependency declarations",
-    support: { oac: "full", claude: "full", cursor: "none", windsurf: "partial" },
+    // Claude Code agent frontmatter accepts name/description/tools/disallowedTools/model and
+    // nothing else. `oac.dependencies` is resolved at build time and then dropped; the
+    // emitted agent declares no dependencies, so "full" overstated this.
+    support: { oac: "full", claude: "none", cursor: "none", windsurf: "partial" },
+    notes: { claude: "Dependencies resolve at build time; not carried in agent frontmatter" },
   },
   {
     name: "priorityLevels",
     category: "advanced",
     description: "Task priority levels",
-    support: { oac: "full", claude: "partial", cursor: "none", windsurf: "partial" },
-    notes: { oac: "4 levels", claude: "2 levels", windsurf: "2 levels" },
+    // "2 levels" was not a Claude Code feature — nothing in agent frontmatter or the plugin
+    // format expresses task priority.
+    support: { oac: "full", claude: "none", cursor: "none", windsurf: "partial" },
+    notes: { oac: "4 levels", claude: "No task priority concept", windsurf: "2 levels" },
   },
 ];
 
@@ -455,7 +504,12 @@ export function getToolCapabilities(
   };
 
   const configFormats: Record<Exclude<Platform, "oac">, ToolCapabilities["configFormat"]> = {
-    claude: "json",
+    // Claude Code agents are markdown files with YAML frontmatter
+    // (`plugins/claude-code/agents/<id>.md`). This row previously read "json" on the
+    // reasoning that `settings.json` is JSON — but settings.json is not what any adapter
+    // emits, and ClaudeAdapter.getCapabilities() simultaneously reported "markdown". One
+    // platform cannot have two answers about itself; the emitted artifact decides.
+    claude: "markdown",
     cursor: "plain",
     windsurf: "json",
   };

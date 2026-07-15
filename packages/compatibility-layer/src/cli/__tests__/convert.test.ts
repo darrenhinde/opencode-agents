@@ -83,7 +83,9 @@ describe("convert command", () => {
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
       expect(result.data?.configs).toBeDefined();
-      expect(result.data?.configs[0].fileName).toContain(".claude/");
+      // Claude Code's real target is the committed plugin tree, not `.claude/`. The old
+      // `.claude/config.json` was a fabricated agent-config file that nothing reads.
+      expect(result.data?.configs[0].fileName).toContain("plugins/claude-code/agents/");
     });
 
     it("converts Cursor to OAC format", async () => {

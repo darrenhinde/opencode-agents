@@ -391,7 +391,12 @@ describe("CapabilityMatrix", () => {
         expect(caps.supportsSkills).toBe(true);
         expect(caps.supportsHooks).toBe(true);
         expect(caps.supportsGranularPermissions).toBe(false);
-        expect(caps.configFormat).toBe("json");
+        // Claude Code agents are markdown files with YAML frontmatter
+        // (`plugins/claude-code/agents/<id>.md`). This asserted "json" on the reasoning that
+        // settings.json is JSON — but settings.json is not what any adapter emits, and
+        // ClaudeAdapter.getCapabilities() simultaneously reported "markdown". The emitted
+        // artifact decides; the adapter now reads this row rather than restating it.
+        expect(caps.configFormat).toBe("markdown");
         expect(caps.outputStructure).toBe("directory");
       });
     });
