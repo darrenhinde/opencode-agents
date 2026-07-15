@@ -36,16 +36,17 @@ Per `00-INDEX.md` v2 worked example and `packages/compatibility-layer/src/types.
 | `tags[]` | string[] | Free-form labels. |
 | `capabilities` | see §0.4 | Ordered rule lists + scalar sugar. **INTENT, not any tool's syntax.** |
 | `inference.temperature` | number \| absent | Sampling temperature. |
-| `inference.model` | string \| **null** | `null` ⇒ tool default. **Never hardcode** (locked #2). |
+| `inference.tier` | `fast` \| `balanced` \| `deep` | Semantic cost/latency intent; adapters resolve it to target defaults. Raw model ids are not authorable. |
 | `inference.maxSteps` | number \| absent | Step cap. |
 | `context[]` | `{ path, priority?, description? }` | External context refs. See §0.6. |
-| `dependencies[]` | `subagent:` \| `context:` \| `skill:` \| `command:` \| `tool:` | Declared deps. |
+| `dependencies[]` | typed refs from `02` §0.2 (`agent` through `config`, including path/wildcard refs) | Declared deps. |
 | `examples[]` | `{ context, user, assistant }` | Few-shot delegation examples. |
 | `hooks[]` | `{ event, command, … }` | Lifecycle hooks. |
 | body | markdown | System prompt authored once. |
 
-Verified census (index v2): **34** agents, **20** commands, **296** context `.md`
-(286 HTML-comment / 3 YAML / 7 neither), 2 OpenCode skills, ~11 CC plugin skills.
+Verified census (Stage 1 closure): **34** agents and **20** OpenCode commands. Context composition
+and the **12 + 4 = 16** canonical skill union are recorded from disk in `09-MERGE-RULES.md` §§4,9;
+those measurements supersede the stale index-v2 counts previously printed here.
 
 ### 0.2 Warning contract
 
@@ -66,8 +67,8 @@ degradedFeatureWarning(feature, from, to):
 
 A transform that drops or degrades any field MUST emit a warning AND `analyzeCompatibility()`
 MUST predict it. Builds fail only on `blockers`; warnings are reported and counted.
-**Security-relevant losses (§2.3) are warnings today — see Open Questions #Q3 for whether they
-should block.**
+**Security-relevant losses (§2.3) are build blockers unless the user supplies the explicit
+`--allow-unsafe-degradation` opt-in** (`07-EXECUTION-PLAN.md` Stage 3).
 
 ### 0.4 The capabilities model (Option A — locked decision #5)
 
@@ -84,19 +85,14 @@ transforms. Adapters never see the sugar forms.
 - **Default-scope decision** — the decision of the rule whose scope is `*`, if present. This is
   what coarse targets (CC/Cursor/Windsurf) collapse to.
 - **Exceptions** — every rule whose scope ≠ `*`. These are what coarse targets lose.
-- **Implicit default** — when *no* `*` rule exists. ⚠️ **The IR does not currently define this**,
-  and the two real agents disagree on what it should be: `coder-agent.edit` lists only *denies*
-  (`**/*.env*`, `**/*.key`, …) and clearly means "edit anything except these" ⇒ default
-  **allow**; `code-reviewer.delegate` lists only *allows* (`contextscout`) and clearly means
-  "only this one" ⇒ default **deny**. A workable inference rule is *"implicit default = the
-  opposite of the decisions present; mixed-without-`*` is an error"* — but this is a **schema
-  decision for `02`, not an adapter decision**. Escalated as Open Question #Q2. Every collapse
-  rule below depends on it.
+- **Implicit default** — when no `*` rule exists, infer the opposite of the one decision present:
+  deny-only exceptions imply `allow`; allow-only exceptions imply `deny`; mixed decisions without
+  `*` are a parse error. This is ratified in `02` §1.2.5 and adapters consume that resolved value.
 
-### 0.5 ⚠️ BLOCKING CONTRADICTION — first-match-wins vs last-match-wins
+### 0.5 Resolved precedence — last-match-wins
 
-**The locked shape says "first-match-wins". Every real agent is authored last-match-wins, and
-first-match-wins would break exactly the agents Option A was chosen to protect.**
+Every real agent is authored last-match-wins. `10-PRECEDENCE-EXPERIMENT.md` confirmed that behavior
+against OpenCode 1.17.20 through live probes and the resolver's `.findLast()` implementation.
 
 Verified evidence — `.opencode/agent/subagents/code/coder-agent.md` as authored on disk:
 
@@ -125,22 +121,16 @@ report task status. That is precisely the breakage the index cites as Option A's
 
 Under **last-match-wins**, both files behave exactly as authored and intended.
 
-The repo's own planning doc agrees — `docs/archive/planning/12-MASTER-SYNTHESIS.md:442`:
+The repo's archived planning doc also states the intended rule at
+`docs/archive/planning/12-MASTER-SYNTHESIS.md:432`:
 
 > "The `permission:` field uses **last-match-wins** evaluation (same as OpenCode's native
 > system) … Rules are evaluated in order; the LAST matching rule wins. This matches OpenCode's
 > permission semantics exactly, ensuring IDE-native compatibility."
 
-**The ordered-list decision is right; the stated match direction is wrong.** Two resolutions:
-
-| | Resolution | Consequence |
-|---|---|---|
-| **A (recommended)** | IR adopts **last-match-wins** | Matches OpenCode natively, matches all 34 authored agents **as written**, zero reordering transform, and the index's own `coder-agent` example becomes correct as printed. |
-| B | IR keeps **first-match-wins** | The index's `coder-agent` example must be **reordered specific-first** (it is currently broken as printed); the OpenCode adapter must **reverse rule order** on both serialize and parse; and all 34 agents must be order-reversed at migration. Equivalent expressive power, strictly more machinery and one more place to get it wrong. |
-
-**This doc specifies Resolution A (last-match-wins) throughout.** If the coordinator confirms
-B, §1.3 gains a reversal step and §0.4's "default-scope decision" becomes "the *last* `*` rule".
-Escalated as **Open Question #Q1 — blocking**; it changes generated output for every target.
+**Decision:** the IR and all adapters use last-match-wins. Rule order is preserved; adapters do not
+reverse it. Integer-like and duplicate scopes are rejected at parse time because the live probes
+showed they can change or erase authored precedence before the resolver runs.
 
 ### 0.6 Context on disk (MVI HTML-comment — locked decision #6)
 
@@ -207,8 +197,7 @@ File name = `id` (kebab); `name:` frontmatter = PascalCase. Verified against
 | `capabilities` | `permission:` map | **ordered list → map, order preserved** (§1.3) |
 | `capabilities.delegate` | `permission.task` | `[{scope:X,decision:D}] → task: { X: "D" }` |
 | `inference.temperature` | `temperature:` | verbatim |
-| `inference.model` = null | *omit `model:`* | null ⇒ OpenCode default |
-| `inference.model` set | `model:` | verbatim |
+| `inference.tier` | target model selection | resolve through project/adapter tier configuration; if no mapping exists, omit and use the tool default |
 | `inference.maxSteps` | sidecar (advisory) | no native field |
 | `context[]` | `@`-ref / `paths.json` + sidecar `context:<id>` dep | referenced, not inlined |
 | `dependencies[]` | sidecar `dependencies[]` | verbatim |
@@ -233,9 +222,10 @@ bash: [ {scope:"*",decision:deny},                      permission:
                                                              "bash …/router.sh status*": "allow"
 ```
 
-Capability→key map: `bash→bash`, `edit→edit`, `write→write`, `delegate→task`. `read`/`grep`/
-`glob` are granted by default in OpenCode; emit a key only when a rule is not a plain
-`*: allow`. Scalar sugar round-trips as a single `"*"` entry. `ask` is preserved natively —
+Capability→key map: `bash→bash`, `edit→edit`, `write→write`, `delegate→task`. Emit every explicit
+rule, including a plain `*: allow`; omission is reserved for an absent capability. This keeps
+explicit author intent distinct from the tool default and makes parse→serialize round trips exact.
+Scalar sugar round-trips as a single `"*"` entry. `ask` is preserved natively —
 **OpenCode is the only target that can express it.**
 
 **Ordering preservation — three caveats, in decreasing severity:**
@@ -349,8 +339,7 @@ Temperature, delegation, skills, hooks, external context: **full fidelity**.
 | `capabilities` | `tools:` / `disallowedTools:` | **ordered list → coarse allowlist** (§2.3) — lossy |
 | `capabilities.delegate` | `Task` in `tools:` | collapse per §2.3 |
 | `inference.temperature` | **dropped** | warn |
-| `inference.model` = null | omit | harness default |
-| `inference.model` set | `model:` | CC alias (`sonnet`/`opus`/`haiku`) |
+| `inference.tier` | `model:` or omit | resolve through project/adapter tier configuration; omit when no mapping is configured |
 | `inference.maxSteps` | dropped | warn |
 | `context[]` | copied → `context/` + SessionStart hook | **bundled**, not referenced (§2.4) |
 | `dependencies[]` | resolved & bundled | `subagent:` deps force-emit that agent file |
@@ -632,8 +621,7 @@ under `# Agent N: <name>`, union of tools, **max** temperature, first non-null m
 | `capabilities` | prose "# Tool Access" list | **default-scope decision only**; all scoping dropped (§3.3) |
 | `capabilities.delegate` | dropped | `task` unsupported (`ToolMapper` marks it so) |
 | `inference.temperature` | `temperature:` | verbatim; limited range |
-| `inference.model` = null | omit | Cursor default |
-| `inference.model` set | `model:` | `mapOACModelToCursor` (falls back to `gpt-4`) |
+| `inference.tier` | omit + warn | Cursor is experimental in v1; do not invent a concrete model mapping |
 | `context[]` | **inlined** into rules body | copied as prose; MVI comment travels inline verbatim |
 | `dependencies[]` | dropped | no dependency system |
 | `examples[]` | prose | no native support |
@@ -714,8 +702,7 @@ JSON (Open Question #Q9).
 | `capabilities` | `tools` + `permissions` (binary) | **default-scope decision → boolean**; scoping dropped (§4.3) |
 | `capabilities.delegate` | `delegate` tool | partial (`task→delegate`) |
 | `inference.temperature` | `creativity` | `≤0.4→low`, `≤0.8→medium`, `>0.8→high` |
-| `inference.model` = null | omit | Windsurf default |
-| `inference.model` set | `model` | `mapOACModelToWindsurf` (fallback `claude-4-sonnet`) |
+| `inference.tier` | omit + warn | Windsurf is outside v1 until its live format is verified |
 | `context[]` | `contexts[]` path refs | referenced under `.windsurf/context/` |
 | `context[].priority` | `priority` | `critical/high→high`, `medium/low→low` (4→2) |
 | `dependencies[]` | partial | subagent deps → separate JSONs; others dropped |
@@ -787,7 +774,7 @@ Extends `CAPABILITY_MATRIX` in `core/CapabilityMatrix.ts`. Cells: **full** / **p
 | granularPermissions (permissions) | full | none | none | none | only oac has per-scope allow/deny/ask |
 | **scopedPermissions** (permissions) † | full | none | none | none | **NEW** — glob/argument scoping *within* a capability (`**/*.env*`, `router.sh …*`). CC `tools:` is tool-NAME-only (verified, `sub-agents.md`); `Bash(x:*)` is settings.json-only and **plugins cannot ship permissions** (§2.6) |
 | **askTriState** (permissions) † | full | none | none | none | **NEW** — CC *platform* has a settings.json `ask` array, but it is **unreachable from a plugin** (§2.6) ⇒ adapter-reachable support is none; rounds to deny |
-| **permissionRuleOrdering** (permissions) † | full | none | none | none | **NEW** — ordered match-wins lists. oac preserves by convention, not by YAML spec (§1.3). ⚠️ direction unresolved (§0.5) |
+| **permissionRuleOrdering** (permissions) † | full | none | none | none | **NEW** — ordered last-match-wins lists, confirmed by `10`; OpenCode preserves textual insertion order (§1.3) |
 | pathPatterns (permissions) | full | none | none | **none** ✏️ | ✏️ windsurf downgraded partial→none: `Record<string,boolean>` cannot hold a path pattern |
 | taskDelegation (tools) | full | **partial** ✏️ | none | partial | ✏️ claude downgraded full→partial: `Task` is coarse — a scoped delegate allowlist cannot be expressed (§2.8) |
 | bashExecution (tools) | full | full | full | full | name remap only |
@@ -797,7 +784,7 @@ Extends `CAPABILITY_MATRIX` in `core/CapabilityMatrix.ts`. Cells: **full** / **p
 | contextPriority (context) | full | none | none | partial | windsurf 4→2; claude drops; oac sidecar-only. ⚠️ all depend on the MVI parser (§0.6) |
 | contextSubdirs (context) | full | full | none | full | cursor single-file |
 | skillsSystem (context) | full | full | none | partial | claude dir-per-skill; windsurf → context refs; cursor inline |
-| modelSelection (model) | full | full | full | full | **null ⇒ tool default** (locked #2) |
+| inferenceTier (model) | full | partial | none | none | semantic tier only; concrete model mapping is project/adapter config, never canonical content |
 | temperatureControl (model) | full | none | partial | partial | claude drops; cursor limited; windsurf → creativity |
 | maxSteps (model) | full | none | none | none | oac sidecar advisory |
 | hooks — plugin/project-level (advanced) | full | full | none | none | claude: `hooks.json` + `session-start.sh` |
@@ -831,63 +818,21 @@ the current file**.
 
 ---
 
-## Open Questions
+## Stage 1 question dispositions
 
-1. **Q1 — first-match-wins vs last-match-wins (BLOCKING; §0.5).** The locked shape says
-   first-match-wins; all 34 authored agents and `docs/archive/planning/12-MASTER-SYNTHESIS.md:442`
-   say last-match-wins, and first-match-wins would silently break `coder-agent`'s `router.sh`
-   allowlist and neuter `openagent`'s `sudo *: deny`. The index's own `coder-agent` example is
-   broken as printed under first-match-wins. **Recommend adopting last-match-wins.** This
-   changes generated output for every target and must be resolved before `02` or `03` freeze.
-
-2. **Q2 — implicit default + IR validations (§0.4, §1.3).** For `02`: (a) when a capability has
-   no `*` rule, is the implicit default allow or deny? `coder-agent.edit` (denies only) implies
-   allow; `code-reviewer.delegate` (allows only) implies deny — proposed rule: *"opposite of
-   the decisions present; mixed-without-`*` is an error."* (b) Should the IR reject
-   integer-like scopes and enforce scope-uniqueness per capability? Both are required for
-   OpenCode's map form to round-trip deterministically.
-
-3. **Q3 — are dropped security globs a warning or a blocker? (§2.3)** `coder-agent` on CC gets
-   unrestricted `Edit` with `**/*.env*` / `**/*.key` protections silently gone, and no
-   adapter-side remedy exists (§2.6). Warning (current spec) or hard blocker requiring explicit
-   opt-in?
-
-4. **Q4 — CC agent `tools:` vs `settings.json` interaction (confidence: medium).** If `Bash` is
-   omitted from an agent's `tools:`, can a project `settings.json` `Bash(...)` allow re-enable
-   it for that agent? Docs say subagents have "independent permissions" but don't specify the
-   interaction. §2.6's conclusion holds either way (plugins can't ship permissions), but this
-   determines whether the documented manual remedy needs a `tools:` edit too.
-
-5. **Q5 — skill execution metadata.** CC skills carry `context: fork` + `agent: <id>`. Does the
-   neutral skill IR gain `execution: { isolate?, agent? }`? Where does it degrade on
-   OpenCode/Cursor/Windsurf?
-
-6. **Q6 — plugin `settings.json: {"model": "opusplan"}` is likely a no-op (§2.5).** Docs say
-   plugin settings.json supports only `agent` and `subagentStatusLine`. If confirmed, #264 /
-   commit `40dd267` shipped a setting CC ignores — worth an issue, and it moots v1's Q4.
-   Needs runtime verification.
-
-7. **Q7 — `code-reviewer` warning count: 1 or 2? (§2.8).** Under Option A, `delegate:
-   {contextscout: allow}` is a scoped rule; collapsing it to "no `Task`" is a real loss that
-   §0.3 says must warn → 2 warnings, not the index's 1. The emitted file is identical either
-   way. **Recommend accepting 2 and correcting the index**; the alternative is a silent drop.
-
-8. **Q8 — Cursor: legacy `.cursorrules` vs `.cursor/rules/*.mdc`.** The stub emits legacy
-   single-file. Modern `.mdc` supports multiple rule files (relaxing the merge, changing
-   `multipleAgents: cursor` from `none`) and a `globs:` key — can `globs:` carry *any* of the
-   scoped-permission intent, or does it only scope rule *activation*? Also: do neutral commands
-   become inlined docs or get skipped?
-
-9. **Q9 — Windsurf real format (unverified).** The `.windsurf/config.json` +
-   `.windsurf/agents/*.json` layout is inferred from the stub, never checked against a live
-   install. Confirm: (a) canonical layout vs `.windsurfrules` / `.windsurf/rules/*.md`;
-   (b) any manifest listing all agents; (c) any home for commands; (d) exact `creativity`
-   vocabulary (`low/medium/high` vs numeric); (e) whether *any* scoped permission construct
-   exists.
-
-10. **Q10 — `externalContext: cursor` cell semantics.** Keep `none` (referencing unsupported;
-    inlining captured by the new `contextBundling` row), or reclassify? Needs a decision so
-    `CapabilityMatrix.ts` and this doc agree.
+1. **Q1 precedence:** last-match-wins, confirmed by `10-PRECEDENCE-EXPERIMENT.md`.
+2. **Q2 implicit default and scope validation:** ratified in `02` §§1.2.5–1.2.6.
+3. **Q3 security-glob loss:** build blocker with explicit `--allow-unsafe-degradation` opt-in.
+4. **Q4 CC `tools:` interaction:** accepted uncertainty; fail-closed output omits `Bash`, and
+   `oac doctor --verify` tests the loaded result before release.
+5. **Q5 skill execution metadata:** represented by the neutral skill execution/target fields in
+   `02`; unsupported targets report degradation.
+6. **Q6 plugin `settings.json` model:** accepted as non-authoritative and omitted from v1 output.
+7. **Q7 warning count:** two warnings for `code-reviewer`, four for `coder-agent`; `05` and `07`
+   assert the exact counts.
+8. **Q8 Cursor format:** experimental, not a first-class v1 target; no fidelity promise.
+9. **Q9 Windsurf format:** cut from v1 until verified against a live install.
+10. **Q10 Cursor cell semantics:** `none` for v1; loss is explicit, never silently upgraded.
 
 **Closed in v2:** v1's Q1 (ClaudeAdapter wrong layout — **confirmed**, now index v2 #4 and
 §2 header) · v1's Q9 (OpenCode safety-pattern preset — **moot**: Option A puts safety globs in

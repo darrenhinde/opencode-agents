@@ -78,7 +78,8 @@ re-derived in §4.1 as of the same date.
 1. **Intent over syntax.** The IR encodes what the author wants, never a tool's serialization.
 2. **Closed vocabularies for invariants, open strings for hints.** Anything an adapter must reason
    about is a Zod `enum`; free-form author intent stays `string`.
-3. **`null` means "tool default"; absent means "unspecified".** Per locked decision #2.
+3. **Concrete model names are not authored.** `inference.tier` carries optional semantic intent;
+   absent/default tier means the target's configured default. Per locked decision #2.
 4. **Metadata is folded into frontmatter.** No sidecar in `/content/`. The OpenCode *adapter* may
    re-emit `agent-metadata.json`; the IR has no sidecar concept.
 5. **The authored on-disk format and the IR shape do not have to match** (locked decision #6).
@@ -93,6 +94,11 @@ import { z } from "zod";
  *  PascalCase for OpenCode). NEUTRAL INVARIANT — the join key across registry + deps. */
 export const IdSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/,
   "id must be kebab-case: lowercase alphanumeric words joined by single hyphens");
+
+/** Backward-compatible imported name. Aliases are lookup keys, not canonical ids, so legacy
+ * PascalCase and underscore names are allowed. New authored ids still use IdSchema. */
+export const AliasSchema = z.string().min(1).regex(/^[A-Za-z0-9][A-Za-z0-9_-]*$/,
+  "alias must be a non-empty legacy identifier without path separators");
 
 /** Human display name. HINT for casing — adapters slugify/re-case freely. */
 export const NameSchema = z.string().min(1);
@@ -593,9 +599,9 @@ the sole owner — closes v2 Q9.)*
 export const AgentSchema = z.object({
   // ---- identity (folded-in metadata; NO sidecar) ----
   id: IdSchema,                              // filename == id (01 Q1, per 06-REVIEW triage)
-  /** Alternate ids this agent answers to in dependency refs (NEW v3 — fixes 06-REVIEW L7).
-   *  Back-compat for renames like tester → test-engineer. */
-  aliases: z.array(IdSchema).default([]),
+  /** Alternate lookup names (NEW v3 — fixes 06-REVIEW L7/L8). Canonical ids stay kebab-case;
+   *  aliases may retain legacy names such as TestEngineer during import. */
+  aliases: z.array(AliasSchema).default([]),
   name: NameSchema,
   description: DescriptionSchema,
   role: RoleSchema,                          // was `mode`
@@ -668,7 +674,7 @@ export const SkillFileSchema = z.object({
 
 export const SkillSchema = z.object({
   id: IdSchema,
-  aliases: z.array(IdSchema).default([]),    // NEW v3
+  aliases: z.array(AliasSchema).default([]), // NEW v3
   name: NameSchema,
   description: DescriptionSchema,
   category: CategorySchema,
@@ -707,7 +713,7 @@ Real source: `.opencode/command/add-context.md`, `context.md`. Verified frontmat
 ```ts
 export const CommandSchema = z.object({
   id: IdSchema,
-  aliases: z.array(IdSchema).default([]),  // NEW v3
+  aliases: z.array(AliasSchema).default([]), // NEW v3
   name: NameSchema.optional(),           // often absent; derive from id
   description: DescriptionSchema,        // NEUTRAL INVARIANT — the only universal field
   tags: TagsSchema,
@@ -865,7 +871,7 @@ string alongside the normalized semver — so a no-op build does not churn ~289 
 ```ts
 export const ContextSchema = z.object({
   id: IdSchema,
-  aliases: z.array(IdSchema).default([]),    // NEW v3 — the 3 symlink/dup-id files land here
+  aliases: z.array(AliasSchema).default([]), // NEW v3 — the 3 symlink/dup-id files land here
   /** OPTIONAL/DERIVED (v3 — fixes 06-REVIEW G2 gap 1: v2 required both, but the MVI marker
    *  carries NEITHER a name NOR a description, so every real context file failed
    *  validation). When absent, derived: name = title-cased path basename; description =
@@ -931,7 +937,7 @@ export const ToolParamSchema = z.object({
 
 export const ToolSchema = z.object({
   id: IdSchema,
-  aliases: z.array(IdSchema).default([]),  // NEW v3
+  aliases: z.array(AliasSchema).default([]), // NEW v3
   name: NameSchema,
   description: DescriptionSchema,        // NEUTRAL — the model needs to know what it does
   tags: TagsSchema,
@@ -1045,7 +1051,7 @@ export const RegistryEntrySchema = z.object({
   /** Alternate ids resolvable in dependency refs (RESTORED v3 — 3 live entries use it;
    *  resolution rule in §1.5). Also the landing place for the 3 symlinked standards files
    *  if the symlink→alias collapse is chosen (index v2.2 symlink finding). */
-  aliases: z.array(IdSchema).default([]),
+  aliases: z.array(AliasSchema).default([]),
   name: NameSchema,
   type: ComponentTypeSchema,
   /** Source path under /content/ (NOT .opencode/). NEUTRAL INVARIANT — catalog→source join. */

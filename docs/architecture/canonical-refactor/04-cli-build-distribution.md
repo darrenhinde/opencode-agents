@@ -41,7 +41,7 @@ and `update.sh` (344 lines). Both bash scripts are **deleted** per the locked de
    and adding OpenCode as just another target (§1, §2).
 3. **Runtime must be Node-portable.** `bin/oac.js` currently `execFileSync('bun', …)` and the
    whole CLI uses Bun-only APIs (`Bun.file`, `Bun.write`, `import.meta.dir`). A user running
-   `npm i -g @nextsystems/oac` will **not** have Bun. This is the single biggest cross-platform
+    `npm i -g @controlstack/oac` will **not** have Bun. This is the single biggest cross-platform
    install blocker and is resolved in §4.1.
 
 ---
@@ -204,7 +204,8 @@ Select the adapter from `AdapterRegistry` for the target and call `adapter.fromO
 agent (and the analogous skill/command transforms per `03-adapter-specs.md`). The adapter returns a
 `ConversionResult` with `configs[]` (path + content) and `warnings[]`. `CapabilityMatrix` predicts
 lossy transforms (temperature dropped for Claude, granular permissions flattened to a tool allowlist,
-`model: null` → omit line so the tool default applies — **no hardcoded models**, locked decision #2).
+semantic tier resolved by project/adapter configuration or omitted for the tool default — **no
+hardcoded models**, locked decision #2).
 All warnings surface to the user; `--verbose` lists each, otherwise a count.
 
 ### Stage 5 — Bundle context
@@ -218,14 +219,19 @@ Context files referenced by an agent's `context[]` are copied/wired per target:
   warns at 80KB / errors at 100KB for Cursor — that guard carries into `build`).
 
 ### Stage 6 — Write
-Write each `config.path` under the target's output root (or `--out`). Writes go through the existing
-**collision/update engine** (`installer.ts` decide-logic): a generated file whose on-disk sha256
-still matches the manifest is safely overwritten; a user-modified generated file is skipped unless
-`--yolo` (then backed up to `.oac/backups/…`). This is how "no accidental overwrite" (#321, #326)
-is enforced for generated output, not just copied source. `--dry-run` prints a unified diff instead.
+`oac build` is a pure projection of canonical content and build configuration. It writes every
+`config.path` under the target output root (or `--out`) through a temp directory followed by an
+atomic replace. Existing generated files are replaced even when manually edited; generated output
+is not an authoring surface. `--check` builds to a temp directory and fails on any diff, while
+`--dry-run` prints that diff without writing.
+
+The collision/update engine applies only when `init`, `add`, or `update` changes user-owned
+canonical `content/` or custom files. Those commands skip user-modified source unless `--yolo`
+(backup then overwrite). Keeping source-update safety outside `build` preserves both user edits and
+the invariant that identical content/config always produces identical generated output.
 
 ### Stage 7 — Manifest generation
-Every written file gets a manifest entry: `{ sha256, type, source: "generated", target, installedAt }`.
+Every written file gets a deterministic manifest entry: `{ sha256, type, source: "generated", target }`.
 The manifest becomes the single source of truth for "what OAC produced" — replacing `install.sh`'s
 ad-hoc collision scan and `update.sh`'s find-everything approach. `source` distinguishes
 `bundled` (neutral `/content` copied), `registry` (added component), `generated` (build output),
@@ -240,9 +246,10 @@ Cursor file ≤ size limit). Validation failures in `--strict`/`--check` → exi
 
 ### 2.1 Determinism requirements
 - Stable sort of inputs (by id) before writing.
-- No timestamps **inside** generated content (timestamps live only in the manifest).
+- No timestamps inside generated content or the deterministic manifest. Optional operational
+  timestamps live in separate state/telemetry and are ignored by build/check comparisons.
 - Frontmatter key order fixed by the adapter, not by object-iteration order.
-- `oac build && oac build` is a no-op (second run: all sha256 match → 0 changes).
+- `oac build && oac build` is a no-op because both runs generate and compare the same temp tree.
 
 ### 2.2 Profiles
 Profiles (`essential`, `developer`, `business`, `full`, `advanced`) live in `registry.json`
@@ -266,6 +273,22 @@ to the absolute install dir whenever installing anywhere other than a local `.op
 survive as a **Stage-5 concern**: when the OpenCode target root is not the default project-local
 `.opencode/` (i.e. `--global` or `--dir`), the adapter/bundler rewrites context path references to
 the resolved absolute location. This is central to issues #321/#326 (global vs project-local paths).
+
+### 2.5 Project discovery (`.oac.json`)
+
+Use one discovery chain:
+
+1. If `<cwd>/.oac.json` exists, parse `context.root`; resolve it relative to that file and require
+   the directory plus its registry/root anchor. Invalid config is a hard error, not a silent scan.
+2. Otherwise walk parent directories to the filesystem root looking for `.oac.json`.
+3. If none exists, accept `<project>/content/` only when its registry/root anchor validates it.
+4. After successful fallback discovery in a writable project, write `.oac.json` atomically with
+   `{ "version": 1, "context": { "root": "content" } }` so the next run takes the fast path.
+5. If discovery fails, stop with `oac init` guidance; never fall back to `.opencode/context` or a
+   global directory implicitly.
+
+`OAC_PACKAGE_ROOT` is separate: it locates OAC's bundled starter content, not the user's editable
+project content. All commands call the same typed discovery function from `packages/core`.
 
 ---
 
@@ -364,8 +387,9 @@ must run on stock Node**. Root `package.json` already declares `engines.node >=1
 
 - Default is **project-local** — the safe, no-surprise default. `--global`/`--dir` are explicit
   opt-ins (mirrors `install.sh`'s location menu but flag-driven).
-- **No accidental overwrite (#321/#326):** every write is gated by the sha256 manifest — a file
-  the user edited is never silently replaced. Path normalization (`lib/paths.ts`) rejects paths that
+- **No accidental source overwrite (#321/#326):** `init`/`add`/`update` writes to canonical or
+  custom files are gated by the sha256 manifest; generated targets are replaced by pure `build`.
+  Path normalization (`lib/paths.ts`) rejects paths that
   escape the install root (`update.sh` already guarded `../` — preserve that: reject `..`/absolute
   escapes before any write).
 - Global path today is `~/.config/opencode` on all platforms (from `get_global_install_path`).
@@ -388,21 +412,19 @@ must run on stock Node**. Root `package.json` already declares `engines.node >=1
 
 | Method | Command | Use case | Notes |
 |--------|---------|----------|-------|
-| **npx (no install)** | `npx @nextsystems/oac init` | one-off / trial / CI | Downloads on demand; needs Node ≥18; the modern replacement for `curl \| bash`. |
-| **Global** | `npm i -g @nextsystems/oac && oac init` | frequent users | `oac` on PATH; `oac doctor` checks for updates vs npm registry (already implemented). |
-| **Dev/local** | `bun run src/index.ts` or `npm link` | contributors | `OAC_PACKAGE_ROOT` env override lets the CLI find bundled `/content` in the monorepo. |
+| **npx (no install)** | `npx @controlstack/oac init` | one-off / trial / CI | Downloads on demand; needs Node ≥20; the modern replacement for `curl \| bash`. |
+| **Global** | `npm i -g @controlstack/oac && oac init` | frequent users | `oac` on PATH; `oac doctor` checks for updates vs npm registry. |
+| **Dev/local** | `pnpm --dir packages/cli dev` | contributors | `OAC_PACKAGE_ROOT` lets the CLI find bundled `/content` in the monorepo. |
 
 Registry is **bundled**, so `npx` and global both work **offline after download** — no network at
 run time (unlike `install.sh`, which curled every file from `raw.githubusercontent.com`).
 
 ### 4.5 Registry fetching, caching, offline
 
-- **Default: bundled + offline.** `registry.json` and `/content` ship inside the package
-  (`readRegistry` reads from `getPackageRoot()`). No network needed for `init/add/build/update`.
-- **Optional remote registry** (parity with `install.sh` `REGISTRY_URL`/`OPENCODE_BRANCH`): a
-  `--registry <url>` flag or `OAC_REGISTRY_URL` env can fetch a newer catalog via `fetch`. Cache it
-  under `~/.cache/oac/registry-<hash>.json` (or `%LOCALAPPDATA%` on Windows) with a TTL; fall back to
-  the bundled copy when offline. This subsumes `fetch_registry`'s `file://`/remote branching.
+- **Bundled + offline only in v1.** `registry.json` and `/content` ship inside the package
+  (`readRegistry` reads from `getPackageRoot()`). No network is needed for `init/add/build/update`.
+  A remote catalog without matching bundled source cannot install a component reliably, so v1 has
+  no `--registry` flag or registry cache.
 - **`doctor`** already does a non-blocking npm-latest check with a 5s timeout and offline fallback —
   the model for all network calls: **never block on the network**.
 
@@ -427,7 +449,7 @@ manifest**. Migration path (details owned by Agent E; CLI responsibilities here)
 3. Because the pre-refactor repo had `.opencode/` as *source*, migration also seeds `content/` from
    the bundled neutral source so future `oac build` works — offering a diff if the user hand-edited
    `.opencode/` agents.
-4. README swaps `curl … | bash` for `npx @nextsystems/oac init`; the old one-liner can print a
+4. README swaps `curl … | bash` for `npx @controlstack/oac init`; the old one-liner can print a
    deprecation notice pointing at npm (kept for one release).
 
 ---
@@ -471,43 +493,21 @@ dev/monorepo override. This is why the CLI works offline. The only change is the
 
 ### 5.3 Versioning
 
-- **Single version** for the whole product = root `package.json` `version` (currently `0.7.1`),
+- **Single version** for the whole product = root `package.json` `version`,
   surfaced by `readCliVersion()` and written into `.oac/manifest.json` `oacVersion` on init/update.
   `doctor` compares it to the npm-latest.
-- The `@nextsystems/oac-cli` sub-package version should track the root (or be dropped in favor of a
-  single published package — Open Question). `bump-version.sh` + `npm version` scripts already exist
-  and write `VERSION`; keep them, but ensure `/content`, adapters, and CLI ship as one coherent
-  version so a manifest's `oacVersion` unambiguously identifies the source that produced the output.
+- Publish exactly one package, `@controlstack/oac`; core and adapters are private and bundled into
+  its CLI output. Legacy package names remain installable only for rollback and are deprecated with
+  a pointer to the canonical package. `/content`, adapters, and CLI ship as one coherent version so
+  a manifest's `oacVersion` identifies the source that produced the output.
 - **Manifest schema version** (`manifest.version: "1"`) and **registry schema version**
   (`registry.schema_version`) are independent of the product version and gate migrations.
 
 ---
 
-## Open Questions
+## Stage 1 decisions
 
-1. **Runtime choice (§4.1):** ship a Node-portable build (option A, recommended) or per-platform
-   compiled binaries (option B)? This determines the whole packaging story and must be decided first.
-2. **Single vs. multi package:** publish one `@nextsystems/oac` (CLI + core + adapters + content) or
-   keep `@nextsystems/oac-cli` + `@openagents-control/compatibility-layer` separate? Affects `bin`,
-   `files`, and version coupling (§5.3).
-3. **Interactive prompts:** `install.sh` had rich menus. Do we ship any interactivity (e.g.
-   `@clack/prompts` for `oac init` when TTY), or stay strictly flag-driven + non-interactive? The
-   parity table treats menus as obsolete, but some users liked the guided flow.
-4. **Default target for `oac init`:** when no IDE is detected and no `--target` given, default to
-   `opencode` (assumed here) or prompt/refuse? Ties to Q3.
-5. **Global path on Windows (§4.2):** keep `~/.config/opencode` everywhere (current bash behavior),
-   or use `%APPDATA%`/`%LOCALAPPDATA%` on Windows? The latter is more native but diverges from
-   existing installs.
-6. **Remote registry (§4.5):** is a fetchable/newer-than-bundled registry actually needed, given
-   `/content` is bundled and versioned? If components can't be installed without their bundled
-   source, a remote registry pointing at unbundled components is meaningless — likely drop it and
-   keep registry fully bundled.
-7. **`apply` deprecation window:** how long is `oac apply` kept as an alias for
-   `oac build --target`? (Coordinate with Agent E's migration timeline.)
-8. **Backup retention:** `.oac/backups/` grows unbounded (never auto-pruned, unlike `update.sh`'s
-   trap cleanup). Add a retention policy / `oac clean` command, or leave to the existing cleanup skill?
-9. **`content/` on disk vs. build-only:** does the user keep an editable `content/` in their project
-   (source they can customize, then `oac build`), or is `/content` purely internal to the package and
-   only targets land in the project? This is the biggest UX fork and affects `init`, `add`, `update`,
-   and migration (§4.7). Needs alignment with Agent A/B.
-```
+`08-STRUCTURE-AND-PACKAGING.md` closes the former questions: Node-portable CLI; one published
+`@controlstack/oac` package; flags-first prompts with TTY guidance; `agents-md` as the non-interactive
+fallback target; native per-OS config paths; bundled/offline registry; `apply` retained for one minor
+release; 30-day backup retention through `oac clean`; and editable project `content/`.

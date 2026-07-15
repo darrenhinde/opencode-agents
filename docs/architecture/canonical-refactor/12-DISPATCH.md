@@ -24,9 +24,9 @@
 | 00–06 | Spec set + adversarial review | ✅ |
 | 07 | Execution plan (stages, gates, kill criteria) | ✅ |
 | 08 | Repo structure, build flow, packaging (`@controlstack/oac`) | ✅ |
-| 09 | MERGE-RULES (created by subtask 08) | ⏳ |
-| 10 | PRECEDENCE-EXPERIMENT transcript (created by subtask 09) | ⏳ |
-| 11 | ROLLBACK story (created by subtask 10) | ⏳ |
+| 09 | MERGE-RULES (created by subtask 08; signed off by subtask 10) | ✅ |
+| 10 | PRECEDENCE-EXPERIMENT transcript (created by subtask 09) | ✅ |
+| 11 | ROLLBACK story (created by subtask 10) | ✅ |
 | 12 | This dispatch guide | ✅ |
 
 Where a subtask brief and a spec doc conflict, precedence is:
@@ -46,8 +46,8 @@ STOP and report — do not guess.
 - `packages/plugin-abilities` — check its `package.json` scripts before wiring CI; do not assume.
 - `evals/framework` — has NO ESLint config; its deterministic baseline = build + the
   `test:ci` vitest allowlist + `validate:suites:all`. Do not add lint gates to it in Stage 0.
-- Known census discrepancy: 00-INDEX says 296 context `.md`, 07 says 294 files + 3 symlinks.
-  **Recount from disk with the leading-window rule before asserting either.**
+- Context census is recorded from disk in `09-MERGE-RULES.md` §9. Recount before asserting it
+  after any content-tree change; historical numbers in `00`–`07` are not runtime authority.
 - CC plugin agents live in `plugins/claude-code/agents/` (7 agents: 5 `sonnet`, 2 `haiku`).
   `.claude-plugin/marketplace.json` is live production config — touch only when a brief says so.
 

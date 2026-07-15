@@ -999,3 +999,57 @@ The failure mode here is not sloppiness. It is that **five authors revised at di
 against a moving index, and the index recorded its conclusions without telling the documents that
 supplied them.** Fixes #1–#4 are all versions of the same repair: make the documents agree with
 each other and with the disk. Do that and this is buildable.
+
+---
+
+## Stage 1 disposition table
+
+> **Gate closure:** 2026-07-15, canonical-refactor subtask 10.
+> **Rule:** `fixed` means the governing specification now contains the required decision or
+> correction. `accepted` means the limitation is intentionally outside the first-class v1 scope
+> and has an explicit guardrail. These dispositions override the original review text where they
+> conflict, per `12-DISPATCH.md`.
+
+| Finding | Disposition | Resolution evidence |
+|---|---|---|
+| **F1** | **fixed** | `05-impact-migration-tests.md` v2 replaces the false 160-agent scope with the disk-verified inventory and merge stages. |
+| **F2** | **fixed** | `02-canonical-schema.md` v3 §0.2 unifies all dependency kinds and accepts path/wildcard refs; Stage 2's corpus gate covers the 19 former rejects. |
+| **F3** | **fixed** | `10-PRECEDENCE-EXPERIMENT.md` confirms last-match-wins through live OpenCode 1.17.20 probes and resolver `.findLast()` evidence. |
+| **F4** | **fixed** | `00-INDEX.md` v2.2 and `02-canonical-schema.md` §4 use the corrected leading-window priority distribution. |
+| **F5** | **fixed** | `01-feature-inventory.md` v2 uses exact-basename navigation counts and preserves the separate suffix-named files. |
+| **F6** | **fixed** | `01-feature-inventory.md` v2 retracts the committed-secret claim; `.env` remains an untracked build-hygiene exclusion only. |
+| **F7** | **fixed** | `00-INDEX.md` v2.2, `01` §4.5, `02` §2, `03` §0.1, and `09` §4 align on 12 CC skills plus 4 canonical OpenCode skills. |
+| **F8** | **fixed** | `00-INDEX.md` v2.2 and `02`'s `inference.tier` preserve the five-sonnet/two-haiku semantic cost tiers without authoring model ids. |
+| **F9** | **fixed** | `01-feature-inventory.md` v2 and `09-MERGE-RULES.md` §§7,9 distinguish regular files, symlinks, and JSON; later work must recount after tree changes. |
+| **F10** | **fixed** | `01-feature-inventory.md` v2 corrects the unregistered-context result and separates path aliases from canonical files. |
+| **C1** | **fixed** | `03-adapter-specs.md` §0.5 and its question dispositions now cite `10-PRECEDENCE-EXPERIMENT.md`; stale precedence blockers are removed. |
+| **C2** | **fixed** | `05-impact-migration-tests.md` v2 defines a two-tree merge; `09-MERGE-RULES.md` owns the per-content-type decisions. |
+| **C3** | **fixed** | `02-canonical-schema.md` v3 makes raw model ids non-authorable and uses `inference.tier`; `05` tests the same contract. |
+| **C4** | **fixed** | `05-impact-migration-tests.md` and `07-EXECUTION-PLAN.md` assert exact CC warning counts: two for `code-reviewer`, four for `coder-agent`. |
+| **C5** | **fixed** | `08-STRUCTURE-AND-PACKAGING.md` §§2.1–2.2 distinguishes bundled canonical content from each user's editable project `content/`. |
+| **C6** | **fixed** | `01-feature-inventory.md` v2 aligns capability examples to `{scope, decision}`, matching `02`. |
+| **C7** | **fixed** | The corrected skill census is aligned across `00`, `01`, `02`, `03` §0.1, and `09` §4. |
+| **C8** | **fixed** | `02-canonical-schema.md` §1.2.5 owns the implicit-default rule; `03` §0.4 consumes it without escalation. |
+| **C9** | **accepted** | `07-EXECUTION-PLAN.md` limits first-class v1 targets to OpenCode and Claude; Cursor is experimental and Windsurf is cut, so unsupported hooks/delegation remain explicit blockers outside the v1 promise. |
+| **C10** | **fixed** | `03-adapter-specs.md` corrects the archived citation to line 432; live behavior is now sourced from `10`, not that citation. |
+| **L1** | **fixed** | `09-MERGE-RULES.md` is the signed-off owner and conflict contract for every content type. |
+| **L2** | **fixed** | `02-canonical-schema.md` v3 adds `targets:[]`; `09` uses it for the 16-skill union and target-specific hooks. |
+| **L3** | **fixed** | `09-MERGE-RULES.md` §§3,6 tokenizes path-bearing bodies and permission scopes; `07` Stage 4 adds a no-raw-`.opencode/` lint. |
+| **L4** | **fixed** | `02-canonical-schema.md` v3 adds `inference.tier: fast|balanced|deep`, retaining per-agent intent without hardcoded models. |
+| **L5** | **fixed** | `02-canonical-schema.md` v3 restores profile objects including `additionalPaths`, badges, descriptions, and components. |
+| **L6** | **fixed** | `02-canonical-schema.md` v3 models registry categories and the promoted `icon`/`order`/`status` metadata. |
+| **L7** | **fixed** | `02-canonical-schema.md` v3 models aliases; `09` §7 defines symlink and duplicate-id collapse into `aliases[]`. |
+| **L8** | **fixed** | `09-MERGE-RULES.md` §§3,7 resolves delegate names through canonical ids or aliases, preserving mixed-case legacy scopes such as `TestEngineer`. |
+| **L9** | **fixed** | `02-canonical-schema.md`'s MVI serializer specifies SemVer normalization with compact `X.Y` re-emission; `05` requires byte-stable round trips. |
+| **L10** | **fixed** | `08-STRUCTURE-AND-PACKAGING.md` §2 defines `.oac.json` as project discovery for editable `content/`; `04` owns CLI discovery/self-healing behavior. |
+| **G1** | **fixed** | `02` resolves dependency vocabulary/defaults, `09` resolves aliases/path scopes, and `07` Stage 3 makes security loss a blocker with explicit opt-in. |
+| **G2** | **fixed** | `02-canonical-schema.md` v3 defines path-derived context identity, optional metadata, split taxonomy, leading-window MVI parsing, and stable re-emission. |
+| **G3** | **fixed** | `02` restores profiles/categories/aliases and plural registry sections; `04` §2.3 defines dependency and section-key normalization. |
+| **G4** | **fixed** | `08-STRUCTURE-AND-PACKAGING.md` §4 replaces both brittle anchors with an explicit package-name check plus `OAC_PACKAGE_ROOT`. |
+| **G5** | **fixed** | `02` §1.2.5 distinguishes absent/default capabilities from explicit `*: allow`; `05` requires OpenCode parse→build idempotence. |
+| **G6** | **fixed** | `04-cli-build-distribution.md` separates deterministic build/check output from update-time sha256 user-edit protection; `07` Stage 5 tests preservation and `--yolo`. |
+| **G7** | **fixed** | `05-impact-migration-tests.md` v2 removes the `diff-explained` escape hatch; `07` Stage 3 requires reviewed, byte-stable goldens and explicit merge decisions. |
+
+All **37** F/C/L/G findings are dispositioned above: **36 fixed, 1 accepted**. U2 is closed by
+`11-ROLLBACK.md`; U1 and U3 are closed by `09-MERGE-RULES.md`; remaining U-items are carried as
+explicit implementation/test constraints in `02`, `05`, and `07` rather than open Stage 1 gates.

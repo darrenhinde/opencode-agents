@@ -71,7 +71,7 @@ Measured across all 34 agent `.md` files (`awk` over the YAML block):
 | `mode` | 34 | `primary` \| `subagent`. | 🟢 UNIVERSAL | `role: primary \| subagent`. OpenCode adapter renames `role`→`mode`. |
 | `temperature` | 33 | Sampling temperature (`0`–`0.2` in practice). | 🟡 OPENCODE-SPECIFIC | `inference.temperature`. **Claude Code has no per-agent temperature → degradation warning** (already predicted in `00-INDEX.md`). |
 | `permission` | 24 | Granular per-tool, per-glob allow/ask/deny. | 🟡 OPENCODE-SPECIFIC | `capabilities` (intent). This is the **hardest transform** — see §1.3. |
-| `model` | **0** | — | 🟢 UNIVERSAL | `inference.model: null`. **Confirms Locked Decision #2:** no agent hardcodes a model today. PRs #311/#324 would have *introduced* the problem, not preserved it. |
+| `model` | **0** | — | 🟢 UNIVERSAL | No concrete model is authored. Optional `inference.tier` carries only semantic cost/latency intent. |
 | `tools` | **0** | — | 🟢 UNIVERSAL | OpenCode expresses tool access via `permission`, not `tools`. Claude adapter derives `tools:` allowlist from `capabilities`. |
 | `hooks` | **0** | — | n/a | No agent declares hooks in frontmatter. Hooks exist only as *plugins* (§6) and CC `hooks.json` (§9.2). |
 | `id`,`category`,`type`,`version`,`author` | **1** | Only `eval-runner.md` inlines these. | 🔵 REGISTRY | Everywhere else these live in the `agent-metadata.json` sidecar. `eval-runner` is the **inconsistent outlier**. |
@@ -257,7 +257,7 @@ model: sonnet
 | `description` (multiline + `<example>` blocks) | `description` + `examples[]` | 🟢 | **`examples[]` is a first-class neutral field** — CC folds it into `description`; OpenCode drops it. Today these examples exist **only** in the CC files and would be lost if `.opencode/` is treated as the sole migration source. |
 | `tools` (allowlist) | `capabilities` allow-set | 🟢 | Derived. |
 | `disallowedTools` | `capabilities` deny-set | 🟢 | Derived. |
-| `model: sonnet` | `inference.model` | 🔴 **VIOLATES Locked Decision #2** | CC agents **hardcode `model: sonnet`**. Under `model: null` the build must emit **no** `model:` line. This is a deliberate behavior change — confirm with Open Question **Q3**. |
+| legacy `model:` | migration input → `inference.tier` | 🟡 MIGRATION ONLY | Scouts map to `fast`; other shipped agents map to `balanced`/default. Concrete names are discarded and never enter canonical content. |
 
 > 🔴 **Preservation alert:** the `<example>` blocks in all 7 CC agents are hand-authored content
 > that exists **nowhere in `.opencode/`**. If `/content/` is seeded only from `.opencode/`,
@@ -1157,7 +1157,7 @@ must preserve the escaping** — a naive template would reintroduce the injectio
 
 | Asset | Path | Class | Notes |
 |---|---|---|---|
-| Per-model prompt variants | `.opencode/prompts/core/openagent/{gemini,gpt,grok,llama,minimax,openrouter}.md` | 🔴 AT RISK | **6 model-specific rewrites of the OpenAgent prompt.** Directly tensions Locked Decision #2 (`model: null`). Also `prompts/core/opencoder/{gemini,gpt,grok,llama}.md`. |
+| Per-model prompt variants | `.opencode/prompts/core/openagent/{gemini,gpt,grok,llama,minimax,openrouter}.md` | 🔴 AT RISK | **6 model-specific rewrites of the OpenAgent prompt.** Canonical content cannot select concrete models, so Stage 4 must explicitly merge, retain as target-specific optional assets, or retire them. Also `prompts/core/opencoder/{gemini,gpt,grok,llama}.md`. |
 | Prompt templates | `.opencode/prompts/*/TEMPLATE.md`, `README.md` | 🔵 | |
 | Eval results | `.opencode/prompts/core/openagent/results/*.json`, `default-output.log` | 🔵 | Build artifacts committed to git. |
 | `.opencode/docs/` | `agents/planning-agents-guide.md`, `guides/task-schema-migration.md`, `workflows/full-project-workflow.md` | 🟢 | 3 docs. `planning-agents-guide.md` documents the **unregistered** planning agents (§1.8). |
@@ -1181,7 +1181,7 @@ must preserve the escaping** — a naive template would reintroduce the injectio
 - [ ] `description` → neutral `description`
 - [ ] `mode: primary|subagent` → neutral `role`
 - [ ] `temperature` (33 agents) → `inference.temperature`; **Claude drops it → warning**
-- [ ] `model` stays absent → `inference.model: null` (Locked Decision #2)
+- [ ] Concrete model names stay absent; optional semantic `inference.tier` is preserved (Locked Decision #2)
 - [ ] `permission.<tool>.<glob>` **tri-state** (`allow`/`ask`/`deny`) → `capabilities` **rule list** (§1.3)
 - [ ] **Glob-scoped denies preserved** (`**/*.env*`, `**/*.key`, `**/*.secret`, `node_modules/**`, `.git/**`) — *security control*
 - [ ] **Deny-by-default + narrow allow preserved** (`coder-agent` bash allowlist) — *security control*
@@ -1337,7 +1337,7 @@ must preserve the escaping** — a naive template would reintroduce the injectio
 - [ ] 🔴 `.context-manifest.json` `profile: "standard"` (not a real profile name) fixed
 
 ### Prompts / misc
-- [ ] 🔴 **10 per-model prompt variants** (`openagent/{gemini,gpt,grok,llama,minimax,openrouter}.md`, `opencoder/{gemini,gpt,grok,llama}.md`) — tension with `model: null` (Q23)
+- [ ] 🔴 **10 per-model prompt variants** (`openagent/{gemini,gpt,grok,llama,minimax,openrouter}.md`, `opencoder/{gemini,gpt,grok,llama}.md`) explicitly merged, retained as target-specific optional assets, or retired; they never select a concrete model from canonical content
 - [ ] `prompts/*/TEMPLATE.md` + READMEs preserved
 - [ ] Eval `results/*.json` — keep or gitignore
 - [ ] `.opencode/docs/` (3 docs) relocated
@@ -1364,11 +1364,9 @@ scalar sugar (§1.3) was adopted, and `00-INDEX.md`'s worked example was revised
 flat model was provably lossy against real agents (`coder-agent`'s deny-all-then-allowlist,
 the `**/*.env*`/`**/*.key` security globs, `rm -rf /*: deny`). No longer open.
 
-**Q3 — Model policy vs shipped reality.** Locked Decision #2 says `model: null`. But
-`plugins/claude-code/agents/*.md` hardcode `model: sonnet`, `settings.json` sets `opusplan`
-(PR #264, merged), and `.opencode/prompts/` holds 10 per-model prompt variants. Does `model: null`
-mean (a) **never** emit `model:` for any target, or (b) allow a **per-adapter default** in adapter
-config (not content)? (b) preserves shipped behavior; (a) is a deliberate behavior change.
+**Q3 — CLOSED (v2): no concrete model names in canonical content.** Legacy plugin values are
+migration evidence only: scouts become `inference.tier: fast`, other agents use
+`balanced`/default. Project or adapter configuration may map tiers to target models.
 
 **Q4 — `0-category.json`: promote or delete?** It's read by nothing. Its `icon`/`order`/`status`
 are richer than `registry.json#categories` (flat strings) and worth promoting. But

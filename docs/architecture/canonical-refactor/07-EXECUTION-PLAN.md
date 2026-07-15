@@ -23,7 +23,7 @@ loads in each real tool. Never degrade silently.
 | Language | **TypeScript everywhere** — kill the 52KB `install.sh`/`update.sh` and the Bun-only APIs | One codebase, testable, cross-platform; bash installers are the root of the Windows bug class (#304, #312) |
 | Runtime | **Node ≥ 20** (no Bun requirement) | `npm i -g` must work on a clean machine; Bun coupling defeats npm distribution (15 files to convert, mechanical) |
 | Workspace manager | **pnpm** (workspaces + lockfile) | Security: strict non-flat `node_modules` (no phantom deps), `ignore-scripts` by default, single content-addressed store, better lockfile integrity. Replaces the current bun.lock + package-lock.json split |
-| Distribution | **npm registry** (`npm i -g oac` / `npx oac`) | Users install with the tool they already have; pnpm is our dev tool, not a user requirement |
+| Distribution | **npm registry** (`npm i -g @controlstack/oac` / `npx @controlstack/oac`) | Users install with the tool they already have; the installed binary remains `oac`; pnpm is our dev tool, not a user requirement |
 | First-class targets v1 | **OpenCode + Claude Code** (+ cheap `agents-md` target) | The two with real users and verified formats. Windsurf CUT from v1 (format never verified against a live install); Cursor = experimental |
 | Core product | **Context management** — team standards versioned, installed, updated safely | This is the wedge: "bring your standards, we deploy them to every tool." The generic context library becomes optional starter profiles |
 | Verification | **Install-verification matrix** as a product feature (`oac doctor --verify`) and a CI gate | "It installed" ≠ "the tool loads it." Headless real-tool load checks across OS × tool × profile |
@@ -84,7 +84,7 @@ the refactor — it needs a week.
 ## Stage 1 — Spec repair & decisions (docs only, no code)
 
 **Why:** `06-REVIEW`'s verdict is verified: the centerpiece schema rejects the corpus it
-describes (19 real dependency refs, all 294 context files), two docs were never revised
+describes (19 real dependency refs and the full context corpus recorded in `09` §9), two docs were never revised
 after v2 decisions, and the hardest migration task (the merge) has no owner. Writing code
 against a self-contradicting spec reproduces the drift we're curing.
 
@@ -117,7 +117,7 @@ against a self-contradicting spec reproduces the drift we're curing.
 - Zero open questions labelled BLOCKING across `01`–`05` (each of `06`'s F/C/L/G findings
   marked *fixed* or *accepted* in a disposition table appended to `06`).
 - The precedence experiment's transcript committed to this directory.
-- Merge conflict rules signed off (a table in `08-MERGE-RULES.md`: content type → source of
+- Merge conflict rules signed off (the table in `09-MERGE-RULES.md`: content type → source of
   truth → conflict resolution).
 
 ---
@@ -141,8 +141,8 @@ implementation. This is the forcing function that proves Stage 1 actually worked
    resolution; parse-time validation for integer-like scopes and duplicate scopes.
 
 **Tests / gate (all in CI from this stage on):**
-- **Corpus test (Layer 1):** every real file parses — 34 agents, 294 context files, 20
-  commands, 16 skills, `registry.json` including all 19 previously-rejected dependency refs
+- **Corpus test (Layer 1):** every real file parses — 34 agents, the context corpus recorded in
+  `09` §9, 20 commands, 16 skills, `registry.json` including all 19 previously-rejected dependency refs
   and all 5 profiles. Zero failures, zero skips.
 - **Trap tests:** the line-232/line-301 prose-marker files parse with correct (path-derived)
   metadata, NOT the in-body marker; the 3 dual-format files resolve MVI-wins; the
@@ -194,7 +194,7 @@ sets; `session-start.sh` exists only on the CC side). It is executed here — ag
 written Stage-1 rules — not improvised under deadline.
 
 **Core features:**
-1. Seed `/content/` from **both** trees per `08-MERGE-RULES.md`; harvest CC `<example>`
+1. Seed `/content/` from **both** trees per `09-MERGE-RULES.md`; harvest CC `<example>`
    blocks, the 12 CC skills, 6 CC-only commands, and `session-start.sh`'s six capabilities.
 2. **Path tokenization** in bodies *and permission scopes* (`{{SKILL_ROOT}}` etc.) + a lint
    forbidding raw `.opencode/` paths in `/content/` (~129 files affected).
@@ -216,7 +216,7 @@ written Stage-1 rules — not improvised under deadline.
 
 ## Stage 5 — CLI, installer parity & the install-verification matrix
 
-**Why:** This is where the user-facing promise lands: `npm i -g oac` on a clean machine —
+**Why:** This is where the user-facing promise lands: `npm i -g @controlstack/oac` on a clean machine —
 including Windows — with no Bun, no bash, safe updates, and working dependency resolution
 (today `add.ts` installs a component and **none** of its dependencies; issue #310 is a user
 discovering this). And "it installed" must be checkable per tool: your explicit requirement

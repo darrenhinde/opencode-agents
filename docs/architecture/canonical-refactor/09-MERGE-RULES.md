@@ -3,6 +3,8 @@
 > **Status:** Decided — written BEFORE Stage 4 executes (per `06-REVIEW.md` recommendation #3
 > and `07-EXECUTION-PLAN.md` Stage 4 feature 1).
 > **Date:** 2026-07-15 · Companion to `07-EXECUTION-PLAN.md` and `08-STRUCTURE-AND-PACKAGING.md`.
+> **Sign-off:** Approved as the Stage 4 merge contract by canonical-refactor subtask 08;
+> reaffirmed at the Stage 1 gate in subtask 10 on 2026-07-15.
 > Every path, count, and line number below was re-verified on disk on 2026-07-15
 > (branch `refactor/canonical`). Where disk disagrees with earlier docs, disk wins and the
 > discrepancy is recorded in §9.
@@ -86,9 +88,10 @@ Grounds, verified:
 | `permission:` (bash/edit/task maps) | → IR rules. Path-bearing scopes (e.g. `"bash .opencode/skills/task-management/router.sh complete*"`, `coder-agent.md:8-9`) are **tokenized** (`{{SKILL_ROOT}}` etc.) per Stage 4 feature 2 — raw `.opencode/` paths are lint-forbidden in `/content/`. |
 | `task:` allowlists (`contextscout`, `externalscout`, `TestEngineer`, …) | → IR delegate rules; referenced agent names resolve via canonical id **or** `aliases[]` (so `TestEngineer` keeps resolving). |
 
-CC-only frontmatter (`tools:` list, `disallowedTools:`, `model:`) maps to the IR fields the
-`02` schema (as amended by 06 fix #1) already defines; no conflict — the OpenCode copies have
-no `model:` at all (verified by grep across both `subagents/code/` and `subagents/core/`).
+CC-only `tools:` and `disallowedTools:` map to capabilities. Legacy `model:` values are migration
+inputs only: the two scout agents become `inference.tier: fast`; the other five become
+`inference.tier: balanced` (or omit the default). Concrete model names are discarded and never
+enter canonical content. OpenCode copies have no `model:` (verified across both subagent trees).
 
 ### 3.3 Mandatory exception — two pairs where OpenCode is longer
 
@@ -104,8 +107,9 @@ structure is the shipped one), **but** for these two pairs the merge is not a bl
 ### 3.4 Identity
 
 Canonical id = CC kebab-case filename (`01` Q1 disposition, `06-REVIEW.md:778`: *filename ==
-id*, `aliases[]` for back-compat). The OpenCode PascalCase `name:` values go into
-`aliases[]` so every existing dependency edge and `task:` permission key keeps resolving.
+id*, `aliases[]` for back-compat). Canonical ids remain kebab-case; the deliberately loose legacy
+alias schema in `02` §0.3 retains OpenCode names such as `TestEngineer`, so existing dependency
+edges and `task:` permission keys keep resolving without making those names canonical.
 
 ---
 
