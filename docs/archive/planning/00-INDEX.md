@@ -1,7 +1,12 @@
 # OAC Package Refactor - Planning Index
 
+> **ARCHIVED (2026-07-15):** These planning documents are historical proposals from the
+> February 2026 package-refactor planning phase. They are superseded by the canonical
+> refactor spec set in `docs/architecture/canonical-refactor/` and are kept for reference
+> only. Do not treat anything here as current direction.
+
 **Date**: 2026-02-14  
-**Status**: Comprehensive Planning Phase  
+**Status**: Archived — superseded by `docs/architecture/canonical-refactor/`  
 **Branch**: `feature/oac-package-refactor`  
 **Issue**: #206
 

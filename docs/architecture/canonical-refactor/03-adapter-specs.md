@@ -125,7 +125,7 @@ report task status. That is precisely the breakage the index cites as Option A's
 
 Under **last-match-wins**, both files behave exactly as authored and intended.
 
-The repo's own planning doc agrees — `docs/planning/12-MASTER-SYNTHESIS.md:442`:
+The repo's own planning doc agrees — `docs/archive/planning/12-MASTER-SYNTHESIS.md:442`:
 
 > "The `permission:` field uses **last-match-wins** evaluation (same as OpenCode's native
 > system) … Rules are evaluated in order; the LAST matching rule wins. This matches OpenCode's
@@ -834,7 +834,7 @@ the current file**.
 ## Open Questions
 
 1. **Q1 — first-match-wins vs last-match-wins (BLOCKING; §0.5).** The locked shape says
-   first-match-wins; all 34 authored agents and `docs/planning/12-MASTER-SYNTHESIS.md:442`
+   first-match-wins; all 34 authored agents and `docs/archive/planning/12-MASTER-SYNTHESIS.md:442`
    say last-match-wins, and first-match-wins would silently break `coder-agent`'s `router.sh`
    allowlist and neuter `openagent`'s `sudo *: deny`. The index's own `coder-agent` example is
    broken as printed under first-match-wins. **Recommend adopting last-match-wins.** This

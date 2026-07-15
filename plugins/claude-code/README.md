@@ -486,7 +486,7 @@ Create `hooks/hooks.json`:
 
 - [Main Documentation](../.opencode/docs/)
 - [Context System](../docs/context-system/)
-- [Planning Documents](../docs/planning/)
+- [Planning Documents (archived)](../docs/archive/planning/)
 
 ## 🤝 Contributing
 
