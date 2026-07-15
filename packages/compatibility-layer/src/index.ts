@@ -70,8 +70,67 @@ export {
 export {
   AgentLoadError,
   FrontmatterParseError,
+  MissingOacBlockError,
   ValidationError,
 } from "./core/AgentLoader.js";
+
+// ============================================================================
+// CORE - Canonical Agent Loading (`oac:` block)
+// ============================================================================
+
+/**
+ * Loads canonical agent files — OpenCode frontmatter plus the `oac:` block — from a
+ * configurable content root (`content/agents/**` by default).
+ *
+ * Identity comes from `oac.id`, never the filename: `subagents/code/test-engineer.md`
+ * declares `id: tester`, and `tester` is what the registry, profiles and context docs
+ * reference.
+ *
+ * @example
+ * ```typescript
+ * const agents = await loadCanonicalAgents('content/agents');
+ * // sorted by oac.id, deterministic regardless of filesystem enumeration order
+ * ```
+ */
+export {
+  CanonicalAgentLoader,
+  loadCanonicalAgents,
+  DEFAULT_CONTENT_ROOT,
+} from "./core/AgentLoader.js";
+
+export type { CanonicalAgentFile } from "./core/AgentLoader.js";
+
+// ============================================================================
+// CORE - Reference Resolution & Profiles
+// ============================================================================
+
+/**
+ * Resolves `type:id` references against `registry.json`, catching the reference rot that
+ * `scripts/registry/validate-registry.sh` reports as 244/244 green.
+ */
+export { ReferenceResolver, formatResolutions } from "./core/ReferenceResolver.js";
+
+export type {
+  Reference,
+  Registry,
+  RegistryComponent,
+  Resolution,
+  ResolutionStatus,
+  ResolveResult,
+} from "./core/ReferenceResolver.js";
+
+/**
+ * Loads install profiles and computes their transitive closures — what "install this
+ * profile" actually means.
+ */
+export { ProfileLoader, ProfileLoadError, ProfileSchema } from "./core/ProfileLoader.js";
+
+export type {
+  ClosureResult,
+  LoadedProfile,
+  Profile,
+  ProfileDrift,
+} from "./core/ProfileLoader.js";
 
 // ============================================================================
 // CORE - Adapter Registry
