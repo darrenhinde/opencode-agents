@@ -1,5 +1,5 @@
 {
-  "name": "@nextsystems/oac",
+  "name": "@controlstack/oac",
   "version": "1.1.0",
   "description": "AI agent framework for plan-first development workflows with approval-based execution. Multi-language support for TypeScript, Python, Go, Rust and more.",
   "packageManager": "pnpm@10.33.4",

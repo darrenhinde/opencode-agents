@@ -125,11 +125,15 @@ Why one package:
   counter-example).
 - **One install, one tarball, offline-complete** — nothing to resolve at runtime.
 - **Smaller supply-chain surface** — users audit one package, not three.
-- All three existing names — `@nextsystems/oac` (0.7.1), `@nextsystems/oac-cli` (1.0.0),
-  and `@openagents-control/compatibility-layer` (0.1.0) — are **deprecated on npm** with
-  pointers at `@controlstack/oac` (`npm deprecate` keeps old installs working while steering
-  new ones). If programmatic consumers show up later, publishing `@controlstack/core`
-  separately is an additive, non-breaking step.
+- Of the three legacy names, **only `@nextsystems/oac` was ever published** (verified against
+  the registry 2026-07-15: it sits at **0.7.0**). `@nextsystems/oac-cli` and
+  `@openagents-control/compatibility-layer` both 404 — they were never published, so they
+  need no deprecation and can simply be abandoned. (An earlier revision of this doc listed
+  them at 1.0.0 and 0.1.0 and `@nextsystems/oac` at 0.7.1; all three were wrong.)
+  `npm deprecate @nextsystems/oac` with a pointer at `@controlstack/oac` is therefore the
+  **only** deprecation required, and it runs at Stage 6 release — it keeps existing 0.7.0
+  installs working while steering new ones. If programmatic consumers show up later,
+  publishing `@controlstack/core` separately is an additive, non-breaking step.
 
 ---
 

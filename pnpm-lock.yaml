@@ -54,7 +54,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@openagents-control/compatibility-layer':
+      '@controlstack/compatibility-layer':
         specifier: workspace:*
         version: link:../compatibility-layer
       chalk:

@@ -11,11 +11,11 @@ Export to Claude Code format when you want to use your agents with Claude Code I
 | Requirement | Version | Notes |
 |-------------|---------|-------|
 | Node.js | >= 18 | Required for CLI |
-| @openagents-control/compatibility-layer | Latest | Install via npm |
+| @controlstack/compatibility-layer | Latest | Install via npm |
 | Claude Code | Any | Target platform |
 
 ```bash
-npm install -g @openagents-control/compatibility-layer
+npm install -g @controlstack/compatibility-layer
 ```
 
 ## Quick Migration
@@ -424,7 +424,7 @@ ls -la .claude/skills/
 ### Programmatic Validation
 
 ```typescript
-import { ClaudeAdapter, loadAgent } from '@openagents-control/compatibility-layer';
+import { ClaudeAdapter, loadAgent } from '@controlstack/compatibility-layer';
 
 async function validateConversion() {
   const agent = await loadAgent('./agent.md');

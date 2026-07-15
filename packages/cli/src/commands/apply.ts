@@ -16,8 +16,8 @@ import {
   CursorAdapter,
   ClaudeAdapter,
   WindsurfAdapter,
-} from '@openagents-control/compatibility-layer'
-import type { OpenAgent, ConversionResult } from '@openagents-control/compatibility-layer'
+} from '@controlstack/compatibility-layer'
+import type { OpenAgent, ConversionResult } from '@controlstack/compatibility-layer'
 import {
   detectIdes,
   getIdeOutputFile,

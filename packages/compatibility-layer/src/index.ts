@@ -1,14 +1,14 @@
 /**
- * @openagents-control/compatibility-layer
+ * @controlstack/compatibility-layer
  * 
  * A TypeScript library for converting OpenAgents Control agent definitions
  * to and from other AI coding tool formats (Cursor, Claude, Windsurf, etc.).
  * 
- * @module @openagents-control/compatibility-layer
+ * @module @controlstack/compatibility-layer
  * 
  * @example
  * ```typescript
- * import { loadAgent, registry, CursorAdapter } from '@openagents-control/compatibility-layer';
+ * import { loadAgent, registry, CursorAdapter } from '@controlstack/compatibility-layer';
  * 
  * // Load an OAC agent
  * const agent = await loadAgent('.opencode/agent/opencoder.md');
@@ -45,7 +45,7 @@ export * from "./types.js";
  * 
  * @example
  * ```typescript
- * import { loadAgent, loadAgents } from '@openagents-control/compatibility-layer';
+ * import { loadAgent, loadAgents } from '@controlstack/compatibility-layer';
  * 
  * // Load single agent
  * const agent = await loadAgent('.opencode/agent/opencoder.md');
@@ -115,7 +115,7 @@ export type { CanonicalAgentFile } from "./core/AgentLoader.js";
  *
  * @example
  * ```typescript
- * import { emitRegistry } from '@openagents-control/compatibility-layer';
+ * import { emitRegistry } from '@controlstack/compatibility-layer';
  *
  * // The bytes to write to registry.json — identical across runs.
  * const json = await emitRegistry(process.cwd());
@@ -152,7 +152,7 @@ export type {
  *
  * @example
  * ```typescript
- * import { plan, write } from '@openagents-control/compatibility-layer';
+ * import { plan, write } from '@controlstack/compatibility-layer';
  *
  * const built = await plan({ root: process.cwd() });
  * // Emit .opencode/** and registry.json in place; stage claude-code for review.
@@ -230,7 +230,7 @@ export type {
  * 
  * @example
  * ```typescript
- * import { registry, getAdapter } from '@openagents-control/compatibility-layer';
+ * import { registry, getAdapter } from '@controlstack/compatibility-layer';
  * 
  * // Get adapter from registry
  * const adapter = getAdapter('cursor');
@@ -266,7 +266,7 @@ export type { AdapterInfo } from "./core/AdapterRegistry.js";
  * 
  * @example
  * ```typescript
- * import { BaseAdapter } from '@openagents-control/compatibility-layer';
+ * import { BaseAdapter } from '@controlstack/compatibility-layer';
  * 
  * class MyAdapter extends BaseAdapter {
  *   readonly name = 'my-tool';
@@ -297,7 +297,7 @@ export { BaseAdapter } from "./adapters/BaseAdapter.js";
  * @example
  * ```typescript
  * // Available in Phase 2:
- * // import { CursorAdapter, ClaudeAdapter, WindsurfAdapter } from '@openagents-control/compatibility-layer';
+ * // import { CursorAdapter, ClaudeAdapter, WindsurfAdapter } from '@controlstack/compatibility-layer';
  * ```
  */
 
@@ -312,7 +312,7 @@ export { WindsurfAdapter } from "./adapters/WindsurfAdapter.js";
  *
  * @example
  * ```typescript
- * import { OpenCodeAdapter } from '@openagents-control/compatibility-layer';
+ * import { OpenCodeAdapter } from '@controlstack/compatibility-layer';
  *
  * const { content } = await new OpenCodeAdapter().fromCanonical(source);
  * ```
@@ -337,7 +337,7 @@ export type {
  * 
  * @example
  * ```typescript
- * import { mapToolFromOAC, mapToolToOAC } from '@openagents-control/compatibility-layer';
+ * import { mapToolFromOAC, mapToolToOAC } from '@controlstack/compatibility-layer';
  * 
  * mapToolFromOAC('bash', 'cursor'); // => { name: 'terminal', exact: true }
  * ```
@@ -360,7 +360,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { mapPermissionsFromOAC } from '@openagents-control/compatibility-layer';
+ * import { mapPermissionsFromOAC } from '@controlstack/compatibility-layer';
  * 
  * mapPermissionsFromOAC({ bash: { "*": "allow" } }, 'claude');
  * // => { permissions: { bash: true }, warnings: [...] }
@@ -388,7 +388,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { mapModelFromOAC, getModelsForPlatform } from '@openagents-control/compatibility-layer';
+ * import { mapModelFromOAC, getModelsForPlatform } from '@controlstack/compatibility-layer';
  * 
  * mapModelFromOAC('claude-sonnet-4', 'cursor');
  * // => { id: 'claude-sonnet-4', exact: true }
@@ -414,7 +414,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { mapContextPathFromOAC } from '@openagents-control/compatibility-layer';
+ * import { mapContextPathFromOAC } from '@controlstack/compatibility-layer';
  * 
  * mapContextPathFromOAC('.opencode/context/core/standards.md', 'claude');
  * // => { path: '.claude/skills/core-standards.md', exact: true }
@@ -447,7 +447,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { analyzeCompatibility, getToolCapabilities } from '@openagents-control/compatibility-layer';
+ * import { analyzeCompatibility, getToolCapabilities } from '@controlstack/compatibility-layer';
  * 
  * const result = analyzeCompatibility(agent, 'cursor');
  * // => { compatible: false, warnings: [...], blockers: [...] }
@@ -474,7 +474,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { TranslationEngine, translate } from '@openagents-control/compatibility-layer';
+ * import { TranslationEngine, translate } from '@controlstack/compatibility-layer';
  * 
  * // Using the engine
  * const engine = new TranslationEngine();

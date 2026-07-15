@@ -1,5 +1,5 @@
 {
-  "name": "@nextsystems/oac-cli",
+  "name": "@controlstack/oac-cli",
   "version": "1.1.0",
   "description": "OAC CLI — install, manage, and update AI agents and context files",
   "type": "module",
@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openagents-control/compatibility-layer": "workspace:*",
+    "@controlstack/compatibility-layer": "workspace:*",
     "commander": "12.1.0",
     "chalk": "5.6.2",
     "ora": "8.2.0",

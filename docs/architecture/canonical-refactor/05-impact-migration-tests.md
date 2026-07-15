@@ -129,7 +129,7 @@ Two populations, two mechanisms, both must keep working through the whole migrat
 
 ### 1.4 Evals impact (the free end-to-end check)
 
-`evals/framework` (`@opencode-agents/eval-framework`, v0.1.1) is an npm workspace that loads
+`evals/framework` (`@controlstack/eval-framework`, v0.1.1) is an npm workspace that loads
 agents through `@opencode-ai/sdk` and runs behavioral suites; root `npm test` delegates to it
 (`test:all` → `cd evals/framework && npm run eval:sdk`). Because it reads the **`.opencode/`
 tree**, and `.opencode/` becomes **build output**, the evals automatically become an

@@ -175,8 +175,8 @@ export const readRegistry = async (packageRoot: string): Promise<Registry> => {
   if (!exists) {
     throw new Error(
       `registry.json not found at "${registryPath}".\n` +
-        `This file should be bundled with the @nextsystems/oac package.\n` +
-        `Try reinstalling: npm install -g @nextsystems/oac`,
+        `This file should be bundled with the @controlstack/oac package.\n` +
+        `Try reinstalling: npm install -g @controlstack/oac`,
     );
   }
 
@@ -184,7 +184,7 @@ export const readRegistry = async (packageRoot: string): Promise<Registry> => {
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(
       `Failed to parse registry.json at "${registryPath}": ${msg}\n` +
-        `The file may be corrupted. Try reinstalling: npm install -g @nextsystems/oac`,
+        `The file may be corrupted. Try reinstalling: npm install -g @controlstack/oac`,
     );
   }) as unknown;
 
@@ -195,7 +195,7 @@ export const readRegistry = async (packageRoot: string): Promise<Registry> => {
       .join("\n");
     throw new Error(
       `Invalid registry.json at "${registryPath}":\n${issues}\n` +
-        `The registry schema may have changed. Try reinstalling: npm install -g @nextsystems/oac`,
+        `The registry schema may have changed. Try reinstalling: npm install -g @controlstack/oac`,
     );
   }
 

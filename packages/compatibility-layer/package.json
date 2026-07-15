@@ -1,5 +1,5 @@
 {
-  "name": "@openagents-control/compatibility-layer",
+  "name": "@controlstack/compatibility-layer",
   "version": "1.1.0",
   "type": "module",
   "description": "Compatibility layer for converting OpenAgents Control agents to/from other AI coding tools (Cursor, Claude Code, Windsurf)",

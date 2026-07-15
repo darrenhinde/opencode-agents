@@ -3,7 +3,7 @@
  *
  * ## This file is wiring, not logic
  *
- * The pipeline itself lives in `@openagents-control/compatibility-layer`
+ * The pipeline itself lives in `@controlstack/compatibility-layer`
  * (`src/core/BuildPipeline.ts`): loading, adapting, orphan pruning and drift detection are all
  * there, under vitest, Node-clean. This module parses flags, chooses roots, and prints. That
  * split is deliberate — `packages/cli` still runs on Bun (12-DISPATCH, Stage 5 owns the
@@ -57,7 +57,7 @@ import {
   type BuildTarget,
   type Drift,
   type OutputRoots,
-} from '@openagents-control/compatibility-layer'
+} from '@controlstack/compatibility-layer'
 
 import { bold, dim, error, info, log, setVerbose, success, verbose, warn } from '../ui/logger.js'
 

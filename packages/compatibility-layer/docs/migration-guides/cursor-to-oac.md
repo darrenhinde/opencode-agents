@@ -25,7 +25,7 @@ OAC provides a superset of Cursor's capabilities while maintaining backward comp
 **Install the compatibility layer:**
 
 ```bash
-npm install @openagents-control/compatibility-layer
+npm install @controlstack/compatibility-layer
 ```
 
 ## Quick Migration
@@ -376,7 +376,7 @@ oac-compat convert agent.md -f cursor -o .cursorrules.test
 **Programmatic validation:**
 
 ```typescript
-import { loadAgent, validateAgent } from '@openagents-control/compatibility-layer';
+import { loadAgent, validateAgent } from '@controlstack/compatibility-layer';
 
 const agent = await loadAgent('./agent.md');
 const errors = validateAgent(agent);

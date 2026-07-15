@@ -71,7 +71,7 @@ export function findPackageRoot(dir: string): string {
       throw new Error(
         `getPackageRoot: could not find a directory with ".opencode/" and "package.json" ` +
           `(without a "registry.json" at the same level) walking up from "${dir}". ` +
-          `Is @nextsystems/oac installed correctly? ` +
+          `Is @controlstack/oac installed correctly? ` +
           `In dev/monorepo mode, set OAC_PACKAGE_ROOT env var to the repo root.`,
       );
     }

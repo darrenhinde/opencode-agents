@@ -1,5 +1,5 @@
 {
-  "name": "@opencode-agents/eval-framework",
+  "name": "@controlstack/eval-framework",
   "version": "1.1.0",
   "type": "module",
   "description": "Evaluation framework for OpenCode agents",

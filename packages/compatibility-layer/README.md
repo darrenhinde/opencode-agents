@@ -1,4 +1,4 @@
-# @openagents-control/compatibility-layer
+# @controlstack/compatibility-layer
 
 > Compatibility layer for converting OpenAgents Control agents to/from other AI coding tools
 
@@ -30,10 +30,10 @@ This package provides bidirectional conversion between OpenAgents Control (OAC) 
 
 ```bash
 # npm
-npm install @openagents-control/compatibility-layer
+npm install @controlstack/compatibility-layer
 
 # pnpm
-pnpm add @openagents-control/compatibility-layer
+pnpm add @controlstack/compatibility-layer
 ```
 
 ## Quick Start
@@ -71,7 +71,7 @@ import {
   getAdapter,
   translate,
   analyzeCompatibility,
-} from "@openagents-control/compatibility-layer";
+} from "@controlstack/compatibility-layer";
 
 // Load an OAC agent
 const agent = await loadAgent("./agent.md");
@@ -182,7 +182,7 @@ import {
   loadAgent,
   loadAgents,
   AgentLoader,
-} from "@openagents-control/compatibility-layer";
+} from "@controlstack/compatibility-layer";
 
 // Load single agent
 const agent = await loadAgent("./agent.md");
@@ -202,7 +202,7 @@ import {
   registry,
   getAdapter,
   listAdapters,
-} from "@openagents-control/compatibility-layer";
+} from "@controlstack/compatibility-layer";
 
 // Get adapter by name
 const adapter = getAdapter("cursor");
@@ -221,7 +221,7 @@ import {
   translate,
   previewTranslation,
   TranslationEngine,
-} from "@openagents-control/compatibility-layer";
+} from "@controlstack/compatibility-layer";
 
 // Quick translate
 const result = translate(agent, "cursor");
@@ -247,7 +247,7 @@ import {
   mapModelFromOAC,
   mapPermissionsFromOAC,
   mapContextPathFromOAC,
-} from "@openagents-control/compatibility-layer";
+} from "@controlstack/compatibility-layer";
 
 // Map tool names
 mapToolFromOAC("bash", "cursor"); // { name: 'terminal', exact: true }
@@ -323,7 +323,7 @@ import {
   OpenAgent,
   ConversionResult,
   ToolCapabilities,
-} from "@openagents-control/compatibility-layer";
+} from "@controlstack/compatibility-layer";
 
 class MyToolAdapter extends BaseAdapter {
   readonly name = "my-tool";
@@ -355,7 +355,7 @@ class MyToolAdapter extends BaseAdapter {
 }
 
 // Register the adapter
-import { registry } from "@openagents-control/compatibility-layer";
+import { registry } from "@controlstack/compatibility-layer";
 registry.register(new MyToolAdapter());
 ```
 

@@ -52,7 +52,7 @@ const fetchLatestNpmVersion = async (packageName: string): Promise<string | null
 /** Check 1: OAC version vs npm registry (non-blocking, skipped if offline). */
 const checkOacVersion = async (): Promise<CheckResult> => {
   const current = readCliVersion();
-  const latest = await fetchLatestNpmVersion('@nextsystems/oac');
+  const latest = await fetchLatestNpmVersion('@controlstack/oac');
 
   if (latest === null) {
     return {
@@ -67,7 +67,7 @@ const checkOacVersion = async (): Promise<CheckResult> => {
     return {
       name: 'OAC version',
       status: 'warn',
-      message: `${current} (latest: ${latest}) — run 'npm install -g @nextsystems/oac' to update`,
+      message: `${current} (latest: ${latest}) — run 'npm install -g @controlstack/oac' to update`,
     };
   }
 
