@@ -14,7 +14,8 @@ oac:
     - images
     - editing
     - generation
-  dependencies: []
+  dependencies:
+    - tool:gemini
   targets:
     - opencode
 ---

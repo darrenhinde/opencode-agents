@@ -29,7 +29,16 @@ oac:
     - context
     - discovery
     - search
-  dependencies: []
+  dependencies:
+    - command:check-context-deps
+    - context:registry-dependencies
+    - context:context-system
+    - context:mvi
+    - context:structure
+    - context:workflows
+    - subagent:externalscout
+    - context:root-navigation
+    - context:context-paths-config
   targets:
     - opencode
     - claude-code

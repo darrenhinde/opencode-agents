@@ -22,7 +22,8 @@ oac:
     - context
     - organization
     - structure
-  dependencies: []
+  dependencies:
+    - context:core/context-system/*
   targets:
     - opencode
 ---

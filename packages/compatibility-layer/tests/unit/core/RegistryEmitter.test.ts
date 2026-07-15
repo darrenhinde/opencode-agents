@@ -74,17 +74,21 @@ const MISSING_FROM_REGISTRY = [
 ] as const;
 
 /**
- * Dependency edges that exist ONLY in `registry.json` — no agent file and no sidecar entry
- * declares them, so generating from the canonical tree DROPS them.
+ * Dependency edges that were once authored ONLY in `registry.json` — no agent file and no
+ * sidecar entry declared them, so generating from the canonical tree used to DROP them.
  *
- * This is a real regression, not a cleanup: `install.sh` resolves these transitively today
- * (`resolve_dependencies`, install.sh:420), so installing `subagent:externalscout` currently
- * pulls in `skill:context7` and would stop doing so. They were hand-authored straight into
+ * That was a real regression, not a cleanup: `install.sh` resolves these transitively
+ * (`resolve_dependencies`, install.sh:420), so installing `subagent:externalscout` pulls in
+ * `skill:context7` and would have stopped doing so. They were hand-authored straight into
  * `registry.json` and never made it into any file, which is precisely the drift this refactor
- * exists to end — but the fix is to backfill `oac.dependencies` in `content/agents/**`, not to
- * let the emitter delete them silently.
+ * exists to end.
  *
- * Pinned here so subtask 10 cannot emit for real while the loss is unresolved.
+ * Subtask 09b backfilled all 13 into `oac.dependencies` in `content/agents/**`, in the exact
+ * order `registry.json` declares them, so the emitter now reproduces every one. This list is
+ * therefore no longer a snapshot of a loss — it is the guard that the backfill stays put. Each
+ * edge was verified to resolve against the registry before being carried over; the sibling dead
+ * ref `context:context-system/*` (profiles-only, expands to 0) was deliberately NOT introduced
+ * here — see `tests/unit/build/reference-resolution.test.ts`.
  */
 const REGISTRY_ONLY_DEPENDENCIES: Readonly<Record<string, readonly string[]>> = {
   contextscout: [
@@ -409,27 +413,41 @@ describe("registry defects", () => {
     expect(byId(document, "subagents").has("batch-executor")).toBe(true);
   });
 
-  it("still drops the dependency edges that only registry.json declares", async () => {
-    // A SNAPSHOT OF A KNOWN REGRESSION, not an invariant. These edges are hand-authored in
-    // registry.json and absent from both the agent files and agent-metadata.json, so
-    // generating from the canonical tree loses them. When subtask 05 backfills
-    // `oac.dependencies` in `content/agents/**`, this test turns red — which is correct:
-    // repairing the loss must be a deliberate edit here, never a silent drift.
+  it("preserves the dependency edges that only registry.json used to declare", async () => {
+    // These edges were hand-authored in registry.json and absent from both the agent files and
+    // agent-metadata.json, so generating from the canonical tree used to lose them. Subtask 09b
+    // backfilled them into `oac.dependencies`. This asserts the round trip: every edge the
+    // committed registry declares is still declared by the generated one, so `install.sh`
+    // resolves exactly what it resolves today.
     const document = await new RegistryEmitter(repoPath()).emit();
     const subagents = byId(document, "subagents");
 
-    for (const [id, lost] of Object.entries(REGISTRY_ONLY_DEPENDENCIES)) {
+    for (const [id, backfilled] of Object.entries(REGISTRY_ONLY_DEPENDENCIES)) {
       const before = new Set(byId(COMMITTED, "subagents").get(id)?.dependencies ?? []);
       const after = new Set(subagents.get(id)?.dependencies ?? []);
 
-      for (const dependency of lost) {
+      for (const dependency of backfilled) {
         expect(before.has(dependency), `${id} -> ${dependency} vanished from registry.json`).toBe(
           true
         );
-        expect(after.has(dependency), `${id} -> ${dependency} is no longer lost — update this snapshot`).toBe(
-          false
-        );
+        expect(
+          after.has(dependency),
+          `${id} -> ${dependency} was dropped — backfill it into content/agents/, do not weaken this test`
+        ).toBe(true);
       }
+    }
+  });
+
+  it("emits the backfilled edges in the order registry.json declares them", async () => {
+    // Order is not cosmetic: the emitter maps `oac.dependencies` positionally, and the
+    // subtask-11 `oac build && git diff --exit-code` gate compares bytes. A reordered list is a
+    // spurious diff, so the canonical files must carry registry.json's own order.
+    const subagents = byId(await new RegistryEmitter(repoPath()).emit(), "subagents");
+
+    for (const id of Object.keys(REGISTRY_ONLY_DEPENDENCIES)) {
+      expect(subagents.get(id)?.dependencies, `${id} dependency order drifted`).toEqual(
+        byId(COMMITTED, "subagents").get(id)?.dependencies
+      );
     }
   });
 });

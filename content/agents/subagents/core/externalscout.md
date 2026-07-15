@@ -28,7 +28,9 @@ oac:
     - external
     - documentation
     - search
-  dependencies: []
+  dependencies:
+    - skill:context7
+    - context:context-system
   targets:
     - opencode
     - claude-code
