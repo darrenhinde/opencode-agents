@@ -13,10 +13,12 @@ const NO_CHANGES = {
   'has-evals': false,
   'has-docs': false,
   'has-workflows': false,
+  'has-packages': false,
 }
 
 const SCRIPT_PATH = join(import.meta.dir, 'detect-pr-changes.ts')
 const WORKFLOW_PATH = join(import.meta.dir, '..', '..', '.github', 'workflows', 'pr-checks.yml')
+const PACKAGES_WORKFLOW_PATH = join(import.meta.dir, '..', '..', '.github', 'workflows', 'packages-checks.yml')
 
 type CliResult = {
   exitCode: number
@@ -76,18 +78,35 @@ describe('classifyChangedPaths', () => {
     })
   })
 
+  test('detects packages changes', () => {
+    expect(classifyChangedPaths(['packages/cli/src/index.ts'])).toEqual({
+      ...NO_CHANGES,
+      'has-packages': true,
+    })
+    expect(classifyChangedPaths(['packages/compatibility-layer/package.json'])).toEqual({
+      ...NO_CHANGES,
+      'has-packages': true,
+    })
+    expect(classifyChangedPaths(['packages/plugin-abilities/src/index.ts'])).toEqual({
+      ...NO_CHANGES,
+      'has-packages': true,
+    })
+  })
+
   test('detects mixed changes', () => {
     expect(
       classifyChangedPaths([
         'evals/framework/package.json',
         'docs/README.md',
         '.github/workflows/release.yml',
+        'packages/cli/package.json',
         'src/index.ts',
       ]),
     ).toEqual({
       'has-evals': true,
       'has-docs': true,
       'has-workflows': true,
+      'has-packages': true,
     })
   })
 
@@ -106,6 +125,9 @@ describe('classifyChangedPaths', () => {
         'docs.md',
         '.github/workflows-old/check.yml',
         'nested/evals/test.ts',
+        'packages-old/cli/index.ts',
+        'packages.json',
+        'nested/packages/cli/index.ts',
       ]),
     ).toEqual(NO_CHANGES)
   })
@@ -127,8 +149,9 @@ describe('formatGitHubOutput', () => {
         'has-evals': true,
         'has-docs': false,
         'has-workflows': true,
+        'has-packages': false,
       }),
-    ).toBe('has-evals=true\nhas-docs=false\nhas-workflows=true\n')
+    ).toBe('has-evals=true\nhas-docs=false\nhas-workflows=true\nhas-packages=false\n')
   })
 })
 
@@ -142,7 +165,7 @@ describe('CLI', () => {
 
       expect(result).toEqual({ exitCode: 0, stderr: '', stdout: '' })
       expect(await readFile(outputPath, 'utf8')).toBe(
-        'existing=value\nhas-evals=true\nhas-docs=false\nhas-workflows=false\n',
+        'existing=value\nhas-evals=true\nhas-docs=false\nhas-workflows=false\nhas-packages=false\n',
       )
     })
   })
@@ -155,7 +178,7 @@ describe('CLI', () => {
 
       expect(result.exitCode).toBe(0)
       expect(await readFile(outputPath, 'utf8')).toBe(
-        'has-evals=false\nhas-docs=false\nhas-workflows=false\n',
+        'has-evals=false\nhas-docs=false\nhas-workflows=false\nhas-packages=false\n',
       )
     })
   })
@@ -186,13 +209,14 @@ describe('CLI', () => {
         'evals/ leading and trailing .ts ',
         'docs/雪\n$HOME;$(touch never).md',
         '.github/workflows/[check]& weird.yml',
+        'packages/cli/src/ spaced 雪.ts',
       ]
 
       const result = await runCli(`${paths.join('\0')}\0`, outputPath)
 
       expect(result.exitCode).toBe(0)
       expect(await readFile(outputPath, 'utf8')).toBe(
-        'has-evals=true\nhas-docs=true\nhas-workflows=true\n',
+        'has-evals=true\nhas-docs=true\nhas-workflows=true\nhas-packages=true\n',
       )
     })
   })
@@ -230,5 +254,35 @@ describe('PR checks workflow contract', () => {
     expect(overallStatus).toContain('needs.check-changes.result }}" == "success"')
     expect(overallStatus).toContain('needs.check-changes.outputs.has-evals }}" != "true"')
     expect(overallStatus).toContain('exit 1')
+  })
+})
+
+describe('Packages checks workflow contract', () => {
+  test('uses the NUL-delimited detector and the has-packages output', async () => {
+    const workflow = await readFile(PACKAGES_WORKFLOW_PATH, 'utf8')
+
+    expect(workflow).toContain('git diff --name-only -z')
+    expect(workflow).toMatch(/git diff --name-only -z[^\n]*\|[\s\S]*bun run scripts\/validation\/detect-pr-changes\.ts/)
+    expect(workflow).toContain('has-packages: ${{ steps.filter.outputs.has-packages }}')
+    expect(workflow).toContain('oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6')
+    expect(workflow).toContain('bun-version: 1.3.14')
+  })
+
+  test('gates every package check job on the has-packages flag', async () => {
+    const workflow = await readFile(PACKAGES_WORKFLOW_PATH, 'utf8')
+
+    expect(workflow).toContain('cli-checks:')
+    expect(workflow).toContain('compatibility-layer-checks:')
+    expect(workflow).toContain('plugin-abilities-checks:')
+
+    const gates = workflow.match(/needs\.check-changes\.outputs\.has-packages == 'true'/g) ?? []
+    expect(gates.length).toBeGreaterThanOrEqual(3)
+  })
+
+  test('triggers on packages/** pull request changes', async () => {
+    const workflow = await readFile(PACKAGES_WORKFLOW_PATH, 'utf8')
+
+    expect(workflow).toContain('pull_request:')
+    expect(workflow).toContain("- 'packages/**'")
   })
 })

@@ -6,6 +6,7 @@ export type ChangeFlags = {
   'has-evals': boolean
   'has-docs': boolean
   'has-workflows': boolean
+  'has-packages': boolean
 }
 
 export function parseChangedPaths(input: string): string[] {
@@ -17,6 +18,7 @@ export function classifyChangedPaths(paths: readonly string[]): ChangeFlags {
     'has-evals': paths.some((path) => path.startsWith('evals/')),
     'has-docs': paths.some((path) => path.startsWith('docs/')),
     'has-workflows': paths.some((path) => path.startsWith('.github/workflows/')),
+    'has-packages': paths.some((path) => path.startsWith('packages/')),
   }
 }
 
@@ -25,6 +27,7 @@ export function formatGitHubOutput(flags: ChangeFlags): string {
     `has-evals=${flags['has-evals']}`,
     `has-docs=${flags['has-docs']}`,
     `has-workflows=${flags['has-workflows']}`,
+    `has-packages=${flags['has-packages']}`,
   ].join('\n') + '\n'
 }
 
