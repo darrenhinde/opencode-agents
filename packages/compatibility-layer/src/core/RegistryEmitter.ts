@@ -1,0 +1,326 @@
+/**
+ * Generates `registry.json` from the canonical `content/agents/**` tree.
+ *
+ * ─── Why this exists ────────────────────────────────────────────────────────────────────
+ *
+ * Adding a component today means editing `registry.json` by hand, or running
+ * `scripts/registry/auto-detect-components.sh --auto-add` — 895 lines of bash that does not
+ * GENERATE the registry at all. It APPENDS: it diffs the `.opencode/**` tree against the
+ * registry's existing `path` values, parses frontmatter with `sed`/`grep`, and `jq`-appends
+ * whatever it did not recognise. Nothing ever re-derives an entry that already exists, so an
+ * entry that drifts from its own file drifts forever. That is exactly what happened —
+ * `registry.json` carries names, descriptions, tags and dependency lists that no file on disk
+ * agrees with any more, and `subagent:batch-executor` is missing outright despite shipping in
+ * `.opencode/agent/subagents/core/batch-executor.md` and being depended on by both
+ * `openagent` and `opencoder`.
+ *
+ * This emitter inverts that: the canonical file is the input, the registry entry is OUTPUT.
+ * Adding an agent becomes "add one file under `content/agents/`, run the build".
+ *
+ * ─── Phase 1 scope: agents only ─────────────────────────────────────────────────────────
+ *
+ * `install.sh` reads `registry.json` and is the only shipping install path, so the blast
+ * radius of a mistake here is "nobody can install". Phase 1 therefore regenerates ONLY the
+ * `components.agents` and `components.subagents` arrays — the two the canonical tree actually
+ * owns — and carries every other part of the document (contexts, commands, tools, plugins,
+ * skills, config, profiles, categories, metadata) through verbatim from the committed file.
+ * Later subtasks canonicalise the rest.
+ *
+ * ─── Which profile list is authoritative ────────────────────────────────────────────────
+ *
+ * Profiles are authored twice — `.opencode/profiles/<name>/profile.json` and
+ * `registry.json` `.profiles.<name>.components` — and they have drifted on all 5 profiles
+ * (`advanced`: 51 vs 68), with neither a superset of the other. This emitter treats
+ * `registry.json` as authoritative and never consults `profile.json`, because
+ * `registry.json` is the list `install.sh` actually reads (`get_profile_components`,
+ * install.sh:292) and `profile.json` is read only by `scripts/registry/check-dependencies.ts`,
+ * a script no install path invokes. Generating from `profile.json` would silently change what
+ * five profiles install. See {@link ProfileLoader.drift} for the disagreement itself; the
+ * reconciliation is a content decision, not an emitter one.
+ *
+ * ─── The dead wildcard stays dead, on purpose ───────────────────────────────────────────
+ *
+ * `.profiles.advanced.components` contains `context:context-system/*`, which expands to zero
+ * registry context paths (`.opencode/context/context-system` does not exist; the real subtree
+ * is `.opencode/context/core/context-system/`). It is NOT repaired here. "Carry non-agent data
+ * through verbatim" is the phase-1 contract, and rewriting the ref to
+ * `context:core/context-system/*` would change what `--profile advanced` installs — a content
+ * decision owned by whoever owns profiles. It is instead reported as a `dead-wildcard` by
+ * {@link ReferenceResolver.resolve} and pinned as a known dead ref in
+ * `tests/unit/build/reference-resolution.test.ts`.
+ *
+ * ─── Determinism ────────────────────────────────────────────────────────────────────────
+ *
+ * The generated tree stays committed and CI gates drift with `oac build && git diff
+ * --exit-code`, so any per-run variation turns that gate into a coin flip (07 Stage 3 /
+ * 04 §2.1). Three things guarantee byte-stability here:
+ *
+ *   - Agent order comes from `oac.id`, not from `readdir`.
+ *   - Key order is fixed: owned entries by literal declaration order, everything else by the
+ *     base document's own order, which makes the emitter a fixed point over its own output.
+ *   - `metadata.lastUpdated` is carried from the base, never stamped from the clock. The bash
+ *     script did `now | strftime` (auto-detect-components.sh:872), which alone would have made
+ *     every rebuild a diff.
+ */
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { CanonicalAgentLoader, type CanonicalAgentFile } from "./AgentLoader.js";
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+/**
+ * One entry in a `registry.json` `components.<category>` array.
+ *
+ * Deliberately open: phase 1 carries non-agent entries through verbatim, and they legitimately
+ * carry fields this emitter does not model (`aliases` on 3 contexts, `files` on skills).
+ * Narrowing this type would silently drop them — and `install.sh` matches on `.aliases`
+ * (install.sh:420), so dropping one uninstalls a component for anyone naming it by alias.
+ */
+export interface RegistryEntry {
+  id: string;
+  name?: string;
+  type?: string;
+  path?: string;
+  version?: string;
+  description?: string;
+  tags?: string[];
+  dependencies?: string[];
+  category?: string;
+  aliases?: string[];
+  [key: string]: unknown;
+}
+
+/** A parsed `registry.json`. Open for the same reason as {@link RegistryEntry}. */
+export interface RegistryDocument {
+  components: Record<string, RegistryEntry[]>;
+  [key: string]: unknown;
+}
+
+export interface RegistryEmitterOptions {
+  /** Root of the canonical agent tree, relative to the repo root. */
+  contentRoot?: string;
+  /**
+   * Where an agent's `path` points once built, relative to the repo root. Registry paths name
+   * the SHIPPED file under `.opencode/agent/`, not the canonical source — `install.sh` copies
+   * `.path` verbatim, so this must stay the install tree.
+   */
+  agentInstallRoot?: string;
+  /** The committed registry to carry non-agent data through from. */
+  registryFile?: string;
+}
+
+const DEFAULTS = {
+  contentRoot: "content/agents",
+  agentInstallRoot: ".opencode/agent",
+  registryFile: "registry.json",
+} as const;
+
+/** `oac.type` -> the `components` key its entries live under. */
+const CATEGORY_FOR_TYPE: Readonly<Record<string, string>> = {
+  agent: "agents",
+  subagent: "subagents",
+};
+
+/** Locale-independent ordering. `localeCompare` is locale-dependent — never use it here. */
+function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// ============================================================================
+// SERIALISATION
+// ============================================================================
+
+/** Every character outside printable ASCII. Written as escapes so the source stays ASCII. */
+const NON_ASCII = /[\u0080-\uFFFF]/g;
+
+/**
+ * Escape every non-ASCII character as `\uXXXX`.
+ *
+ * `JSON.stringify` emits raw UTF-8; the committed `registry.json` escapes instead, in 3 places
+ * (an em-dash and two emoji, in carried-through context descriptions). Without this the
+ * generated file differs from the committed one on bytes nobody changed, and the subtask-11
+ * diff gate reports noise. Safe to apply to the whole document: in valid JSON a non-ASCII
+ * character can only occur inside a string literal. Lone surrogates escape to their own halves,
+ * which is still valid JSON.
+ */
+function escapeNonAscii(json: string): string {
+  return json.replace(NON_ASCII, (character) => {
+    const code = character.charCodeAt(0).toString(16).padStart(4, "0");
+    return `\\u${code}`;
+  });
+}
+
+/**
+ * Serialise a registry document the way the committed file is written: 2-space indent,
+ * `\uXXXX`-escaped non-ASCII, trailing newline.
+ *
+ * Verified byte-exact against the committed `registry.json` — parsing it and re-serialising it
+ * through this function reproduces it exactly, so every difference the diff gate reports is
+ * semantic rather than a formatting artefact.
+ */
+export function serializeRegistry(document: RegistryDocument): string {
+  return `${escapeNonAscii(JSON.stringify(document, null, 2))}\n`;
+}
+
+// ============================================================================
+// ENTRY CONSTRUCTION
+// ============================================================================
+
+/**
+ * Build the registry entry for one canonical agent.
+ *
+ * Field order is the object literal's order, which is what `JSON.stringify` emits. It matches
+ * the shape the two versioned subagents in the committed registry already use
+ * (`id,name,type,path,version,description,tags,dependencies,category`).
+ *
+ * `description` comes from the OpenCode frontmatter rather than the `oac:` block: it is the
+ * text the agent itself ships with and the one an installer shows. Everything else comes from
+ * `oac:`, which is precisely the content of the `.opencode/config/agent-metadata.json` sidecar
+ * this refactor dissolves.
+ */
+export function entryForAgent(agent: CanonicalAgentFile, agentInstallRoot: string): RegistryEntry {
+  return {
+    id: agent.oac.id,
+    name: agent.oac.name,
+    type: agent.oac.type,
+    path: `${agentInstallRoot}/${agent.relativePath}`,
+    version: agent.oac.version,
+    description: agent.frontmatter.description,
+    tags: agent.oac.tags,
+    dependencies: agent.oac.dependencies.map(({ type, id }) => `${type}:${id}`),
+    category: agent.oac.category,
+  };
+}
+
+// ============================================================================
+// EMITTER
+// ============================================================================
+
+export class RegistryEmitter {
+  private readonly root: string;
+  private readonly contentRoot: string;
+  private readonly agentInstallRoot: string;
+  private readonly registryFile: string;
+
+  /**
+   * @param root    - Repository root. Everything resolves relative to this, so the emitter is
+   *                  testable against a fixture tree rather than a hardcoded path.
+   * @param options - Tree locations. Defaults, not hardcodes.
+   */
+  constructor(root: string, options: RegistryEmitterOptions = {}) {
+    this.root = root;
+    this.contentRoot = options.contentRoot ?? DEFAULTS.contentRoot;
+    this.agentInstallRoot = options.agentInstallRoot ?? DEFAULTS.agentInstallRoot;
+    this.registryFile = options.registryFile ?? DEFAULTS.registryFile;
+  }
+
+  /**
+   * The committed registry, the source of everything phase 1 does not generate.
+   *
+   * `resolve` rather than `join` throughout: it leaves an absolute override absolute, so a
+   * caller can point `contentRoot` or `registryFile` at a tree outside `root` — which is how
+   * the fixed-point test emits a scratch registry against the real content tree.
+   */
+  base(): RegistryDocument {
+    return JSON.parse(
+      readFileSync(resolve(this.root, this.registryFile), "utf-8")
+    ) as RegistryDocument;
+  }
+
+  /**
+   * Generate the registry document.
+   *
+   * Owned arrays (`agents`, `subagents`) are rebuilt from the canonical tree. Everything else
+   * — including the document's own key order — comes from the base, which is what makes this a
+   * fixed point over its own output: emitting, writing, and emitting again yields the same
+   * bytes.
+   */
+  async emit(): Promise<RegistryDocument> {
+    const base = this.base();
+    const agents = await new CanonicalAgentLoader(resolve(this.root, this.contentRoot))
+      .loadFromDirectory();
+
+    const generated = this.generatedByCategory(agents);
+    const components: Record<string, RegistryEntry[]> = {};
+
+    // Iterate the BASE's keys, not the generated ones: an entry type the canonical tree does
+    // not own yet must survive untouched, and its position must not move.
+    for (const category of Object.keys(base.components)) {
+      const existing = base.components[category] ?? [];
+      const owned = generated.get(category);
+      components[category] = owned === undefined ? existing : merge(owned, existing);
+    }
+
+    // A canonical `oac.type` whose category the base has never seen. Not reachable today
+    // (`AgentTypeSchema` is `agent | subagent` and both exist), but appending rather than
+    // dropping means a new type surfaces in the diff instead of vanishing.
+    for (const [category, owned] of generated) {
+      components[category] ??= merge(owned, []);
+    }
+
+    const document: RegistryDocument = {} as RegistryDocument;
+    for (const key of Object.keys(base)) {
+      document[key] = key === "components" ? components : base[key];
+    }
+
+    return document;
+  }
+
+  /** The generated registry document, serialised exactly as the committed file is written. */
+  async emitJson(): Promise<string> {
+    return serializeRegistry(await this.emit());
+  }
+
+  /** Canonical agents grouped into the `components` arrays they belong in, sorted by id. */
+  private generatedByCategory(agents: readonly CanonicalAgentFile[]): Map<string, RegistryEntry[]> {
+    const byCategory = new Map<string, RegistryEntry[]>();
+
+    for (const agent of agents) {
+      const category = CATEGORY_FOR_TYPE[agent.oac.type];
+      if (category === undefined) continue;
+
+      const entries = byCategory.get(category) ?? [];
+      entries.push(entryForAgent(agent, this.agentInstallRoot));
+      byCategory.set(category, entries);
+    }
+
+    for (const entries of byCategory.values()) entries.sort((a, b) => compare(a.id, b.id));
+
+    return byCategory;
+  }
+}
+
+/**
+ * Combine generated entries with the base entries the canonical tree does not claim.
+ *
+ * The carry-through is not a convenience — it is load-bearing. `agent:eval-runner` ships in
+ * `.opencode/agent/eval-runner.md` and sits in the committed registry, but has no
+ * `content/agents/` counterpart yet. Generating agents purely from the canonical tree would
+ * delete it from the registry and uninstall the eval harness for everyone. Anything not yet
+ * canonicalised is preserved verbatim, keeping its own key order and any fields this emitter
+ * does not model.
+ *
+ * The result is sorted by id: array order must be a property of the CONTENT, not of the
+ * insertion history of a hand-edited file, or the diff gate cannot tell a real change from a
+ * reshuffle.
+ */
+function merge(generated: readonly RegistryEntry[], base: readonly RegistryEntry[]): RegistryEntry[] {
+  const claimed = new Set(generated.map((entry) => entry.id));
+  const carried = base.filter((entry) => !claimed.has(entry.id));
+
+  return [...generated, ...carried].sort((a, b) => compare(a.id, b.id));
+}
+
+/**
+ * Generate `registry.json` for a repository, as the bytes to write.
+ *
+ * The build's entry point into this module — see `tests/unit/build/determinism.test.ts`.
+ *
+ * @param root - Repository root.
+ */
+export async function emitRegistry(root: string): Promise<string> {
+  return new RegistryEmitter(root).emitJson();
+}

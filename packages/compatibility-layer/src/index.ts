@@ -101,6 +101,40 @@ export {
 export type { CanonicalAgentFile } from "./core/AgentLoader.js";
 
 // ============================================================================
+// CORE - Registry Emission
+// ============================================================================
+
+/**
+ * Generates `registry.json` from the canonical `content/agents/**` tree, replacing the
+ * hand-editing that `scripts/registry/auto-detect-components.sh` only ever appended to.
+ *
+ * Phase 1 owns `components.agents` and `components.subagents`; contexts, commands, tools,
+ * plugins, skills, config and profiles are carried through verbatim from the committed file.
+ * Output is byte-stable and a fixed point over itself, so `oac build && git diff --exit-code`
+ * is a real drift gate.
+ *
+ * @example
+ * ```typescript
+ * import { emitRegistry } from '@openagents-control/compatibility-layer';
+ *
+ * // The bytes to write to registry.json — identical across runs.
+ * const json = await emitRegistry(process.cwd());
+ * ```
+ */
+export {
+  RegistryEmitter,
+  emitRegistry,
+  serializeRegistry,
+  entryForAgent,
+} from "./core/RegistryEmitter.js";
+
+export type {
+  RegistryDocument,
+  RegistryEntry,
+  RegistryEmitterOptions,
+} from "./core/RegistryEmitter.js";
+
+// ============================================================================
 // CORE - Reference Resolution & Profiles
 // ============================================================================
 
@@ -216,6 +250,28 @@ export { BaseAdapter } from "./adapters/BaseAdapter.js";
 export { CursorAdapter } from "./adapters/CursorAdapter.js";
 export { ClaudeAdapter } from "./adapters/ClaudeAdapter.js";
 export { WindsurfAdapter } from "./adapters/WindsurfAdapter.js";
+
+/**
+ * OpenCodeAdapter — emits `.opencode/agent/**` from the canonical `content/agents/**` tree by
+ * stripping the `oac:` block. The canonical build target.
+ *
+ * @example
+ * ```typescript
+ * import { OpenCodeAdapter } from '@openagents-control/compatibility-layer';
+ *
+ * const { content } = await new OpenCodeAdapter().fromCanonical(source);
+ * ```
+ */
+export {
+  OpenCodeAdapter,
+  OpenCodeEmitError,
+  OPENCODE_AGENT_ROOT,
+} from "./adapters/OpenCodeAdapter.js";
+
+export type {
+  CanonicalEmitResult,
+  FromCanonicalOptions,
+} from "./adapters/OpenCodeAdapter.js";
 
 // ============================================================================
 // MAPPERS - Feature Translation (Phase 3)
