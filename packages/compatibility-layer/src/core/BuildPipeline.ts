@@ -54,6 +54,13 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { CanonicalAgentLoader, type CanonicalAgentFile } from "./AgentLoader.js";
+import {
+  MANIFEST_FILE,
+  readManifest,
+  serializeManifest,
+  type BuildManifest,
+  type ManifestEntry,
+} from "./BuildManifest.js";
 import { RegistryEmitter } from "./RegistryEmitter.js";
 import { ClaudeAdapter } from "../adapters/ClaudeAdapter.js";
 import { OpenCodeAdapter } from "../adapters/OpenCodeAdapter.js";
@@ -142,27 +149,12 @@ export interface WriteResult {
   kept: Array<{ path: string; reason: string }>;
 }
 
-/** One line of the ledger: what the build wrote at a path, and where it was allowed to. */
-export interface ManifestEntry {
-  /** sha256 of the bytes the build wrote. */
-  sha256: string;
-  /** The target that produced it. */
-  target: string;
-  /**
-   * The output root this file was written under — `TARGET_ROOTS[target]`, rebased if the
-   * target was staged. Recorded rather than recomputed so pruning can bound itself without
-   * having to be told which staging layout a PREVIOUS build happened to use.
-   */
-  root: string;
-}
-
-/** The build's ledger of what it wrote. Deterministic: sorted keys, no timestamps. */
-export interface BuildManifest {
-  /** Ledger format version, so a future shape change is detectable rather than silent. */
-  version: 1;
-  /** Repo-relative POSIX path -> what the build wrote there. */
-  files: Record<string, ManifestEntry>;
-}
+// The ledger lives in `./BuildManifest.js` because `RegistryEmitter` needs it too and this
+// module already imports `RegistryEmitter`. Re-exported here so it stays part of the build
+// pipeline's public surface — `readManifest`/`serializeManifest`/`BuildManifest` have always
+// been importable from this module and callers should not have to care that it moved.
+export { readManifest, serializeManifest } from "./BuildManifest.js";
+export type { BuildManifest, ManifestEntry } from "./BuildManifest.js";
 
 // ============================================================================
 // PATHS AND CONSTANTS
@@ -170,7 +162,6 @@ export interface BuildManifest {
 
 const DEFAULTS = {
   contentRoot: "content/agents",
-  manifestFile: ".oac/build-manifest.json",
 } as const;
 
 /**
@@ -341,32 +332,6 @@ export async function buildAgentIn(
 // MANIFEST
 // ============================================================================
 
-/** Read the previous manifest, or an empty one. An absent ledger prunes nothing — safe. */
-export function readManifest(root: string): BuildManifest {
-  const path = join(resolve(root), DEFAULTS.manifestFile);
-  if (!existsSync(path)) return { version: 1, files: {} };
-
-  try {
-    const parsed = JSON.parse(readFileSync(path, "utf-8")) as BuildManifest;
-    // A ledger we cannot vouch for prunes nothing rather than pruning wrongly.
-    if (parsed.version !== 1 || typeof parsed.files !== "object" || parsed.files === null) {
-      return { version: 1, files: {} };
-    }
-    return parsed;
-  } catch {
-    return { version: 1, files: {} };
-  }
-}
-
-/** Serialise a manifest with sorted keys and a trailing newline. No clock, by construction. */
-export function serializeManifest(manifest: BuildManifest): string {
-  const files: BuildManifest["files"] = {};
-  for (const path of Object.keys(manifest.files).sort(compare)) {
-    files[path] = manifest.files[path]!;
-  }
-  return `${JSON.stringify({ version: manifest.version, files }, null, 2)}\n`;
-}
-
 /** The manifest a plan implies, given where each target is actually written. */
 function manifestFor(files: readonly BuildFile[], outputRoots: OutputRoots): BuildManifest {
   const entries: BuildManifest["files"] = {};
@@ -519,7 +484,7 @@ export function write(plan: BuildPlan, options: WriteOptions): WriteResult {
     }
   }
 
-  const manifestPath = join(root, DEFAULTS.manifestFile);
+  const manifestPath = join(root, MANIFEST_FILE);
   mkdirSync(dirname(manifestPath), { recursive: true });
   writeFileSync(manifestPath, serializeManifest(next), "utf-8");
 

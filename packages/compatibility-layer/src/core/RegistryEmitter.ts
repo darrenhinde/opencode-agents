@@ -49,6 +49,30 @@
  * {@link ReferenceResolver.resolve} and pinned as a known dead ref in
  * `tests/unit/build/reference-resolution.test.ts`.
  *
+ * ─── Withdrawing an entry, and why it is manifest-gated ─────────────────────────────────
+ *
+ * Deleting a canonical source must delete its registry entry, or this emitter reproduces the
+ * exact defect it was built to cure: an entry nothing on disk agrees with, lingering forever.
+ * But entries are also CARRIED — `agent:eval-runner` ships in `.opencode/agent/eval-runner.md`
+ * and sits in the committed registry with no `content/` counterpart, and dropping it would
+ * uninstall the eval harness for everyone.
+ *
+ * By id alone the two cases are indistinguishable: both are "in the base, absent from the
+ * canonical tree". The discriminator is `.oac/build-manifest.json` — the same ledger
+ * {@link BuildPipeline} prunes generated FILES with. An entry whose `path` the ledger claims
+ * was written BY US, so its absence from the tree means its source was deleted and the entry is
+ * withdrawn. An entry whose `path` the ledger does not claim was never ours, so it is carried.
+ * `eval-runner.md` has never been in the ledger; every generated agent file always is.
+ *
+ * The ledger rather than `existsSync`, deliberately: at emit time the orphaned FILE has not
+ * been pruned yet ({@link BuildPipeline.write} plans before it reconciles), so an existence
+ * check would still see the file and carry the entry — the answer would depend on the order two
+ * phases happen to run in. The ledger is ordering-independent, and using the same mechanism as
+ * file pruning is what keeps `.opencode/**` and `registry.json` from drifting apart.
+ *
+ * No ledger prunes nothing, matching {@link BuildPipeline}'s rule: no record of having written
+ * a file is not evidence that we wrote it, so a first build carries everything.
+ *
  * ─── Determinism ────────────────────────────────────────────────────────────────────────
  *
  * The generated tree stays committed and CI gates drift with `oac build && git diff
@@ -66,6 +90,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { CanonicalAgentLoader, type CanonicalAgentFile } from "./AgentLoader.js";
+import { generatedPaths } from "./BuildManifest.js";
 
 // ============================================================================
 // TYPES
@@ -110,6 +135,15 @@ export interface RegistryEmitterOptions {
   agentInstallRoot?: string;
   /** The committed registry to carry non-agent data through from. */
   registryFile?: string;
+  /**
+   * Repo-relative paths a previous build recorded generating — the discriminator between "this
+   * base entry was never ours, carry it" and "we wrote this and its source is gone, withdraw
+   * it". See the module header.
+   *
+   * Defaults to the paths `.oac/build-manifest.json` claims. An empty set carries everything,
+   * which is what a repo with no ledger yet gets.
+   */
+  generatedPaths?: ReadonlySet<string>;
 }
 
 const DEFAULTS = {
@@ -204,6 +238,7 @@ export class RegistryEmitter {
   private readonly contentRoot: string;
   private readonly agentInstallRoot: string;
   private readonly registryFile: string;
+  private readonly injectedGeneratedPaths?: ReadonlySet<string>;
 
   /**
    * @param root    - Repository root. Everything resolves relative to this, so the emitter is
@@ -215,6 +250,15 @@ export class RegistryEmitter {
     this.contentRoot = options.contentRoot ?? DEFAULTS.contentRoot;
     this.agentInstallRoot = options.agentInstallRoot ?? DEFAULTS.agentInstallRoot;
     this.registryFile = options.registryFile ?? DEFAULTS.registryFile;
+    this.injectedGeneratedPaths = options.generatedPaths;
+  }
+
+  /**
+   * The paths a previous build claims to have written. Read lazily rather than in the
+   * constructor so that constructing an emitter stays free of I/O, exactly like {@link base}.
+   */
+  private previouslyGenerated(): ReadonlySet<string> {
+    return this.injectedGeneratedPaths ?? generatedPaths(this.root);
   }
 
   /**
@@ -244,6 +288,7 @@ export class RegistryEmitter {
       .loadFromDirectory();
 
     const generated = this.generatedByCategory(agents);
+    const ours = this.previouslyGenerated();
     const components: Record<string, RegistryEntry[]> = {};
 
     // Iterate the BASE's keys, not the generated ones: an entry type the canonical tree does
@@ -251,14 +296,14 @@ export class RegistryEmitter {
     for (const category of Object.keys(base.components)) {
       const existing = base.components[category] ?? [];
       const owned = generated.get(category);
-      components[category] = owned === undefined ? existing : merge(owned, existing);
+      components[category] = owned === undefined ? existing : merge(owned, existing, ours);
     }
 
     // A canonical `oac.type` whose category the base has never seen. Not reachable today
     // (`AgentTypeSchema` is `agent | subagent` and both exist), but appending rather than
     // dropping means a new type surfaces in the diff instead of vanishing.
     for (const [category, owned] of generated) {
-      components[category] ??= merge(owned, []);
+      components[category] ??= merge(owned, [], ours);
     }
 
     const document: RegistryDocument = {} as RegistryDocument;
@@ -303,15 +348,37 @@ export class RegistryEmitter {
  * canonicalised is preserved verbatim, keeping its own key order and any fields this emitter
  * does not model.
  *
+ * An unclaimed entry we PREVIOUSLY GENERATED is the opposite case and must not be carried: its
+ * canonical source has been deleted, and carrying it would strand it in the registry forever —
+ * see {@link wasGeneratedByUs} and the module header.
+ *
  * The result is sorted by id: array order must be a property of the CONTENT, not of the
  * insertion history of a hand-edited file, or the diff gate cannot tell a real change from a
  * reshuffle.
  */
-function merge(generated: readonly RegistryEntry[], base: readonly RegistryEntry[]): RegistryEntry[] {
+function merge(
+  generated: readonly RegistryEntry[],
+  base: readonly RegistryEntry[],
+  previouslyGenerated: ReadonlySet<string>
+): RegistryEntry[] {
   const claimed = new Set(generated.map((entry) => entry.id));
-  const carried = base.filter((entry) => !claimed.has(entry.id));
+  const carried = base.filter(
+    (entry) => !claimed.has(entry.id) && !wasGeneratedByUs(entry, previouslyGenerated)
+  );
 
   return [...generated, ...carried].sort((a, b) => compare(a.id, b.id));
+}
+
+/**
+ * Whether a base entry names a file the build previously wrote.
+ *
+ * Matched on `path` because that is the only field tying an entry to a file on disk — and it is
+ * the field `install.sh` copies verbatim, so an entry without one installs nothing and cannot
+ * be something we emitted. A missing or non-string `path` therefore answers "not ours", which
+ * carries the entry: every ambiguity here resolves toward keeping data.
+ */
+function wasGeneratedByUs(entry: RegistryEntry, previouslyGenerated: ReadonlySet<string>): boolean {
+  return typeof entry.path === "string" && previouslyGenerated.has(entry.path);
 }
 
 /**
