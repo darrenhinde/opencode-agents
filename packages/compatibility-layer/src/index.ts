@@ -135,6 +135,61 @@ export type {
 } from "./core/RegistryEmitter.js";
 
 // ============================================================================
+// CORE - Build Pipeline
+// ============================================================================
+
+/**
+ * The whole of `oac build`: load `content/agents/**`, honour each agent's `oac.targets`, run
+ * the matching adapter, and reconcile the generated trees.
+ *
+ * {@link plan} computes; {@link write} reconciles; {@link check} compares without touching
+ * anything. Splitting them is what makes `--check` and `--dry-run` share the build's code path
+ * rather than re-implement it.
+ *
+ * Orphan removal is gated on {@link BuildManifest}: the build removes a file only if a
+ * previous build recorded writing that exact path with those exact bytes. A file it never
+ * generated can never become a prune candidate.
+ *
+ * @example
+ * ```typescript
+ * import { plan, write } from '@openagents-control/compatibility-layer';
+ *
+ * const built = await plan({ root: process.cwd() });
+ * // Emit .opencode/** and registry.json in place; stage claude-code for review.
+ * const result = write(built, {
+ *   root: process.cwd(),
+ *   outputRoots: { "claude-code": ".tmp/oac-build" },
+ * });
+ * ```
+ */
+export {
+  BUILD_TARGETS,
+  build,
+  buildAgent,
+  buildAgentIn,
+  check,
+  plan,
+  readManifest,
+  repoRelative,
+  serializeManifest,
+  write,
+} from "./core/BuildPipeline.js";
+
+export type {
+  BuildFile,
+  BuildManifest,
+  BuildOptions,
+  BuildPlan,
+  BuildTarget,
+  BuildWarning,
+  Drift,
+  ManifestEntry,
+  OutputRoots,
+  WriteOptions,
+  WriteResult,
+} from "./core/BuildPipeline.js";
+
+// ============================================================================
 // CORE - Reference Resolution & Profiles
 // ============================================================================
 

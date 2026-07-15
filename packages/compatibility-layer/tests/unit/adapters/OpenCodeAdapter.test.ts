@@ -274,39 +274,24 @@ describe("OpenCodeAdapter permissions", () => {
 // ============================================================================
 
 /**
- * The obsolete header that 23 committed `.opencode/agent` files still carry — a comment
- * pointing at the very sidecar this refactor dissolves.
+ * ─── The drifted 9, and why there is no longer an exception list here ────────────────────
  *
- * The seeding commit (`cf97d98`) dropped it from 9 of those 23 and kept it in the other 14.
- * That inconsistency is a seeding artifact, not an adapter behaviour: the comment is absent
- * from those 9 canonical sources, so no emitter can reproduce it.
+ * 23 committed `.opencode/agent` files used to carry an obsolete 4-line header pointing at the
+ * `agent-metadata.json` sidecar this refactor dissolves. The seeding commit (`cf97d98`) dropped
+ * it from 9 of the canonical sources and kept it in the other 14, so those 9 could not be
+ * reproduced byte-for-byte: the comment simply was not in the source any more.
  *
- * It is pinned here rather than papered over. The adapter is NOT special-cased to re-insert
- * it — doing so would be forging bytes the source does not contain. Instead the 9 are named,
- * so the drift is visible, cannot grow silently, and stays owned by whoever re-seeds
- * `content/agents` (subtask 09). Resolving it means either restoring the comment in those 9
- * sources or removing it from all 23 — a content decision, made once, deliberately.
+ * That was pinned here as a named set rather than papered over — the adapter was never
+ * special-cased to re-insert the comment, because emitting bytes the source does not contain is
+ * forging. The note left two ways out: restore the comment in the 9 sources, or remove it from
+ * the emitted files.
+ *
+ * Subtask 10 took the second by running `oac build`, which emits `.opencode/agent/**` in place.
+ * Those 9 files no longer carry the comment, the other 24 were already byte-identical, and the
+ * exception machinery is gone with the exception. The round-trip below now compares every
+ * source against its committed output directly, with nothing carved out for anybody — which is
+ * exactly the property the subtask-11 `oac build && git diff --exit-code` gate needs.
  */
-const SIDECAR_COMMENT =
-  [
-    "# OpenCode Agent Configuration",
-    "# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:",
-    "# .opencode/config/agent-metadata.json",
-    "",
-  ].join("\n") + "\n";
-
-/** The 9 sources whose committed output still carries {@link SIDECAR_COMMENT}. */
-const DRIFTED: ReadonlySet<string> = new Set([
-  "content/copywriter.md",
-  "content/technical-writer.md",
-  "meta/system-builder.md",
-  "subagents/planning/story-mapper.md",
-  "subagents/system-builder/agent-generator.md",
-  "subagents/system-builder/command-creator.md",
-  "subagents/system-builder/domain-analyzer.md",
-  "subagents/test/simple-responder.md",
-  "subagents/utils/image-specialist.md",
-]);
 
 describe("OpenCodeAdapter round-trip", () => {
   const sources = listFiles(CONTENT_ROOT);
@@ -321,19 +306,15 @@ describe("OpenCodeAdapter round-trip", () => {
       const { content } = await adapter().fromCanonical(readFileSync(file, "utf-8"), {
         filePath: file,
       });
-      const committed = readFileSync(`${OPENCODE_ROOT}/${rel}`, "utf-8");
 
-      // The drifted 9 must differ ONLY by the obsolete comment — re-inserting it recovers the
-      // committed bytes exactly. Any other difference in them still fails here.
-      const expected = DRIFTED.has(rel)
-        ? committed.replace(`---\n${SIDECAR_COMMENT}`, "---\n")
-        : committed;
-
-      expect(content).toBe(expected);
+      expect(content).toBe(readFileSync(`${OPENCODE_ROOT}/${rel}`, "utf-8"));
     }
   );
 
-  it("pins the drifted set, so it cannot grow unnoticed", async () => {
+  it("leaves no source drifting from its committed output", async () => {
+    // The aggregate form of the per-file assertion above. It earns its place by naming every
+    // drifted file in ONE failure: a rebuild that regresses 9 files should say so once, not
+    // scroll 9 separate byte-diffs past whoever is reading CI.
     const drifted: string[] = [];
 
     for (const file of sources) {
@@ -342,7 +323,7 @@ describe("OpenCodeAdapter round-trip", () => {
       if (content !== readFileSync(`${OPENCODE_ROOT}/${rel}`, "utf-8")) drifted.push(rel);
     }
 
-    expect(drifted.sort()).toEqual([...DRIFTED].sort());
+    expect(drifted.sort()).toEqual([]);
   });
 
   it("maps each source onto its committed output path", () => {

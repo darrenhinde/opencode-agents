@@ -53,17 +53,26 @@ const NONDETERMINISM = [
 ];
 
 /**
- * Agents that ship on disk, are referenced, and are ABSENT from the committed registry.
+ * Agents that ship on disk, are referenced, and were ABSENT from the registry until subtask 10
+ * generated it.
  *
  * Verified on disk 2026-07-15. `batch-executor` is the load-bearing one: both `openagent` and
- * `opencoder` declare `subagent:batch-executor`, so the registry has advertised a dependency
- * on a component it does not contain. The other six are in neither the registry nor
+ * `opencoder` declare `subagent:batch-executor`, so the registry advertised a dependency on a
+ * component it did not contain. The other six were in neither the registry nor
  * `.opencode/config/agent-metadata.json` — they were added to `.opencode/agent/` and nothing
- * ever noticed. `auto-detect-components.sh --dry-run` reports all 7 as "New Components" today.
+ * ever noticed. `auto-detect-components.sh --dry-run` reported all 7 as "New Components".
  *
- * The emitter fixes all of these BY CONSTRUCTION, which is the whole argument for generating.
+ * ─── Updated by subtask 10, deliberately ────────────────────────────────────────────────
+ *
+ * This list used to assert the committed registry OMITS these 7 — it pinned the bug. Subtask
+ * 10 ran `oac build`, which emits `registry.json` in place, so all 7 are now registered and
+ * that assertion inverted. Per this file's own contract ("when a subtask repairs one, the test
+ * turns red and forces a deliberate edit here"), the edit is made rather than the test
+ * relaxed: the list now guards that generation KEEPS registering them. It stops being a
+ * snapshot of a loss and becomes a regression guard, exactly as
+ * {@link REGISTRY_ONLY_DEPENDENCIES} did when subtask 09b backfilled the 13 edges.
  */
-const MISSING_FROM_REGISTRY = [
+const RECOVERED_BY_GENERATION = [
   "adr-manager",
   "architecture-analyzer",
   "batch-executor",
@@ -392,19 +401,23 @@ describe("generation from the canonical tree", () => {
 // ============================================================================
 
 describe("registry defects", () => {
-  it.each(MISSING_FROM_REGISTRY)("registers %s, which the committed registry omits", async (id) => {
+  it.each(RECOVERED_BY_GENERATION)("keeps %s registered, which only generation ever added", async (id) => {
+    // Both sides are asserted on purpose. The generated document proves the emitter still
+    // derives the entry from the canonical file; the committed one proves the emit actually
+    // reached disk. Checking only the emitter would let `registry.json` silently regress to a
+    // hand-edited copy that drops these 7 again — the exact failure this refactor ends.
     const document = await new RegistryEmitter(repoPath()).emit();
 
-    expect(byId(COMMITTED, "subagents").has(id), `${id} is unexpectedly already registered`).toBe(
-      false
-    );
     expect(byId(document, "subagents").get(id)?.path).toContain(id);
+    expect(byId(COMMITTED, "subagents").has(id), `${id} is missing from the committed registry`).toBe(
+      true
+    );
   });
 
   it("makes subagent:batch-executor resolvable for openagent and opencoder", async () => {
-    // Both declare `subagent:batch-executor`; the committed registry contains no such
-    // component, so install.sh resolves the dependency to nothing and silently installs an
-    // orchestrator whose parallel executor is missing.
+    // Both declare `subagent:batch-executor`. The hand-maintained registry contained no such
+    // component, so install.sh resolved the dependency to nothing and silently installed an
+    // orchestrator whose parallel executor was missing. Generation is what closed that.
     const document = await new RegistryEmitter(repoPath()).emit();
     const agents = byId(document, "agents");
 
