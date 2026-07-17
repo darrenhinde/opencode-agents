@@ -131,7 +131,6 @@ describe("OacBlockSchema", () => {
             name: "code-reviewer",
             model: "sonnet",
             tools: ["Read", "Glob", "Grep"],
-            unenforced: { bash: "Claude Code cannot scope Bash per-agent" },
           },
         },
       });
@@ -139,14 +138,14 @@ describe("OacBlockSchema", () => {
       expect(result.success ? [] : result.error.issues).toEqual([]);
     });
 
-    it("defaults unenforced to an empty record", () => {
+    it("accepts a name-only override, for an agent whose tools need no restating", () => {
       const result = OacBlockSchema.parse({
         ...VALID_BLOCK,
         targets: ["opencode", "claude-code"],
         overrides: { "claude-code": { name: "code-reviewer" } },
       });
 
-      expect(result.overrides["claude-code"]?.unenforced).toEqual({});
+      expect(result.overrides["claude-code"]).toEqual({ name: "code-reviewer" });
     });
 
     it("rejects an unknown key inside an override (strict)", () => {

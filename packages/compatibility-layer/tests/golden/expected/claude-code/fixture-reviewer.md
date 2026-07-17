@@ -2,7 +2,7 @@
 name: fixture-reviewer
 description: Reviews code for correctness. A golden-file fixture, not a shipped agent.
 tools: Read, Glob, Grep
-disallowedTools: Write, Edit, Bash, Task
+disallowedTools: Write, Edit, Bash, WebFetch, Task
 model: haiku
 ---
 

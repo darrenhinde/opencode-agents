@@ -49,23 +49,16 @@ oac:
   overrides:
     claude-code:
       model: sonnet
-      # Matches what ships today. Edit and Task are scoped in canonical and are DENIED here
-      # rather than widened; this agent writes context files rather than editing them in place
-      # on Claude Code, and cannot delegate.
+      # Matches what ships today. Edit and Task are scoped in canonical and denied here; this
+      # agent writes context files rather than editing them in place on Claude Code.
+      #
+      # WIDENING — Write: canonical confines writes to .opencode/context/**/*.{md,json} and
+      # denies *.env*, *.key, *.secret. Claude enforces none of it. Accepted because managing
+      # context files IS this agent's only job. The confinement holds on OpenCode.
+      # WIDENING — Bash: canonical allows exactly four shapes (find/ls/mkdir/mv under
+      # .opencode/context) and denies everything else; on Claude Code this is unrestricted
+      # shell. The widest grant in this corpus — revisit here first.
       tools: [Read, Write, Glob, Grep, Bash]
-      unenforced:
-        write: >-
-          Canonical confines writes to .opencode/context/**/*.{md,json} and denies *.env*,
-          *.key and *.secret. Claude Code enforces none of that — Write is on or off. Accepted
-          because managing context files IS this agent's only job, so denying Write would leave
-          nothing for it to do. The confinement still holds on OpenCode.
-        bash: >-
-          Canonical allows exactly four shapes (find/ls/mkdir/mv under .opencode/context) and
-          denies everything else. On Claude Code this becomes unrestricted shell, which is the
-          widest grant any of these seven agents receives. Accepted only because the four
-          allowed commands are how it creates and moves context directories, and Claude Code
-          offers no way to scope them for a single agent. Revisit first if this list is ever
-          tightened: this is the weakest link.
 ---
 
 # ContextManager

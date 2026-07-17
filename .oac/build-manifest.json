@@ -182,7 +182,7 @@
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
     ".tmp/oac-build/plugins/claude-code/agents/context-scout.md": {
-      "sha256": "34e97512b3007d994c1c705d796842b493d54cdc0d63bf42b394d87a8f2185de",
+      "sha256": "0656a63f76e70431a16a797d398007498fb41fdbc1c0fbcf8d0f88a311bb6056",
       "target": "claude-code",
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },

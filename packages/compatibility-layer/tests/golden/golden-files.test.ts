@@ -176,41 +176,44 @@ describe.each(TARGETS)("%s adapter goldens", (target) => {
 describe("claude-code adapter against the live corpus", () => {
   const OWED_BY = "subtasks 07 + 09 (ClaudeAdapter + content/agents/)";
 
-  it("refuses an ordered bash allowlist that no override has ruled on", async () => {
-    // This used to assert that degrading an ordered rule list emitted a warning. It no longer
-    // degrades: Claude Code cannot enforce a per-agent scope by any route (flat frontmatter
-    // lists; session-wide settings.json rules; plugins barred from shipping rules at all), so
-    // neither available emission is right — fail-closed cripples the agent, widening leaks —
-    // and choosing between them is a security decision the adapter has no standing to make.
-    // It refuses, and a human rules on it in `oac.overrides.claude-code`. A warning would be
-    // the wrong instrument: warnings are advisory, and this must not be possible to ignore.
+  it("refuses to emit an agent that never says what it may do on Claude Code", async () => {
+    // This once asserted that an ordered rule list degraded fail-closed with a warning. It no
+    // longer degrades, and the tool list is no longer derived from `permission:` at all.
+    // Claude Code cannot enforce a per-agent scope by any route (flat frontmatter lists;
+    // session-wide settings.json rules; plugins barred from shipping rules), so there is
+    // nothing to compute: every automatic answer is either a crippled agent or a silent
+    // widening. The tools are authored, and an agent that omits them is incomplete — which is
+    // an error, not a cue to pick a default.
     const adapter = await adapterFor(
       "claude-code",
-      "an ordered rule list Claude Code cannot enforce is refused, not silently degraded"
+      "an agent targeting claude-code without an authored tools list is refused, not defaulted"
     );
 
-    // fixture-planner itself now carries an override, so build the un-ruled-on case here.
+    // fixture-planner carries an override, so build the un-authored case out of it.
     const unruled = fixture("fixture-planner").replace(
-      /  overrides:\n    claude-code:\n(?:      .*\n|      #.*\n)*/,
+      /  overrides:\n    claude-code:\n(?:      .*\n)*/,
       ""
     );
 
     expect(unruled, "the override block must actually be gone").not.toContain("overrides:");
 
-    await expect(adapter.fromCanonical(unruled)).rejects.toThrow(/bash/i);
+    await expect(adapter.fromCanonical(unruled)).rejects.toThrow(
+      /declares no oac\.overrides\.claude-code\.tools/
+    );
   });
 
-  it("emits fixture-planner once its override rules on that bash block", async () => {
+  it("honours an authored override verbatim", async () => {
     const adapter = await adapterFor(
       "claude-code",
-      "an authored override unblocks emission and is honoured verbatim"
+      "an authored override is honoured verbatim, with no projection involved"
     );
 
     const { content, warnings } = await adapter.fromCanonical(fixture("fixture-planner"));
 
-    // The override denies Bash. Denying is a tightening, not a widening, so no permission
-    // warning is owed. (The fixture's `temperature: 0.3` still warns — Claude Code's agent
-    // frontmatter has no temperature — which is a real and unrelated loss.)
+    // fixture-planner's canonical bash block is deny-all-then-allowlist; its override grants
+    // only Read, so Bash lands in disallowedTools because the AUTHOR said so — not because a
+    // projection worked it out.
+    expect(content).toMatch(/^tools: Read$/m);
     expect(content).toMatch(/^disallowedTools:.*\bBash\b/m);
     expect((warnings ?? []).filter((w) => /permission|enforce/i.test(w))).toEqual([]);
   });

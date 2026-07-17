@@ -321,27 +321,6 @@ export function degradeToBinary(
 }
 
 /**
- * The bound capabilities whose rules have NO faithful flat on/off equivalent.
- *
- * Defined as "degrading it loses something" rather than by re-deriving the shape, so this can
- * never disagree with {@link projectToFlatTools} about which capabilities are lossy — they
- * consult the same function.
- *
- * This is what lets a caller distinguish the two honest outcomes from the dishonest one: an
- * exact projection (emit it), versus a projection that silently drops scoping (refuse, and
- * make a human author the loss). Empty means the projection is exact.
- */
-export function lossyCapabilities(
-  permissions: GranularPermission,
-  bindings: readonly ToolBinding[],
-  options: DegradationOptions = {}
-): string[] {
-  return bindings
-    .filter((binding) => degradeToBinary(permissions, binding.capability, options).warnings.length > 0)
-    .map((binding) => binding.capability);
-}
-
-/**
  * Project a canonical permission spec onto a target's flat `tools` / `disallowedTools` lists.
  *
  * Every bound tool lands in exactly one list — never omitted from both, because "absent"

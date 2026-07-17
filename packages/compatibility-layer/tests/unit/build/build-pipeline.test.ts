@@ -40,7 +40,19 @@ const REPO = repoPath();
 let root: string;
 
 /** A minimal canonical agent. `targets` is the knob most of these tests turn. */
+/**
+ * A canonical fixture agent.
+ *
+ * A claude-code target automatically gets an authored `tools` override, because every agent
+ * targeting Claude Code must have one — the adapter refuses to derive it (Claude Code cannot
+ * enforce a per-agent scope, so there is no honest derivation). An agent without one is
+ * incomplete, so it cannot be this helper's default shape; tests that want that case strip it.
+ */
 function canonicalAgent(id: string, targets: readonly string[]): string {
+  const overrides = targets.includes("claude-code")
+    ? ["  overrides:", "    claude-code:", "      tools: [Read]"]
+    : [];
+
   return [
     "---",
     `name: ${id}`,
@@ -58,6 +70,7 @@ function canonicalAgent(id: string, targets: readonly string[]): string {
     "  author: opencode",
     "  targets:",
     ...targets.map((target) => `    - ${target}`),
+    ...overrides,
     "---",
     "",
     `# ${id}`,
@@ -318,32 +331,32 @@ describe("failure handling", () => {
     await expect(plan({ root })).rejects.toThrow();
   });
 
-  it("fails the build rather than silently widening when a target cannot carry a scoped rule", async () => {
-    // Previously this asserted a warning. A warning was the wrong instrument: it is advisory,
-    // and the two things it could be advising are both wrong (fail-closed cripples the agent,
-    // widening leaks the tool). Claude Code cannot enforce a per-agent scope by any route, so
-    // there is no correct emission to warn ABOUT — a human has to rule on it in
-    // `oac.overrides.claude-code`, and a build that keeps going does not get one.
+  it("fails the build when an agent targets claude-code without authoring its tools", async () => {
+    // Previously this asserted a warning, then a refusal-on-scoped-rules. Both were downstream
+    // of deriving the tool list from `permission:`, which is not possible — Claude Code cannot
+    // enforce a per-agent scope, so every derived answer is either a crippled agent or a silent
+    // widening. The list is authored; an agent that omits it is incomplete, and the build says
+    // so rather than picking a default.
     put(
       "content/agents/subagents/test/gamma.md",
       canonicalAgent("gamma", ["claude-code"]).replace(
-        '  read:\n    "*": "allow"',
-        '  bash:\n    "*": "deny"\n    "git status": "allow"',
+        "  overrides:\n    claude-code:\n      tools: [Read]\n",
+        "",
       ),
     );
 
     await expect(plan({ root, targets: ["claude-code"], skipRegistry: true })).rejects.toThrow(
-      /without an explicit override/,
+      /declares no oac\.overrides\.claude-code\.tools/,
     );
   });
 
   it("names the source file in a refusal, not just the agent id", async () => {
-    // The adapter only knows `gamma`. The person who has to make the decision needs the path.
+    // The adapter only knows `gamma`. Whoever has to make the decision needs the path.
     put(
       "content/agents/subagents/test/gamma.md",
       canonicalAgent("gamma", ["claude-code"]).replace(
-        '  read:\n    "*": "allow"',
-        '  bash:\n    "*": "deny"\n    "git status": "allow"',
+        "  overrides:\n    claude-code:\n      tools: [Read]\n",
+        "",
       ),
     );
 

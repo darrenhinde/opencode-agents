@@ -34,9 +34,9 @@ oac:
   overrides:
     claude-code:
       # Bash is deliberately NOT granted. Its canonical block is deny-all-then-allowlist, and
-      # Claude Code cannot express that, so the adapter refuses to choose — this is where the
-      # choice is made. Denying is not a widening, so no `unenforced:` entry is owed: the
-      # `git status` / `git log*` allowances are simply unavailable on this target.
+      # Claude Code cannot express that, so the choice is made here, not derived. Denying is
+      # a tightening: the `git status` / `git log*` allowances are simply unavailable on this
+      # target.
       tools: [Read]
 ---
 

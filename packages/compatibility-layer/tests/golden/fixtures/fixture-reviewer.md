@@ -34,6 +34,11 @@ oac:
   targets:
     - opencode
     - claude-code
+  overrides:
+    claude-code:
+      # Read-only. Matches this fixture's canonical permission block exactly — it scopes
+      # nothing, so there is no trade-off to record here.
+      tools: [Read, Glob, Grep]
 ---
 
 # FixtureReviewer

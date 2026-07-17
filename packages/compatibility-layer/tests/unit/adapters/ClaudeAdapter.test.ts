@@ -26,6 +26,12 @@ import { ClaudeAdapter } from "../../../src/adapters/ClaudeAdapter";
 import { packagePath } from "../../support/pending.js";
 import type { OpenAgent, AgentFrontmatter, HookDefinition } from "../../../src/types";
 
+/** Claude Code's tools in the adapter's emit order. The union of both lists is always this. */
+const CLAUDE_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "WebFetch", "Task"] as const;
+
+/** The same list, rendered for a YAML `tools: [...]` override. */
+const CLAUDE_TOOLS_LITERAL = CLAUDE_TOOLS.join(", ");
+
 const FIXTURE_REVIEWER = packagePath("tests/golden/fixtures/fixture-reviewer.md");
 const FIXTURE_PLANNER = packagePath("tests/golden/fixtures/fixture-planner.md");
 
@@ -33,8 +39,14 @@ function fixture(path: string): string {
   return readFileSync(path, "utf-8");
 }
 
-/** A canonical agent file built around one permission block, for targeted projection tests. */
-function canonical(permission: string, extra = "", override = ""): string {
+/**
+ * A canonical agent file built around one permission block.
+ *
+ * The override defaults to a valid one: every agent targeting claude-code MUST author
+ * `tools`, so an agent without one is an error, not a baseline. Tests that care about the
+ * tool list pass their own via {@link override}; the "refuses without tools" case passes "".
+ */
+function canonical(permission: string, extra = "", override = OVERRIDE_DEFAULT): string {
   return `---
 name: ProbeAgent
 description: A probe agent.
@@ -60,6 +72,9 @@ Body.
 function override(body: string): string {
   return `  overrides:\n    claude-code:\n${body}`;
 }
+
+/** The default override for probes that are not about the tool list itself. */
+const OVERRIDE_DEFAULT = override(`      tools: [Read]\n`);
 
 /**
  * An in-memory OpenAgent carrying an authored permission map — the `fromOAC` (legacy
@@ -196,7 +211,7 @@ describe("ClaudeAdapter", () => {
         `---\nname: fixture-reviewer\n` +
           `description: Reviews code for correctness. A golden-file fixture, not a shipped agent.\n` +
           `tools: Read, Glob, Grep\n` +
-          `disallowedTools: Write, Edit, Bash, Task\n` +
+          `disallowedTools: Write, Edit, Bash, WebFetch, Task\n` +
           `model: haiku\n`
       );
     });
@@ -217,16 +232,26 @@ describe("ClaudeAdapter", () => {
 
     it("omits an empty tools list rather than emitting a bare key", async () => {
       // `tools:` with no value means something different to Claude Code than an absent key.
-      const { content } = await adapter.fromCanonical(canonical(`  bash:\n    "*": "deny"\n`));
+      const { content } = await adapter.fromCanonical(
+        canonical(`  bash:\n    "*": "deny"\n`, "", override(`      tools: []\n`))
+      );
 
       expect(content).not.toMatch(/^tools:\s*$/m);
-      expect(content).toMatch(/^disallowedTools: Bash$/m);
+      expect(content).toMatch(/^disallowedTools: Read, Write/m);
     });
 
     it("omits an empty disallowedTools list", async () => {
-      const { content } = await adapter.fromCanonical(canonical(`  read:\n    "*": "allow"\n`));
+      // Only reachable when every bound tool is granted — an authored override is exhaustive,
+      // so this is the one shape that leaves the deny list empty.
+      const { content } = await adapter.fromCanonical(
+        canonical(
+          `  read:\n    "*": "allow"\n`,
+          "",
+          override(`      tools: [${CLAUDE_TOOLS_LITERAL}]\n`)
+        )
+      );
 
-      expect(content).toMatch(/^tools: Read$/m);
+      expect(content).toMatch(/^tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, Task$/m);
       expect(content).not.toMatch(/^disallowedTools:/m);
     });
 
@@ -269,210 +294,106 @@ describe("ClaudeAdapter", () => {
 
   describe("tool ordering", () => {
     it("emits tools in the canonical Read, Write, Edit, Glob, Grep, Bash, WebFetch, Task order", async () => {
-      // Recovered from the 7 committed agents: all 10 of their lists fit this order and it
-      // is the only total order that does. Alphabetical is refuted by context-manager.md
-      // (`Read, Write, Glob, Grep, Bash`); so is ToolAccessSchema field order.
+      // Recovered from the 7 committed agents — the only total order all 10 of their lists
+      // agree with. Emitting any other order fails to reproduce every shipped file.
       const { content } = await adapter.fromCanonical(
         canonical(
-          `  task:\n    "*": "allow"\n` +
-            `  bash:\n    "*": "allow"\n` +
-            `  grep:\n    "*": "allow"\n` +
-            `  glob:\n    "*": "allow"\n` +
-            `  edit:\n    "*": "allow"\n` +
-            `  write:\n    "*": "allow"\n` +
-            `  read:\n    "*": "allow"\n` +
-            `  webfetch:\n    "*": "allow"\n`
+          `  read:\n    "*": "allow"\n`,
+          "",
+          override(`      tools: [Task, Bash, Read, Grep, Write, Glob, Edit, WebFetch]\n`)
         )
       );
 
-      expect(content).toMatch(
-        /^tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, Task$/m
+      expect(/^tools: (.*)$/m.exec(content)?.[1]).toBe(
+        "Read, Write, Edit, Glob, Grep, Bash, WebFetch, Task"
       );
     });
 
     it("orders disallowedTools by the same rule", async () => {
       const { content } = await adapter.fromCanonical(
-        canonical(
-          `  task:\n    "*": "deny"\n` +
-            `  bash:\n    "*": "deny"\n` +
-            `  edit:\n    "*": "deny"\n` +
-            `  write:\n    "*": "deny"\n`
-        )
+        canonical(`  read:\n    "*": "allow"\n`, "", override(`      tools: [Read]\n`))
       );
 
-      expect(content).toMatch(/^disallowedTools: Write, Edit, Bash, Task$/m);
+      expect(/^disallowedTools: (.*)$/m.exec(content)?.[1]).toBe(
+        "Write, Edit, Glob, Grep, Bash, WebFetch, Task"
+      );
     });
 
-    it("does not emit a tool for a capability the source never mentions", async () => {
-      // Ratified rule (02 §1.2.5 case 1): an absent capability means "the target's own
-      // default", so naming it in either list would invent an intent the author never had.
-      const { content } = await adapter.fromCanonical(canonical(`  read:\n    "*": "allow"\n`));
+    it("puts every bound tool in exactly one list, leaving nothing to a default", async () => {
+      // An omitted tool reads as "Claude Code's default" to Claude Code, which is the
+      // ambiguity an authored override exists to end. Union == every bound tool, always.
+      const { content } = await adapter.fromCanonical(
+        canonical(`  read:\n    "*": "allow"\n`, "", override(`      tools: [Read, Glob]\n`))
+      );
 
-      for (const tool of ["Write", "Edit", "Glob", "Grep", "Bash", "WebFetch", "Task"]) {
-        expect(content, `${tool} was invented from silence`).not.toContain(tool);
-      }
+      const tools = /^tools: (.*)$/m.exec(content)?.[1]?.split(", ") ?? [];
+      const denied = /^disallowedTools: (.*)$/m.exec(content)?.[1]?.split(", ") ?? [];
+
+      expect([...tools, ...denied].sort()).toEqual([...CLAUDE_TOOLS].sort());
     });
   });
 
   // ============================================================================
-  // PERMISSION PROJECTION — fails closed
+  // AUTHORED TOOLS — the whole contract
   // ============================================================================
 
-  describe("permission projection", () => {
-    it("carries a provably uniform allow through as a grant", async () => {
-      const { content, warnings } = await adapter.fromCanonical(
-        canonical(`  read:\n    "*": "allow"\n`)
-      );
+  describe("authored tools", () => {
+    // Claude Code cannot enforce a per-agent permission scope by any route, so an agent's
+    // tools there are NOT derivable from its canonical permission: block. Deriving them was
+    // tried and was wrong in both directions — fail-closed crippled `externalscout` (it scopes
+    // `read`, so it lost Read outright), and widening is how the shipped agents leaked. So the
+    // list is authored, taken at its word, and its absence is an error rather than a cue to
+    // guess. These tests pin exactly that.
 
-      expect(content).toMatch(/^tools: Read$/m);
-      expect(warnings).toEqual([]);
-    });
-
-    it("carries a provably uniform deny through as a denial, silently", async () => {
-      // An exact projection loses nothing, so it must not warn — warnings mean loss, and
-      // noise here would train readers to ignore the real ones.
-      const { content, warnings } = await adapter.fromCanonical(
-        canonical(`  bash:\n    "*": "deny"\n`)
-      );
-
-      expect(content).toMatch(/^disallowedTools: Bash$/m);
-      expect(warnings).toEqual([]);
-    });
-
-  });
-
-  // ============================================================================
-  // REFUSAL — the canonical path will not guess at a security decision
-  // ============================================================================
-
-  describe("refuses rather than guessing", () => {
-    // Claude Code cannot enforce a scoped rule per-agent (frontmatter is two flat lists;
-    // permission rules are session-wide in settings.json; a plugin cannot ship them at all).
-    // So for a scoped capability there is no emission that is both faithful and useful:
-    // fail-closed yields a scout that cannot read, and widening is the leak this whole module
-    // exists to prevent. That is a product decision, not a projection — so `oac build` stops
-    // and makes a human author it. These tests pin THAT, because a future "helpful" default
-    // here would silently ship one of the two wrong answers.
-
-    it("refuses a deny-all-then-allowlist bash block with no override", async () => {
-      // The live shape: `bash: {"*": deny, "git log*": allow}`. Answering `tools: Bash`
-      // because "an allow rule exists" would hand over unrestricted shell — the precise
-      // failure PermissionMapper's permissive default produces.
+    it("refuses an agent that targets claude-code without authoring tools", async () => {
       await expect(
-        adapter.fromCanonical(
-          canonical(`  bash:\n    "*": "deny"\n    "git status": "allow"\n`)
-        )
-      ).rejects.toThrow(/cannot be emitted for claude-code without an explicit override/);
+        adapter.fromCanonical(canonical(`  read:\n    "*": "allow"\n`, "", ""))
+      ).rejects.toThrow(/declares no oac\.overrides\.claude-code\.tools/);
     });
 
-    it("names the offending capability and its rules, so the error is actionable", async () => {
+    it("refuses even when the permission block would have projected cleanly", async () => {
+      // The tempting case: `read: {"*": allow}` is unambiguous, so a projection WOULD be
+      // exact. It is still refused — "we could have guessed correctly this time" is how a
+      // derivation creeps back in, and the next agent is the one that scopes something.
       await expect(
-        adapter.fromCanonical(canonical(`  bash:\n    "*": "deny"\n    "git log*": "allow"\n`))
-      ).rejects.toThrow(/bash: "\*": deny, "git log\*": allow/);
+        adapter.fromCanonical(canonical(`  read:\n    "*": "allow"\n`, "", ""))
+      ).rejects.toThrow(/declares no oac\.overrides\.claude-code\.tools/);
     });
 
-    it("points at the exact place the decision belongs", async () => {
+    it("says how to fix it, and that dropping the target is a valid answer", async () => {
       await expect(
-        adapter.fromCanonical(canonical(`  bash:\n    "*": "deny"\n    "git log*": "allow"\n`))
-      ).rejects.toThrow(/oac:\s*\n\s*overrides:\s*\n\s*claude-code:/);
+        adapter.fromCanonical(canonical(`  read:\n    "*": "allow"\n`, "", ""))
+      ).rejects.toThrow(/Or drop "claude-code" from targets/);
     });
 
-    it("refuses every mixed shape in the live corpus", async () => {
-      // Property check: no scoped shape may slip through to an emission either way.
-      const shapes = [
-        `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
-        `  bash:\n    "git log*": "allow"\n    "*": "deny"\n`,
-        `  bash:\n    "*": "ask"\n`,
-        `  edit:\n    "*": "allow"\n    "**/*.env*": "deny"\n`,
-        `  edit:\n    "**/*.env*": "deny"\n    "**/*.key": "deny"\n`,
-        `  read:\n    "**/*": "deny"\n    ".tmp/**": "allow"\n`,
-      ];
-
-      for (const shape of shapes) {
-        await expect(
-          adapter.fromCanonical(canonical(shape)),
-          `${shape} was emitted instead of refused`
-        ).rejects.toThrow(/without an explicit override/);
-      }
-    });
-
-    it("emits without complaint once a scoped capability is denied by an override", async () => {
-      // Denying is not a widening, so it needs no justification — the tools list says it.
-      const { content, warnings } = await adapter.fromCanonical(
-        canonical(
-          `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
-          "",
-          override(`      tools: [Read]\n`)
-        )
-      );
-
-      expect(content).toMatch(/^tools: Read$/m);
-      expect(content).toMatch(/^disallowedTools:.*\bBash\b/m);
-      expect(warnings).toEqual([]);
-    });
-  });
-
-  // ============================================================================
-  // OVERRIDES — an authored decision, held to its own justification
-  // ============================================================================
-
-  describe("per-target overrides", () => {
-    it("grants a scoped tool when the widening is justified", async () => {
+    it("grants a tool the canonical permission block scopes, when authored to", async () => {
+      // The widening case, stated out loud: canonical scopes bash to `git log*`; Claude Code
+      // cannot express that; the author grants Bash anyway. No warning, no refusal — a human
+      // decided, and the adapter does as it is told.
       const { content } = await adapter.fromCanonical(
         canonical(
           `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
           "",
-          override(`      tools: [Read, Bash]\n      unenforced:\n        bash: "why not"\n`)
+          override(`      tools: [Read, Bash]\n`)
         )
       );
 
-      expect(content).toMatch(/^tools: Read, Bash$/m);
+      expect(/^tools: (.*)$/m.exec(content)?.[1]).toBe("Read, Bash");
     });
 
-    it("warns on every build about a widening, not just in the source", async () => {
-      // An override records the loss; it does not make the loss stop existing. A reader of
-      // the build output must see it too, or the decision is invisible outside the file.
-      const { warnings } = await adapter.fromCanonical(
-        canonical(
-          `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
-          "",
-          override(`      tools: [Bash]\n      unenforced:\n        bash: "needs the shell"\n`)
-        )
+    it("denies a tool the canonical permission block allows, when authored to", async () => {
+      // The reverse: canonical allows bash outright, the author withholds it on this target.
+      const { content } = await adapter.fromCanonical(
+        canonical(`  bash:\n    "*": "allow"\n`, "", override(`      tools: [Read]\n`))
       );
 
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toMatch(/will not enforce 'bash'/);
-      expect(warnings[0]).toMatch(/needs the shell/);
-    });
-
-    it("refuses a widening with no justification", async () => {
-      await expect(
-        adapter.fromCanonical(
-          canonical(
-            `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
-            "",
-            override(`      tools: [Read, Bash]\n`)
-          )
-        )
-      ).rejects.toThrow(/grants "Bash" on claude-code, but canonical scopes "bash"/);
-    });
-
-    it("refuses a justification for something that is not a widening", async () => {
-      // Stale security notes are worse than none: they read as current and mask the real
-      // ones. Bash is denied here, so justifying it is describing a risk that does not exist.
-      await expect(
-        adapter.fromCanonical(
-          canonical(
-            `  bash:\n    "*": "deny"\n    "git log*": "allow"\n`,
-            "",
-            override(`      tools: [Read]\n      unenforced:\n        bash: "stale"\n`)
-          )
-        )
-      ).rejects.toThrow(/not a widening/);
+      expect(/^tools: (.*)$/m.exec(content)?.[1]).toBe("Read");
+      expect(content).toMatch(/^disallowedTools:.*\bBash\b/m);
     });
 
     it("refuses a tool name Claude Code does not have", async () => {
-      // A typo fails OPEN — `Reed` would silently just not be granted — so it must not pass.
+      // A typo fails OPEN — `Reed` would silently just not be granted, quietly shipping an
+      // agent with less access than intended and no error anywhere.
       await expect(
         adapter.fromCanonical(
           canonical(`  read:\n    "*": "allow"\n`, "", override(`      tools: [Reed]\n`))
@@ -480,9 +401,22 @@ describe("ClaudeAdapter", () => {
       ).rejects.toThrow(/Claude Code has no such tool for/);
     });
 
+    it("accepts an empty grant: an agent may be authored to have no tools at all", async () => {
+      const { content } = await adapter.fromCanonical(
+        canonical(`  read:\n    "*": "allow"\n`, "", override(`      tools: []\n`))
+      );
+
+      expect(content).not.toMatch(/^tools:/m);
+      expect(/^disallowedTools: (.*)$/m.exec(content)?.[1]).toBe(CLAUDE_TOOLS.join(", "));
+    });
+
     it("emits the override name, and keys the path on it", async () => {
       const { path, content } = await adapter.fromCanonical(
-        canonical(`  read:\n    "*": "allow"\n`, "", override(`      name: probe-scout\n`))
+        canonical(
+          `  read:\n    "*": "allow"\n`,
+          "",
+          override(`      name: probe-scout\n      tools: [Read]\n`)
+        )
       );
 
       expect(path).toBe("plugins/claude-code/agents/probe-scout.md");
@@ -490,28 +424,17 @@ describe("ClaudeAdapter", () => {
     });
 
     it("prefers the override model over the canonical one", async () => {
+      // Claude Code names models in its own vocabulary (`haiku`); canonical `model:` is
+      // OpenCode's.
       const { content } = await adapter.fromCanonical(
         canonical(
           `  read:\n    "*": "allow"\n`,
           "model: claude-sonnet-4\n",
-          override(`      model: haiku\n`)
+          override(`      model: haiku\n      tools: [Read]\n`)
         )
       );
 
       expect(content).toMatch(/^model: haiku$/m);
-    });
-
-    it("puts every bound tool in exactly one list, leaving nothing to a default", async () => {
-      // An omitted tool reads as "Claude Code's default", which is the ambiguity an override
-      // exists to end.
-      const { content } = await adapter.fromCanonical(
-        canonical(`  read:\n    "*": "allow"\n`, "", override(`      tools: [Read, Glob]\n`))
-      );
-
-      expect(/^tools: (.*)$/m.exec(content)?.[1]).toBe("Read, Glob");
-      expect(/^disallowedTools: (.*)$/m.exec(content)?.[1]).toBe(
-        "Write, Edit, Grep, Bash, WebFetch, Task"
-      );
     });
   });
 

@@ -434,11 +434,11 @@ export const DependencyRefInputSchema = z.union([
 /**
  * What one target may override about this component, authored by a human.
  *
- * ## Why overrides exist at all
+ * ## Why overrides exist: some things are not derivable
  *
- * A canonical `permission:` block is an *enforcement* spec: ordered globs, last-match-wins.
- * Some targets cannot enforce that. Claude Code is the live example — verified against its
- * docs on 2026-07-15:
+ * A canonical `permission:` block is OpenCode's own field, and on OpenCode it is *enforcement*:
+ * ordered globs, last-match-wins, applied per agent. Other targets cannot enforce that. Claude
+ * Code is the live example — verified against its docs on 2026-07-15:
  *
  * - subagent frontmatter carries `tools:`/`disallowedTools:` and nothing else
  *   (`sub-agents.md`, "Supported frontmatter fields");
@@ -449,12 +449,13 @@ export const DependencyRefInputSchema = z.union([
  * - precedence is category-based (deny → ask → allow, specificity-blind, `permissions.md`),
  *   which cannot express last-match-wins even in principle.
  *
- * So for an agent whose canonical rules are scoped, *no emission is both faithful and useful*.
- * Fail-closed yields a documentation scout that cannot read; widening is how the shipped
- * agents came to leak. That is not a question an adapter can answer — it is a security
- * decision. This block is where a human answers it, once, in the source, visible in a diff.
+ * So "what should this agent be allowed to do on Claude Code?" **cannot be computed** from the
+ * permission block. Deriving it and fixing up the failures was tried and was a mistake: every
+ * answer is either a crippled agent (fail-closed denies `externalscout` the Read it exists to
+ * do) or a silent widening (which is how the shipped agents came to leak). It is a judgement
+ * call, so a human writes it down here, and the adapter does as it is told.
  *
- * @see {@link TargetOverridesSchema} for the rule that makes a widening un-silenceable.
+ * Say WHY in a YAML comment next to the grant. That is where a reader looks anyway.
  */
 export const TargetOverrideSchema = z
   .object({
@@ -464,26 +465,12 @@ export const TargetOverrideSchema = z
     model: z.string().min(1).optional(),
     /**
      * The tools this component is granted on this target, in the target's own vocabulary.
+     *
      * Deliberately `string[]`, not an enum: each target names its tools differently, and the
      * adapter that owns those names validates them. A schema-level enum here would make
      * `types.ts` know about every target's tool list.
      */
     tools: z.array(z.string().min(1)).optional(),
-    /**
-     * Why it is acceptable that this target will not enforce a capability's canonical scope,
-     * keyed by capability (`bash`, `edit`, …).
-     *
-     * This is the honest field, and the one that keeps the whole mechanism from rotting. When
-     * an override grants a tool whose canonical rules are scoped, the scope is simply not
-     * applied on the target — it survives as prompt text at best. That is a real widening, and
-     * the author is asserting it is acceptable.
-     *
-     * Keyed rather than free-form prose **so the adapter can check it**: every granted-but-
-     * scoped capability must have an entry, and every entry must correspond to one. A prose
-     * blob would decay into a rubber stamp that nothing verifies; this cannot silently fall
-     * out of date, because the build fails when it does.
-     */
-    unenforced: z.record(z.string().min(1), z.string().min(1)).default({}),
   })
   .strict();
 

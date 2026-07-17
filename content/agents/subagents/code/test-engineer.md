@@ -45,24 +45,17 @@ oac:
     claude-code:
       name: test-engineer
       model: sonnet
-      # Matches what ships today. Task is scoped in canonical and DENIED here.
+      # Matches what ships today. Task is scoped in canonical and denied here. Glob and Grep
+      # are NOT granted though canonical leaves them unconstrained — this agent has shipped
+      # without them and does not need them to author tests against files it is pointed at.
       #
-      # Glob and Grep are NOT granted, though canonical leaves them unconstrained: this agent
-      # has shipped without them and they are not needed to author tests against files it is
-      # pointed at. Kept narrow deliberately rather than widened for symmetry.
+      # WIDENING — Bash: canonical allows ten test-runner prefixes (npx vitest, pytest, go
+      # test, ...), asks on "rm -rf *", and denies sudo and all else. Claude Code collapses
+      # that to unrestricted shell: this is the only place the rm -rf ask and the sudo deny
+      # disappear. Accepted because running tests is the whole point of the agent.
+      # WIDENING — Edit: canonical denies *.env*, *.key, *.secret; Claude applies none. Same
+      # trade as coder-agent — authoring tests requires Edit, and the globs hold on OpenCode.
       tools: [Read, Write, Edit, Bash]
-      unenforced:
-        bash: >-
-          Canonical allows ten test-runner prefixes (npx vitest, pytest, go test, …), asks on
-          "rm -rf *", and denies sudo and everything else. Claude Code collapses all of that to
-          unrestricted shell. Accepted because running tests is the entire point of this agent
-          and Claude Code cannot scope Bash per-agent — but note this is the only place the
-          "rm -rf" ask and the sudo deny disappear, so on Claude Code this agent is trusted with
-          the shell rather than restricted to it.
-        edit: >-
-          Canonical denies edits to *.env*, *.key and *.secret; Claude Code applies none of
-          them. Accepted for the same reason as coder-agent: authoring tests requires Edit, and
-          the globs still hold on OpenCode.
 ---
 
 # TestEngineer

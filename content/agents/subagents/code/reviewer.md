@@ -33,14 +33,12 @@ oac:
     claude-code:
       name: code-reviewer
       model: sonnet
-      # Read-only, exactly as canonical intends and exactly as this agent ships today. Every
-      # scoped capability (write, edit, task) is DENIED rather than widened, so there is no
-      # `unenforced:` block: nothing is granted that Claude Code cannot enforce.
+      # Read-only, matching canonical and what ships today. Everything canonical scopes
+      # (write, edit, task) is denied here rather than widened.
       #
-      # The one real loss is delegation — canonical lets this agent call `contextscout`, and
-      # Claude Code's Task tool is all-or-nothing, so allowing it would let this agent invoke
-      # ANY agent. A reviewer that cannot delegate is a fair trade for one that cannot be
-      # turned into a general-purpose executor; it already ships this way.
+      # The real loss is delegation: canonical lets this agent call contextscout, but Claude's
+      # Task tool is all-or-nothing — granting it would let the reviewer invoke ANY agent. A
+      # reviewer that cannot delegate beats one that can be turned into a general executor.
       tools: [Read, Glob, Grep]
 ---
 
