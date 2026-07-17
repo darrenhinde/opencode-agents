@@ -202,7 +202,7 @@
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
     "registry.json": {
-      "sha256": "0c5b7641e7d4cdfb76e65e1da266de1980fa935309cf71c17cc3b349689b8cbd",
+      "sha256": "d149d8a5d30641136919c88775935fff68bb2cadbb02e2ea8dcc1d03b94b1346",
       "target": "registry",
       "root": "registry.json"
     }

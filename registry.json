@@ -3565,7 +3565,7 @@
         "context:subagent-template",
         "context:openagents-repo/*",
         "context:context-system",
-        "context:context-system/*",
+        "context:core/context-system/*",
         "context:registry-dependencies",
         "context:templates",
         "context:frontmatter",

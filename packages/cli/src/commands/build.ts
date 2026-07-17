@@ -41,6 +41,14 @@
  * `oac.overrides` to the prompt — but it is a real design decision, not a default a build
  * command should pick. So this target keeps staging to {@link CLAUDE_STAGING_ROOT} and
  * REPORTING the comparison, and there is deliberately no flag to emit it in place.
+ *
+ * A third difference is mechanical, added 2026-07-17 (9b4e807): the adapter now emits
+ * EXHAUSTIVE tools/disallowedTools pairs — every bound tool lands in one list or the other —
+ * while the shipped files list only some denials (four list none, and none mention WebFetch).
+ * So the staged comparison reports all 7 files as "would change" even where the `tools:` line
+ * matches byte-for-byte. Converging the trees means accepting the exhaustive lists too, not
+ * just resolving the prompt variance. No security impact either way: the shipped `tools:`
+ * whitelist already confines each agent; the exhaustive deny list only makes it explicit.
  */
 
 import { type Command } from 'commander'
@@ -190,11 +198,11 @@ const reportWarnings = (built: BuildPlan): void => {
 /**
  * Dead `type:id` references in the tree, reported with their source.
  *
- * Read against the registry ON DISK, so this describes the tree as it stands. Reported rather
- * than fatal by default: 4 dead references are known and pinned in
- * `tests/unit/build/reference-resolution.test.ts`, and one of them (`context:context-system/*`)
- * is deliberately carried through until whoever owns profiles decides what it should say.
- * `--strict` makes them fatal.
+ * Read against the registry ON DISK, so this describes the tree as it stands. The tree
+ * carries zero dead references (the four found 2026-07-15 were repaired 2026-07-17, gated in
+ * `tests/unit/build/reference-resolution.test.ts`), so any reported here is new rot. Reported
+ * rather than fatal by default so a broken ref cannot block an unrelated build; `--strict`
+ * makes them fatal, and CI's test suite catches them regardless.
  */
 const reportDeadReferences = async (root: string): Promise<number> => {
   const dead = await new ReferenceResolver(root).findDeadReferences()

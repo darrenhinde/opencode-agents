@@ -232,7 +232,8 @@ export class ClaudeAdapter extends BaseAdapter {
       notes: [
         "Agents emit to plugins/claude-code/agents/<id>.md — one flat markdown file each",
         "Permissions are two flat lists (tools/disallowedTools) — ordered rules, path globs " +
-          "and 'ask' have no equivalent and degrade fail-closed to disallowedTools",
+          "and 'ask' have no equivalent. The build path requires an authored " +
+          "oac.overrides.claude-code.tools list; only imports (fromOAC) degrade fail-closed",
         "Temperature and maxSteps are not expressible in agent frontmatter",
         "Skills provide context injection similar to OAC contexts",
       ],

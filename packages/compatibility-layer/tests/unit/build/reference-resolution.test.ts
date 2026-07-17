@@ -3,36 +3,35 @@
  *
  * ─── Why this suite is the important one ────────────────────────────────────────────────
  *
- * `scripts/registry/validate-registry.sh` currently prints:
- *
- *     Total paths checked:    244
- *     Valid paths:            244
- *     Missing paths:          0
- *     Missing dependencies:   0
- *     ✓ All component dependencies are valid!
- *
- * and exits 0. That is a FALSE GREEN, reproduced on disk 2026-07-15. Four references are
- * broken right now and the validator reports none of them, because it is blind in two ways
- * that the tests below pin down structurally:
+ * `scripts/registry/validate-registry.sh` prints "All component dependencies are valid!" and
+ * exits 0 — and did so for months while four references were broken. That was a FALSE GREEN,
+ * reproduced on disk 2026-07-15, because the validator is blind in two ways the tests below
+ * pin down structurally:
  *
  *   1. It reads `registry.json` and nothing else. It never parses the `dependencies:`
  *      frontmatter that actually ships in the component files, so drift between a registry
- *      entry and its own file is undetectable. `.opencode/command/add-context.md` is exactly
- *      that: its registry entry lists the four correct bare ids while its frontmatter lists
- *      three path-style ids that resolve to nothing.
+ *      entry and its own file is undetectable. `.opencode/command/add-context.md` was exactly
+ *      that: its registry entry listed the four correct bare ids while its frontmatter listed
+ *      three path-style ids that resolved to nothing.
  *   2. It iterates `.components.*[].dependencies` only. `.profiles.*.components` — 209 refs
  *      across 5 profiles — is never validated, which is how a wildcard expanding to zero
- *      matches sits in the `advanced` profile unnoticed.
+ *      matches sat in the `advanced` profile unnoticed.
  *
- * ─── The dead-ref count is 4, not 9 ─────────────────────────────────────────────────────
+ * ─── The four dead refs, and their repair ───────────────────────────────────────────────
+ *
+ * Four dead references were verified on disk 2026-07-15 and repaired 2026-07-17: the three
+ * path-style frontmatter refs in `add-context.md` became the bare slugs its registry entry
+ * always carried, and the `advanced` profile's `context:context-system/*` gained its missing
+ * `core/` prefix. {@link REPAIRED} records them; the tree now carries ZERO dead references
+ * and this suite fails on the first new one.
+ *
+ * ─── The dead-ref count was 4, not 9 ────────────────────────────────────────────────────
  *
  * A "9 known dead context import paths" figure circulated in earlier planning notes. It was
- * never substantiated: no doc, commit or script produces it, and no scan of this tree
- * reproduces it. The repo's own docs say three
- * (`01-feature-inventory.md:955`, `06-REVIEW.md:309`); a fourth — the profile wildcard —
- * was found while writing this suite and is recorded in `task.json` notes. The oracle in
- * `tests/support/references.ts` finds exactly these 4 and no others. `9` is treated here as
- * folklore and is asserted against, so it cannot quietly return.
+ * never substantiated: no doc, commit or script produces it, and no scan of this tree ever
+ * reproduced it. The repo's own docs said three (`01-feature-inventory.md:955`,
+ * `06-REVIEW.md:309`); the fourth — the profile wildcard — was found while writing this
+ * suite. `9` is folklore.
  */
 
 import { describe, it, expect } from "vitest";
@@ -51,120 +50,85 @@ import {
 import { importPendingSymbols, repoPath } from "../../support/pending.js";
 
 /**
- * The four dead references in this tree, verified on disk 2026-07-15.
+ * The four references that were dead from 2026-07-15 to 2026-07-17, in their repaired form.
  *
- * This is a snapshot of a KNOWN BUG, not an invariant to preserve. When a subtask repairs
- * one of these refs, the "is still dead" test below turns red — that is correct and
- * intended: fixing a dead ref must be a deliberate edit here, never a silent drift.
+ * Each must now resolve. If one of these goes red, the repair has been reverted or the
+ * component it points at has been removed — either way that is a deliberate content decision
+ * and this list must be edited with it, never weakened around.
  */
-const KNOWN_DEAD: readonly { ref: string; source: string; why: string }[] = [
+const REPAIRED: readonly { ref: string; source: string; was: string }[] = [
   {
-    ref: "context:core/context-system/standards/mvi.md",
+    ref: "context:mvi",
     source: ".opencode/command/add-context.md",
-    why: "path-style-with-.md, but the registry id is the bare slug `mvi`",
+    was: "context:core/context-system/standards/mvi.md (path-style, a dead id)",
   },
   {
-    ref: "context:core/context-system/standards/frontmatter.md",
+    ref: "context:frontmatter",
     source: ".opencode/command/add-context.md",
-    why: "path-style-with-.md, but the registry id is the bare slug `frontmatter`",
+    was: "context:core/context-system/standards/frontmatter.md (path-style, a dead id)",
   },
   {
-    ref: "context:core/standards/project-intelligence.md",
+    ref: "context:project-intelligence",
     source: ".opencode/command/add-context.md",
-    why: "path-style-with-.md, but the registry id is the bare slug `project-intelligence`",
+    was: "context:core/standards/project-intelligence.md (path-style, a dead id)",
   },
   {
-    ref: "context:context-system/*",
+    ref: "context:core/context-system/*",
     source: "registry.json profiles.advanced.components",
-    why: "expands to 0 matches — the real directory is .opencode/context/core/context-system/",
+    was: "context:context-system/* (missing the core/ prefix, a dead wildcard)",
   },
 ];
-
-/** The count that folklore claims. Asserted against so it cannot creep back in. */
-const UNSUBSTANTIATED_COUNT = 9;
 
 function describeAll(resolutions: readonly Resolution[]): string {
   return `\n${format(resolutions)}\n`;
 }
 
 // ============================================================================
-// The facts — green today, and they lock the ground truth
+// The facts — the tree is clean, and stays clean
 // ============================================================================
 
 describe("dead references in this tree", () => {
-  it("finds exactly 4 dead references — not the unsubstantiated 9", () => {
+  it("finds none — the four known dead refs were repaired 2026-07-17", () => {
     const dead = deadReferences();
 
-    expect(dead.length, `dead references found:${describeAll(dead)}`).toBe(KNOWN_DEAD.length);
-    expect(dead.length).not.toBe(UNSUBSTANTIATED_COUNT);
+    expect(dead, `reference rot has appeared:${describeAll(dead)}`).toEqual([]);
   });
 
-  it.each(KNOWN_DEAD)("still reports $ref as dead ($why)", ({ ref, source }) => {
-    const dead = deadReferences();
-    const match = dead.find((d) => d.ref === ref && d.source.includes(source));
+  it.each(REPAIRED)("still resolves $ref (was $was)", ({ ref, source }) => {
+    const [resolution] = resolveAll([{ ref, source }]);
 
     expect(
-      match,
-      `expected ${ref} (authored in ${source}) to resolve to nothing.\n` +
-        `If a subtask has repaired it, delete its entry from KNOWN_DEAD in this file — ` +
-        `do not weaken the resolver.\nCurrently dead:${describeAll(dead)}`
-    ).toBeDefined();
-  });
-
-  it("reports no dead references beyond the 4 known ones", () => {
-    const unexpected = deadReferences().filter(
-      (dead) => !KNOWN_DEAD.some((known) => known.ref === dead.ref)
-    );
-
-    expect(
-      unexpected,
-      `new reference rot has appeared since 2026-07-15:${describeAll(unexpected)}`
-    ).toEqual([]);
-  });
-
-  it("classifies the three add-context refs as dead ids and the profile ref as a dead wildcard", () => {
-    const dead = deadReferences();
-
-    expect(dead.filter((d) => d.status === "dead-id").length).toBe(3);
-    expect(dead.filter((d) => d.status === "dead-wildcard").length).toBe(1);
+      resolution?.status,
+      `${ref} (authored in ${source}) no longer resolves. If that is deliberate, ` +
+        `update REPAIRED in this file alongside the content change.`
+    ).toBe("ok");
   });
 });
 
 // ============================================================================
-// Why the shell validator cannot see them — the mechanism, asserted structurally
+// Why the shell validator could not see them — the mechanism, asserted structurally
 // ============================================================================
 
 describe("validate-registry.sh blind spots", () => {
-  it("cannot see frontmatter drift: add-context.md's file and registry entry disagree", () => {
+  it("cannot see frontmatter drift: add-context.md's file and registry entry must agree by hand", () => {
     const registry = loadRegistry();
     const entry = registry.components.commands?.find((c) => c.id === "add-context");
     const onDisk = frontmatterReferences().filter((r) =>
       r.source.endsWith("command/add-context.md")
     );
 
-    // The registry entry is correct — which is precisely why a registry-only validator is happy.
+    // Nothing enforces this agreement but this test: the validator reads only the registry
+    // side, so if the shipped frontmatter drifts again it is the ONLY thing that goes red.
     expect(entry?.dependencies).toEqual([
       "subagent:context-organizer",
       "context:mvi",
       "context:frontmatter",
       "context:project-intelligence",
     ]);
-
-    // The file that actually ships says something else, and three of its refs resolve to nothing.
-    expect(onDisk.map((r) => r.ref)).toEqual([
-      "subagent:context-organizer",
-      "context:core/context-system/standards/mvi.md",
-      "context:core/context-system/standards/frontmatter.md",
-      "context:core/standards/project-intelligence.md",
-    ]);
-
-    expect(
-      resolveAll(onDisk).filter((r) => r.status !== "ok").length,
-      "the shipped frontmatter should contain 3 dead refs the registry entry hides"
-    ).toBe(3);
+    expect(onDisk.map((r) => r.ref)).toEqual([...(entry?.dependencies ?? [])]);
   });
 
-  it("never validates profile component lists, where the dead wildcard lives", () => {
+  it("never validates profile component lists, where the repaired wildcard lives", () => {
     const registry = loadRegistry();
     const profileRefs = profileReferences(registry);
     const componentRefs = registryComponentReferences(registry);
@@ -178,27 +142,32 @@ describe("validate-registry.sh blind spots", () => {
     ]);
     expect(profileRefs.length).toBeGreaterThan(200);
 
-    // The dead wildcard is authored ONLY in a profile — no component depends on it — so a
-    // validator that walks components alone cannot reach it by any path.
-    expect(profileRefs.map((r) => r.ref)).toContain("context:context-system/*");
+    // The dead spelling was authored ONLY in a profile — no component depended on it — so a
+    // validator that walks components alone could not reach it by any path. That is how it
+    // survived unnoticed, and why this suite must keep watching profiles. (The repaired
+    // spelling also appears as a component dependency — context-organizer's — which is
+    // precisely why only the profile copy could rot invisibly.)
+    expect(profileRefs.map((r) => r.ref)).toContain("context:core/context-system/*");
+    expect(profileRefs.map((r) => r.ref)).not.toContain("context:context-system/*");
     expect(componentRefs.map((r) => r.ref)).not.toContain("context:context-system/*");
   });
 
-  it("wildcard misses are silent: the sibling context:openagents-repo/* does resolve", () => {
+  it("wildcard misses are silent: a wrong prefix reports dead-wildcard, not an error", () => {
     const registry = loadRegistry();
-    const [openagentsRepo] = resolveAll(
-      [{ ref: "context:openagents-repo/*", source: "control" }],
+    const [repaired] = resolveAll(
+      [{ ref: "context:core/context-system/*", source: "control" }],
       registry
     );
-    const [contextSystem] = resolveAll(
+    const [misspelt] = resolveAll(
       [{ ref: "context:context-system/*", source: "control" }],
       registry
     );
 
-    // Both are authored in the same profile list, one line apart. Only one expands. That is
-    // what makes the miss invisible to eyeballing as well as to the validator.
-    expect(openagentsRepo?.status).toBe("ok");
-    expect(contextSystem?.status).toBe("dead-wildcard");
+    // The two spellings differ by one path segment. One expands, one silently matches
+    // nothing — which is what made the miss invisible to eyeballing as well as to the
+    // validator, and why the resolver must classify it rather than ignore it.
+    expect(repaired?.status).toBe("ok");
+    expect(misspelt?.status).toBe("dead-wildcard");
   });
 
   it("registry context ids are bare slugs, so a path-style ref is genuinely a different namespace", () => {
@@ -214,7 +183,8 @@ describe("validate-registry.sh blind spots", () => {
       "no registry context id may contain '/' or end in '.md'"
     ).toEqual([]);
 
-    // The three add-context targets exist on disk — the files are fine, the refs are not.
+    // The three former add-context targets exist on disk under their bare ids — the files
+    // were always fine; only the refs were wrong.
     for (const id of ["mvi", "frontmatter", "project-intelligence"]) {
       const component = (registry.components.contexts ?? []).find((c) => c.id === id);
       expect(component, `registry should carry the bare context id "${id}"`).toBeDefined();
@@ -236,17 +206,17 @@ describe("reference corpus", () => {
     expect(frontmatterReferences().length).toBeGreaterThan(0);
   });
 
-  it("resolves the overwhelming majority of references, so the 4 stand out", () => {
+  it("resolves every reference in the corpus", () => {
     const resolutions = resolveAll(allReferences());
-    const ok = resolutions.filter((r) => r.status === "ok");
+    const notOk = resolutions.filter((r) => r.status !== "ok");
 
     expect(resolutions.length).toBeGreaterThan(200);
-    expect(ok.length).toBe(resolutions.length - KNOWN_DEAD.length);
+    expect(notOk, `unresolved references:${describeAll(notOk)}`).toEqual([]);
   });
 });
 
 // ============================================================================
-// RED — the shipped resolver (subtask 05) must agree with the oracle
+// The shipped resolver (subtask 05) must agree with the oracle
 // ============================================================================
 
 const OWED_BY = "subtask 05 (src/core/ReferenceResolver.ts)";
@@ -261,7 +231,7 @@ describe("ReferenceResolver (shipped)", () => {
     );
   });
 
-  it("finds the same 4 dead references the oracle finds", async () => {
+  it("finds the same zero dead references the oracle finds", async () => {
     const { ReferenceResolver } = await importPendingSymbols<{
       ReferenceResolver: new (root: string) => {
         findDeadReferences(): Promise<{ ref: string; source: string }[]>;
@@ -270,13 +240,13 @@ describe("ReferenceResolver (shipped)", () => {
       "src/core/ReferenceResolver.ts",
       ["ReferenceResolver"],
       OWED_BY,
-      "the shipped resolver finds exactly the 4 dead refs the oracle finds — and therefore " +
-        "catches what validate-registry.sh reports as 244/244 green"
+      "the shipped resolver agrees with the oracle that the tree is clean — and therefore " +
+        "catches what validate-registry.sh cannot"
     );
 
     const found = await new ReferenceResolver(repoPath()).findDeadReferences();
 
-    expect(found.map((f) => f.ref).sort()).toEqual(KNOWN_DEAD.map((k) => k.ref).sort());
+    expect(found).toEqual([]);
   });
 
   it("resolves a live reference to the component's real path on disk", async () => {

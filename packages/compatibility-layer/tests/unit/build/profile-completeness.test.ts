@@ -8,8 +8,10 @@
  * fails at the same point, one level deeper.
  *
  * `validate-registry.sh` checks NEITHER half of this: it never reads `.profiles.*` at all
- * (see reference-resolution.test.ts), which is how `context:context-system/*` has sat in the
- * `advanced` profile expanding to zero components while the validator prints 244/244 green.
+ * (see reference-resolution.test.ts), which is how a dead `context:context-system/*` sat in
+ * the `advanced` profile expanding to zero components — until repaired 2026-07-17 to
+ * `context:core/context-system/*` — while the validator printed 244/244 green. These tests
+ * are the only thing that would catch the next one.
  */
 
 import { describe, it, expect } from "vitest";
@@ -24,9 +26,6 @@ import {
 import { importPendingSymbols, repoPath } from "../../support/pending.js";
 
 const PROFILES = ["advanced", "business", "developer", "essential", "full"] as const;
-
-/** The one profile ref that does not resolve today. See reference-resolution.test.ts. */
-const KNOWN_DEAD_PROFILE_REF = "context:context-system/*";
 
 function refsFor(profile: string, registry: Registry): Reference[] {
   return profileReferences(registry).filter((reference) =>
@@ -80,35 +79,24 @@ describe("profiles", () => {
     expect(refsFor(profile, loadRegistry()).length).toBeGreaterThan(0);
   });
 
-  it.each(PROFILES)("%s resolves every component it names, except the known dead ref", (profile) => {
+  it.each(PROFILES)("%s resolves every component it names", (profile) => {
     const registry = loadRegistry();
-    const dead = resolveAll(refsFor(profile, registry), registry)
-      .filter((resolution) => resolution.status !== "ok")
-      .filter((resolution) => resolution.ref !== KNOWN_DEAD_PROFILE_REF);
+    const dead = resolveAll(refsFor(profile, registry), registry).filter(
+      (resolution) => resolution.status !== "ok"
+    );
 
     expect(dead, `${profile} names components that do not exist:\n${format(dead)}`).toEqual([]);
   });
 
-  it.each(PROFILES)("%s has an installable transitive closure, except the known dead ref", (profile) => {
+  it.each(PROFILES)("%s has an installable transitive closure", (profile) => {
     const registry = loadRegistry();
     const { refs } = closure(profile, registry);
-    const dead = resolveAll(refs, registry)
-      .filter((resolution) => resolution.status !== "ok")
-      .filter((resolution) => resolution.ref !== KNOWN_DEAD_PROFILE_REF);
+    const dead = resolveAll(refs, registry).filter((resolution) => resolution.status !== "ok");
 
     expect(
       dead,
       `${profile}'s closure reaches components that do not exist — installing it would fail:\n${format(dead)}`
     ).toEqual([]);
-  });
-
-  it("advanced is the profile carrying the known dead wildcard", () => {
-    const registry = loadRegistry();
-    const carriers = PROFILES.filter((profile) =>
-      refsFor(profile, registry).some((r) => r.ref === KNOWN_DEAD_PROFILE_REF)
-    );
-
-    expect(carriers).toEqual(["advanced"]);
   });
 
   it("the closure is strictly larger than the named set for at least one profile", () => {
@@ -156,8 +144,7 @@ describe("ProfileLoader (shipped)", () => {
     );
 
     const { missing } = await new ProfileLoader(repoPath()).resolveClosure(profile);
-    const unexpected = missing.filter((entry) => entry.ref !== KNOWN_DEAD_PROFILE_REF);
 
-    expect(unexpected).toEqual([]);
+    expect(missing).toEqual([]);
   });
 });

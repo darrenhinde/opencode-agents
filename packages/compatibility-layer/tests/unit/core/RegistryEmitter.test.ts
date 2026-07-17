@@ -269,14 +269,16 @@ describe("carry-through of everything the canonical tree does not own", () => {
     expect(document.profiles).toEqual(COMMITTED.profiles);
   });
 
-  it("leaves the dead advanced-profile wildcard exactly as authored", async () => {
-    // `context:context-system/*` expands to zero registry paths. Repairing it to
-    // `context:core/context-system/*` would change what `--profile advanced` installs, so it
-    // stays a known-dead ref that ReferenceResolver reports rather than an emitter rewrite.
+  it("leaves the advanced-profile wildcard exactly as authored", async () => {
+    // This ref spent 2026-07-15..17 authored as the dead `context:context-system/*`, and the
+    // emitter carried THAT verbatim too — the repair to `core/context-system/*` was a content
+    // edit to the committed registry.json, not an emitter rewrite. Profile lists pass through
+    // untouched either way; that is the contract this test pins.
     const document = await new RegistryEmitter(repoPath()).emit();
     const advanced = document.profiles as Record<string, { components: string[] }>;
 
-    expect(advanced.advanced?.components).toContain("context:context-system/*");
+    expect(advanced.advanced?.components).toContain("context:core/context-system/*");
+    expect(advanced.advanced?.components).not.toContain("context:context-system/*");
   });
 
   it("carries agents that have no canonical counterpart", async () => {

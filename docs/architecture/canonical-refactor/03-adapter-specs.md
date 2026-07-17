@@ -353,6 +353,14 @@ edit→Edit, bash→Bash, glob→Glob, grep→Grep, delegate→Task`.
 
 ### 2.3 The collapse rule — ordered rule list → coarse allowlist
 
+> **SUPERSEDED (2026-07-17).** §2.3 and §2.5's permission rows describe the derive-and-degrade
+> behaviour as specified before implementation. The shipped adapter replaced it twice over:
+> first refuse-on-loss (`d643b4a`), then no derivation at all (`9b4e807`) — on the build path
+> every agent targeting claude-code must author `oac.overrides.claude-code.tools`, taken
+> verbatim, and its absence is a build error. The collapse rule below survives only on the
+> `fromOAC` import path, where there is no source file to author an override in. Kept as
+> history; do not implement from it.
+
 **Verified constraint (CC docs, `sub-agents.md`):** `tools:` and `disallowedTools:` are
 allowlists/denylists of **tool NAMES only**. A pattern like `Bash(foo:*)` is **not valid** in
 agent frontmatter — argument scoping exists *only* in `settings.json`. So **every scope ≠ `*`

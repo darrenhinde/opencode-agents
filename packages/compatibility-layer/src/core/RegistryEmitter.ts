@@ -38,15 +38,14 @@
  * five profiles install. See {@link ProfileLoader.drift} for the disagreement itself; the
  * reconciliation is a content decision, not an emitter one.
  *
- * ─── The dead wildcard stays dead, on purpose ───────────────────────────────────────────
+ * ─── Dead refs are repaired in the SOURCE, never here ───────────────────────────────────
  *
- * `.profiles.advanced.components` contains `context:context-system/*`, which expands to zero
- * registry context paths (`.opencode/context/context-system` does not exist; the real subtree
- * is `.opencode/context/core/context-system/`). It is NOT repaired here. "Carry non-agent data
- * through verbatim" is the phase-1 contract, and rewriting the ref to
- * `context:core/context-system/*` would change what `--profile advanced` installs — a content
- * decision owned by whoever owns profiles. It is instead reported as a `dead-wildcard` by
- * {@link ReferenceResolver.resolve} and pinned as a known dead ref in
+ * "Carry non-agent data through verbatim" is the phase-1 contract: this emitter never edits
+ * profile lists, even broken ones. The live example was `.profiles.advanced.components`
+ * carrying `context:context-system/*`, which expanded to zero matches (the real subtree is
+ * `.opencode/context/core/context-system/`). It was repaired 2026-07-17 as a content edit to
+ * the committed `registry.json` — the authoritative profile source — not by rewriting it
+ * here. Dead refs are reported by {@link ReferenceResolver.resolve} and gated at zero in
  * `tests/unit/build/reference-resolution.test.ts`.
  *
  * ─── Withdrawing an entry, and why it is manifest-gated ─────────────────────────────────
