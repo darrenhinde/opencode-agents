@@ -154,12 +154,37 @@ describe("OpenClawAdapter", () => {
         c.fileName.includes("bootstrap-manifest")
       );
       expect(manifest).toBeDefined();
+      // Per-agent file name (same pattern as permission-index-{agentId}.json)
+      // so same-directory primaries never overwrite each other.
+      expect(manifest!.fileName).toBe(".openclaw/bootstrap-manifest-test-agent.json");
       const parsed = JSON.parse(manifest!.content) as {
         agentId: string;
         guidance: string;
       };
       expect(parsed.agentId).toBe("test-agent");
       expect(parsed.guidance).toContain("6-stage");
+    });
+
+    it("emits a unique bootstrap manifest per primary agent (no cross-agent overwrite)", async () => {
+      const agentA = makeAgent();
+      const agentB = makeAgent({
+        metadata: { ...agentA.metadata, id: "agent-b" },
+      });
+
+      const [resultA, resultB] = await Promise.all([
+        adapter.fromOAC(agentA),
+        adapter.fromOAC(agentB),
+      ]);
+
+      const fileNameA = resultA.configs.find((c) =>
+        c.fileName.includes("bootstrap-manifest")
+      )!.fileName;
+      const fileNameB = resultB.configs.find((c) =>
+        c.fileName.includes("bootstrap-manifest")
+      )!.fileName;
+      expect(fileNameA).toBe(".openclaw/bootstrap-manifest-test-agent.json");
+      expect(fileNameB).toBe(".openclaw/bootstrap-manifest-agent-b.json");
+      expect(fileNameA).not.toBe(fileNameB);
     });
 
     it("does NOT generate bootstrap manifest for subagents", async () => {

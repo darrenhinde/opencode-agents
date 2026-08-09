@@ -16,7 +16,10 @@ import { createPermissionIndex } from "../mappers/PermissionMapper.js";
  *
  * Conversion outputs (fromOAC, one config fragment per agent):
  * - `.openclaw/agents/{agentId}.json`        — agents.list entry (primary) or subagent config (subagent)
- * - `.openclaw/bootstrap-manifest.json`      — primary agent body (6-stage workflow guidance) for agent:bootstrap injection
+ * - `.openclaw/bootstrap-manifest-{agentId}.json` — primary agent body (6-stage workflow guidance) for agent:bootstrap injection.
+ *     Per-agent file names prevent same-directory primaries from overwriting
+ *     each other (the plugin routes by agentId and falls back to the legacy
+ *     single `.openclaw/bootstrap-manifest.json`).
  * - `.openclaw/skills-index.json`            — skills reference list (SKILL.md compatible)
  * - `.openclaw/permission-index-{agentId}.json` — per-agent granular permission fragment (no degradation).
  *     The install pipeline aggregates these fragments into the single merged
@@ -78,10 +81,12 @@ export class OpenClawAdapter extends BaseAdapter {
     });
 
     // Channel 2: bootstrap manifest (primary agent body → agent:bootstrap injection)
+    // Per-agent file name (same pattern as permission-index-{agentId}.json) so
+    // multiple primaries under the same directory never overwrite each other.
     const isPrimary = agent.frontmatter.mode !== "subagent";
     if (isPrimary && agent.systemPrompt && agent.systemPrompt.trim().length > 0) {
       configs.push({
-        fileName: ".openclaw/bootstrap-manifest.json",
+        fileName: `.openclaw/bootstrap-manifest-${agentId}.json`,
         content: JSON.stringify(
           {
             agentId,

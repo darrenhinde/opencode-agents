@@ -687,7 +687,7 @@ You are an agent that exercises the multi-config output path.
         outDir, "subagents", "code", ".openclaw", "agents", "multi-config.json"
       );
       const bootstrapPath = join(
-        outDir, "subagents", "code", ".openclaw", "bootstrap-manifest.json"
+        outDir, "subagents", "code", ".openclaw", "bootstrap-manifest-multi-config.json"
       );
       const skillsPath = join(
         outDir, "subagents", "code", ".openclaw", "skills-index.json"
@@ -745,6 +745,70 @@ You are an agent that exercises the multi-config output path.
         outDir, ".openclaw", "agents", ".openclaw", "permission-index-multi-config.json"
       );
       await expect(readFile(nestedPath, "utf-8")).rejects.toMatchObject({ code: "ENOENT" });
+    });
+
+    it("writes unique per-agent bootstrap manifests for same-directory primaries (no overwrite)", async () => {
+      // Arrange: two primary agents in the SAME source subdirectory.
+      // Regression for the converter overwrite bug: fixed-name
+      // .openclaw/bootstrap-manifest.json was clobbered by the last primary
+      // migrated; per-agent names must both survive.
+      const sourceDir = join(TEMP_DIR, "source-multi-same-dir");
+      const agentDir = join(sourceDir, "subagents", "code");
+      await mkdir(agentDir, { recursive: true });
+
+      const agentA = `---
+name: "Alpha Agent"
+description: "First same-dir primary"
+mode: primary
+---
+# Alpha Agent
+
+Alpha 六阶段工作流准则。
+`;
+      const agentB = `---
+name: "Beta Agent"
+description: "Second same-dir primary"
+mode: primary
+---
+# Beta Agent
+
+Beta 六阶段工作流准则。
+`;
+      await writeFile(join(agentDir, "alpha.md"), agentA);
+      await writeFile(join(agentDir, "beta.md"), agentB);
+
+      const outDir = join(TEMP_DIR, "output-multi-same-dir");
+
+      // Act
+      const result = await executeMigrate(
+        sourceDir,
+        { format: "openclaw", outDir },
+        defaultGlobalOptions
+      );
+
+      // Assert: both per-agent manifests exist with non-empty source guidance
+      expect(result.success).toBe(true);
+      expect(result.data?.successful).toBeGreaterThanOrEqual(2);
+
+      const alphaManifestPath = join(
+        outDir, "subagents", "code", ".openclaw", "bootstrap-manifest-alpha.json"
+      );
+      const betaManifestPath = join(
+        outDir, "subagents", "code", ".openclaw", "bootstrap-manifest-beta.json"
+      );
+
+      const alphaManifest = JSON.parse(await readFile(alphaManifestPath, "utf-8"));
+      const betaManifest = JSON.parse(await readFile(betaManifestPath, "utf-8"));
+      expect(alphaManifest.agentId).toBe("alpha");
+      expect(alphaManifest.guidance).toContain("Alpha 六阶段");
+      expect(betaManifest.agentId).toBe("beta");
+      expect(betaManifest.guidance).toContain("Beta 六阶段");
+
+      // No legacy single-file manifest is produced for multi-agent output
+      const legacyPath = join(
+        outDir, "subagents", "code", ".openclaw", "bootstrap-manifest.json"
+      );
+      await expect(readFile(legacyPath, "utf-8")).rejects.toMatchObject({ code: "ENOENT" });
     });
   });
 });
