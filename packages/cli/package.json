@@ -11,8 +11,8 @@
   "types": "./dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
-    "build": "rm -rf dist && bun build src/index.ts --outdir dist --target node --splitting",
-    "build:watch": "bun build src/index.ts --outdir dist --target node --splitting --watch",
+    "build": "rm -rf dist && bun build src/index.ts --outdir dist --target node && node --check dist/index.js",
+    "build:watch": "bun build src/index.ts --outdir dist --target node --watch",
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
