@@ -200,6 +200,19 @@ get_global_install_path() {
     esac
 }
 
+# Normalize an install path for use inside installed files.
+# On Windows, Git Bash exposes paths as /c/Users/... which native
+# Windows tools (e.g. opencode in PowerShell) cannot resolve. Convert
+# to a Windows path with forward slashes (C:/Users/...) via cygpath.
+normalize_install_path() {
+    local path="$1"
+    if [ "$PLATFORM" = "Windows" ] && command -v cygpath >/dev/null 2>&1; then
+        cygpath -m "$path"
+    else
+        printf "%s" "$path"
+    fi
+}
+
 #############################################################################
 # Dependency Checks
 #############################################################################
@@ -1148,7 +1161,8 @@ perform_installation() {
                 if curl -fsSL "$url" -o "$dest"; then
                     # Transform paths for global installation
                     if [[ "$INSTALL_DIR" != ".opencode" ]] && [[ "$INSTALL_DIR" != *"/.opencode" ]]; then
-                        local expanded_path="${INSTALL_DIR/#\~/$HOME}"
+                        local expanded_path
+                        expanded_path=$(normalize_install_path "${INSTALL_DIR/#\~/$HOME}")
                         sed -i.bak -e "s|@\.opencode/context/|@${expanded_path}/context/|g" \
                                    -e "s|\.opencode/context|${expanded_path}/context|g" "$dest" 2>/dev/null || true
                         rm -f "${dest}.bak" 2>/dev/null || true
@@ -1195,7 +1209,8 @@ perform_installation() {
                 # Local paths: .opencode or */.opencode
                 if [[ "$INSTALL_DIR" != ".opencode" ]] && [[ "$INSTALL_DIR" != *"/.opencode" ]]; then
                     # Expand tilde and get absolute path for transformation
-                    local expanded_path="${INSTALL_DIR/#\~/$HOME}"
+                    local expanded_path
+                    expanded_path=$(normalize_install_path "${INSTALL_DIR/#\~/$HOME}")
                     # Transform @.opencode/context/ references to actual install path
                     sed -i.bak -e "s|@\.opencode/context/|@${expanded_path}/context/|g" \
                                -e "s|\.opencode/context|${expanded_path}/context|g" "$dest" 2>/dev/null || true
