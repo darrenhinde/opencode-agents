@@ -21,6 +21,11 @@ interface Schema<T> {
 interface ResolvedSystemProfile {
   agents: string[];
   contexts: string[];
+  commands: string[];
+  tools: string[];
+  skills: string[];
+  plugins: string[];
+  config: string[];
 }
 
 interface ProfileLoaderApi {
@@ -72,6 +77,11 @@ function fixture(
     systemProfile?: unknown;
     agents?: string[];
     contexts?: string[];
+    commands?: string[];
+    tools?: string[];
+    skills?: string[];
+    plugins?: string[];
+    config?: string[];
   } = {}
 ): void {
   writeJson(root, "content/profiles/context/basic-context.json", options.contextProfile ?? {
@@ -83,19 +93,30 @@ function fixture(
     agents: ["simple-responder"],
     contextProfiles: ["basic-context"],
   });
-  writeJson(root, "registry.json", {
-    components: {
-      agents: (options.agents ?? ["simple-responder"]).map((id) => ({
-        id,
-        path: `content/agents/${id}.md`,
-      })),
-      contexts: (options.contexts ?? ["team-standard"]).map((id) => ({
-        id,
-        path: `content/context/${id}.md`,
-      })),
-    },
-    profiles: {},
-  });
+
+  const components: Record<string, { id: string; path: string }[]> = {
+    agents: (options.agents ?? ["simple-responder"]).map((id) => ({
+      id,
+      path: `content/agents/${id}.md`,
+    })),
+    contexts: (options.contexts ?? ["team-standard"]).map((id) => ({
+      id,
+      path: `content/context/${id}.md`,
+    })),
+  };
+  const kinds = [
+    ["commands", "content/commands"],
+    ["tools", "content/tools"],
+    ["skills", "content/skills"],
+    ["plugins", "content/plugins"],
+    ["config", "content/config"],
+  ] as const;
+  for (const [field, dir] of kinds) {
+    const ids = options[field];
+    if (ids !== undefined) components[field] = ids.map((id) => ({ id, path: `${dir}/${id}.md` }));
+  }
+
+  writeJson(root, "registry.json", { components, profiles: {} });
 }
 
 describe("profile schemas", () => {
@@ -139,6 +160,37 @@ describe("profile schemas", () => {
     expect(parseContext).toThrow(/contexts|at least one|unrecognized|adapter/i);
     expect(parseSystem).toThrow(/agents|contextProfiles|at least one|unrecognized|targets/i);
   });
+
+  it("accepts optional component kinds and rejects legacy-only keys", async () => {
+    // Arrange
+    const { SystemProfileSchema } = await schemas();
+    const systemProfile = {
+      id: "full-system",
+      agents: ["simple-responder"],
+      contextProfiles: ["basic-context"],
+      commands: ["commit"],
+      tools: ["env"],
+      skills: ["task-management"],
+      plugins: ["notify"],
+      config: ["env-example"],
+    };
+    // `subagents` is deliberately absent from the schema: the canonical tree collapses
+    // subagents into agents, so the legacy category must not resurrect as a field.
+    const invalidSystem = {
+      id: "basic-system",
+      agents: ["simple-responder"],
+      contextProfiles: ["basic-context"],
+      subagents: ["tester"],
+    };
+
+    // Act
+    const parsed = SystemProfileSchema.parse(systemProfile);
+    const parseInvalid = () => SystemProfileSchema.parse(invalidSystem);
+
+    // Assert
+    expect(parsed).toEqual(systemProfile);
+    expect(parseInvalid).toThrow(/unrecognized|subagents/i);
+  });
 });
 
 describe("system profile resolution", () => {
@@ -161,7 +213,15 @@ describe("system profile resolution", () => {
     const resolved = await profileLoader.resolveSystemProfile("basic-system");
 
     // Assert
-    expect(resolved).toEqual({ agents: ["simple-responder"], contexts: ["team-standard"] });
+    expect(resolved).toEqual({
+      agents: ["simple-responder"],
+      contexts: ["team-standard"],
+      commands: [],
+      tools: [],
+      skills: [],
+      plugins: [],
+      config: [],
+    });
   });
 
   it("deduplicates and locale-independently sorts differently ordered inputs", async () => {
@@ -202,8 +262,70 @@ describe("system profile resolution", () => {
     expect(first).toEqual({
       agents: ["alpha-agent", "zeta-agent"],
       contexts: ["alpha-standard", "zeta-standard"],
+      commands: [],
+      tools: [],
+      skills: [],
+      plugins: [],
+      config: [],
     });
     expect(second).toEqual(first);
+  });
+
+  it("resolves commands, tools, skills, plugins and config against the registry", async () => {
+    // Arrange
+    fixture(root, {
+      systemProfile: {
+        id: "basic-system",
+        agents: ["simple-responder"],
+        contextProfiles: ["basic-context"],
+        commands: ["commit", "test"],
+        tools: ["env"],
+        skills: ["task-management"],
+        plugins: ["notify"],
+        config: ["env-example"],
+      },
+      commands: ["commit", "test"],
+      tools: ["env"],
+      skills: ["task-management"],
+      plugins: ["notify"],
+      config: ["env-example"],
+    });
+    const profileLoader = await loader(root);
+
+    // Act
+    const resolved = await profileLoader.resolveSystemProfile("basic-system");
+
+    // Assert
+    expect(resolved).toEqual({
+      agents: ["simple-responder"],
+      contexts: ["team-standard"],
+      commands: ["commit", "test"],
+      tools: ["env"],
+      skills: ["task-management"],
+      plugins: ["notify"],
+      config: ["env-example"],
+    });
+  });
+
+  it("fails actionably for an unknown command", async () => {
+    // Arrange
+    fixture(root, {
+      systemProfile: {
+        id: "basic-system",
+        agents: ["simple-responder"],
+        contextProfiles: ["basic-context"],
+        commands: ["missing-command"],
+      },
+    });
+    const profileLoader = await loader(root);
+
+    // Act
+    const resolution = profileLoader.resolveSystemProfile("basic-system");
+
+    // Assert
+    await expect(resolution).rejects.toThrow(
+      /command.*missing-command.*(not found|unknown|resolve)/i
+    );
   });
 
   it("fails actionably for an unknown system profile", async () => {

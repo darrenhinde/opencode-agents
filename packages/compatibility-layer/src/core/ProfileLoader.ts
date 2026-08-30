@@ -29,6 +29,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
+import { ContextProfileSchema, SystemProfileSchema } from "../types.js";
 import { ReferenceResolver, type Reference, type Resolution } from "./ReferenceResolver.js";
 
 // ============================================================================
@@ -85,7 +86,27 @@ export interface ProfileDrift {
   onlyInRegistry: string[];
 }
 
+/**
+ * The result of resolving a system profile: deduplicated, locale-independently sorted ids.
+ * Every key is always present; a kind the profile does not name resolves to `[]`.
+ */
+export interface SystemProfileResolution {
+  agents: string[];
+  contexts: string[];
+  commands: string[];
+  tools: string[];
+  skills: string[];
+  plugins: string[];
+  config: string[];
+}
+
 const PROFILES_DIR = ".opencode/profiles";
+
+/** Canonical system profiles: `content/profiles/system/<id>.json`. */
+const SYSTEM_PROFILES_DIR = "content/profiles/system";
+
+/** Canonical context profiles: `content/profiles/context/<id>.json`. */
+const CONTEXT_PROFILES_DIR = "content/profiles/context";
 
 /** Locale-independent ordering. `localeCompare` is locale-dependent — never use it here. */
 function compare(a: string, b: string): number {
@@ -257,5 +278,141 @@ export class ProfileLoader {
       onlyInProfileJson: components.filter((ref) => !inRegistry.has(ref)).sort(compare),
       onlyInRegistry: registryComponents.filter((ref) => !onDisk.has(ref)).sort(compare),
     };
+  }
+
+  // --------------------------------------------------------------------------
+  // Canonical profiles (content/profiles/**)
+  // --------------------------------------------------------------------------
+
+  /**
+   * Resolve a system profile to its full component closure.
+   *
+   * Unlike the legacy profile sources above, canonical profiles have exactly ONE source
+   * (`content/profiles/**`), so there is no union to referee: a profile is sound only when
+   * EVERY component it names — directly or via a context profile — resolves against the
+   * registry. Any miss fails the whole profile, closed.
+   *
+   * Output is deduplicated and locale-independently sorted, so authored order never leaks
+   * into the emitted install plan.
+   */
+  async resolveSystemProfile(id: string): Promise<SystemProfileResolution> {
+    const system = await this.loadProfile(SYSTEM_PROFILES_DIR, id, SystemProfileSchema, "system profile");
+
+    const contextIds: string[] = [];
+    for (const contextProfileId of system.contextProfiles) {
+      const contextProfile = await this.loadProfile(
+        CONTEXT_PROFILES_DIR,
+        contextProfileId,
+        ContextProfileSchema,
+        "context profile"
+      );
+      contextIds.push(...contextProfile.contexts);
+    }
+
+    // One table drives every component kind: field on the schema -> registry ref type.
+    // `agents` covers subagents too — the canonical tree collapses that distinction.
+    const KINDS: readonly (readonly [keyof Omit<SystemProfileResolution, "contexts">, string])[] = [
+      ["agents", "agent"],
+      ["commands", "command"],
+      ["tools", "tool"],
+      ["skills", "skill"],
+      ["plugins", "plugin"],
+      ["config", "config"],
+    ];
+
+    const references: Reference[] = contextIds.map((context) => ({
+      ref: `context:${context}`,
+      source: `${CONTEXT_PROFILES_DIR} contexts`,
+    }));
+
+    for (const [field, type] of KINDS) {
+      for (const component of system[field] ?? []) {
+        references.push(
+          field === "agents"
+            ? this.resolveAgentRef(component, `${SYSTEM_PROFILES_DIR}/${id}.json agents`)
+            : {
+                ref: `${type}:${component}`,
+                source: `${SYSTEM_PROFILES_DIR}/${id}.json ${field}`,
+              }
+        );
+      }
+    }
+
+    const failures = this.resolver.resolveMany(references).filter((resolution) => !resolution.ok);
+    if (failures.length > 0) {
+      throw new ProfileLoadError(
+        `System profile "${id}" cannot be installed:\n` +
+          failures.map((f) => `  ${f.ref} does not resolve: ${f.reason}`).join("\n"),
+        `${SYSTEM_PROFILES_DIR}/${id}.json`
+      );
+    }
+
+    return {
+      agents: [...new Set(system.agents)].sort(compare),
+      contexts: [...new Set(contextIds)].sort(compare),
+      commands: [...new Set(system.commands ?? [])].sort(compare),
+      tools: [...new Set(system.tools ?? [])].sort(compare),
+      skills: [...new Set(system.skills ?? [])].sort(compare),
+      plugins: [...new Set(system.plugins ?? [])].sort(compare),
+      config: [...new Set(system.config ?? [])].sort(compare),
+    };
+  }
+
+  /**
+   * Resolve one id from the `agents` field against BOTH registry categories.
+   *
+   * The canonical tree collapses subagents into agents (`content/agents/subagents/**` is
+   * still an agent file), so an authored id may legitimately live in either legacy
+   * category until the registry emitter splits them back out. Primary form is `agent:`;
+   * `subagent:` is the fallback. Both failing reports the primary with the fallback noted.
+   */
+  private resolveAgentRef(id: string, source: string): Resolution {
+    const asAgent = this.resolver.resolve(`agent:${id}`);
+    if (asAgent.ok) return { ref: `agent:${id}`, source, ...asAgent };
+
+    const asSubagent = this.resolver.resolve(`subagent:${id}`);
+    if (asSubagent.ok) return { ref: `subagent:${id}`, source, ...asSubagent };
+
+    return {
+      ref: `agent:${id}`,
+      source,
+      ...asAgent,
+      reason: `${asAgent.reason} (also tried as "subagent:${id}": ${asSubagent.reason})`,
+    };
+  }
+
+  /** Load, validate and return one canonical profile JSON document. */
+  private loadProfile<T>(
+    dir: string,
+    id: string,
+    schema: z.ZodType<T>,
+    kind: string
+  ): Promise<T> {
+    const relativePath = `${dir}/${id}.json`;
+    const absolute = join(this.root, relativePath);
+
+    if (!existsSync(absolute)) {
+      throw new ProfileLoadError(`${kind} "${id}" not found: ${relativePath}`, relativePath);
+    }
+
+    let raw: unknown;
+    try {
+      raw = JSON.parse(readFileSync(absolute, "utf-8"));
+    } catch (cause) {
+      throw new ProfileLoadError(`Failed to parse ${kind}: ${relativePath}`, relativePath, cause);
+    }
+
+    const parsed = schema.safeParse(raw);
+    if (!parsed.success) {
+      throw new ProfileLoadError(
+        `Invalid ${kind} ${relativePath}:\n${parsed.error.errors
+          .map((e) => `  - ${e.path.join(".")}: ${e.message}`)
+          .join("\n")}`,
+        relativePath,
+        parsed.error
+      );
+    }
+
+    return Promise.resolve(parsed.data);
   }
 }

@@ -552,6 +552,66 @@ export const CanonicalAgentSchema = AgentFrontmatterSchema.extend({
 });
 
 // ============================================================================
+// Canonical Profile Schemas
+// ============================================================================
+
+/**
+ * A context profile: a named, reusable bundle of context ids, authored at
+ * `content/profiles/context/<id>.json`. System profiles compose these rather than
+ * listing contexts directly, so a team standard set is written once and shared.
+ *
+ * A context entry may be a registry wildcard (e.g. `core/*`) — a directory subscription
+ * that also installs future files added under that prefix. Wildcards are authored
+ * verbatim and expanded at emission/install time, never in the authored source.
+ *
+ * Strict: an unknown key is an error, never silently dropped.
+ */
+export const ContextProfileSchema = z
+  .object({
+    id: OacIdSchema,
+    contexts: z
+      .array(z.string().min(1))
+      .min(1, "a context profile that names no contexts installs nothing"),
+  })
+  .strict();
+
+/**
+ * A system profile: the smallest installable unit — a set of agents plus the context
+ * profiles that back them, authored at `content/profiles/system/<id>.json`.
+ *
+ * "Install `developer` and you get a working set" is a promise about the CLOSURE: every
+ * component must resolve, or the profile is broken no matter how deep the break hides.
+ * {@link import("./core/ProfileLoader.js").ProfileLoader.resolveSystemProfile} enforces that.
+ *
+ * `agents` names BOTH primary agents and subagents: the canonical tree collapses them —
+ * a subagent is just an agent file under `content/agents/subagents/**` — so the legacy
+ * `agent:`/`subagent:` distinction is an emission detail, not an authoring one.
+ *
+ * The remaining kinds are optional because most profiles name none of a given kind; a
+ * field left out parses to nothing and installs nothing. There is deliberately no
+ * `subagents` field and no wildcard expansion here: profiles name concrete ids, and the
+ * registry emitter, not the author, worries about categories.
+ *
+ * Strict: an unknown key is an error, never silently dropped.
+ */
+export const SystemProfileSchema = z
+  .object({
+    id: OacIdSchema,
+    agents: z
+      .array(z.string().min(1))
+      .min(1, "a system profile that names no agents installs nothing"),
+    contextProfiles: z
+      .array(z.string().min(1))
+      .min(1, "a system profile that names no context profiles installs nothing"),
+    commands: z.array(z.string().min(1)).optional(),
+    tools: z.array(z.string().min(1)).optional(),
+    skills: z.array(z.string().min(1)).optional(),
+    plugins: z.array(z.string().min(1)).optional(),
+    config: z.array(z.string().min(1)).optional(),
+  })
+  .strict();
+
+// ============================================================================
 // Agent Metadata Schema
 // ============================================================================
 
@@ -654,6 +714,8 @@ export type OacBlock = z.infer<typeof OacBlockSchema>;
 /** Authored `oac:` block, before defaults are applied. */
 export type OacBlockInput = z.input<typeof OacBlockSchema>;
 export type CanonicalAgent = z.infer<typeof CanonicalAgentSchema>;
+export type ContextProfile = z.infer<typeof ContextProfileSchema>;
+export type SystemProfile = z.infer<typeof SystemProfileSchema>;
 export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
 export type OpenAgent = z.infer<typeof OpenAgentSchema>;
 export type ToolConfig = z.infer<typeof ToolConfigSchema>;
