@@ -1,0 +1,18 @@
+{
+  "id": "engineering",
+  "contexts": [
+    "animation-advanced",
+    "animation-basics",
+    "animation-components",
+    "api-design",
+    "clean-code",
+    "core/*",
+    "design-systems",
+    "development/*",
+    "openagents-repo/*",
+    "project-intelligence/*",
+    "react-patterns",
+    "ui-styling-standards",
+    "ui/*"
+  ]
+}
