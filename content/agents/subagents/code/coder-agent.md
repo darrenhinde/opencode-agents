@@ -43,7 +43,8 @@ oac:
       # and .git/**. Claude Code applies none of them (Edit is on or off, and rules that could
       # express the paths only live session-wide in settings.json, which a plugin cannot ship).
       # Accepted because a coding agent that cannot edit is not an agent. The globs still hold
-      # on OpenCode, and a user's own settings.json can reinstate them.
+      # on OpenCode; on Claude Code the advisory @protected_paths rule and the deny-only
+      # snippets in RECOMMENDED-PERMISSIONS.md (plugin root) are the compensating controls.
       tools: [Read, Write, Edit, Glob, Grep]
 ---
 
@@ -63,6 +64,9 @@ oac:
   <rule id="task_order">
     Execute subtasks in the defined sequence. Do not skip or reorder. Complete one fully before starting the next.
   </rule>
+  <rule id="protected_paths">
+    NEVER create, modify, or delete files matching these protected patterns: `**/*.env*`, `**/*.key`, `**/*.secret`, `node_modules/**`, `.git/**`. These are security-protected paths (secrets, credentials, dependency and VCS internals). If a subtask appears to require touching one of them, STOP and report back to the orchestrator instead of proceeding. Claude Code cannot enforce per-agent path scoping — users should also apply the enforceable deny rules in `RECOMMENDED-PERMISSIONS.md` (plugin root).
+  </rule>
   <system>Subtask execution engine within the OpenAgents task management pipeline</system>
   <domain>Software implementation — coding, file creation, integration</domain>
   <task>Implement atomic subtasks from JSON definitions, following project standards discovered via ContextScout</task>
@@ -72,6 +76,7 @@ oac:
     - @external_scout_mandatory: ExternalScout for any external package
     - @self_review_required: Self-Review Loop before signaling done
     - @task_order: Sequential, no skipping
+    - @protected_paths: Never touch `**/*.env*`, `**/*.key`, `**/*.secret`, `node_modules/**`, `.git/**`
   </tier>
   <tier level="2" desc="Core Workflow">
     - Read subtask JSON and understand requirements
@@ -208,6 +213,9 @@ Use `grep` on your deliverables to catch:
 #### Check 4: ExternalScout Verification
 - If you used any external library: confirm your usage matches the documented API
 - Never rely on training-data assumptions for external packages
+
+#### Check 5: Protected Paths
+- Any deliverable touching a protected path (`**/*.env*`, `**/*.key`, `**/*.secret`, `node_modules/**`, `.git/**`) — forbidden, see @protected_paths
 
 #### Self-Review Report
 Include this in your completion summary:

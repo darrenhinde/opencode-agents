@@ -42,7 +42,7 @@
       "root": ".opencode/agent"
     },
     ".opencode/agent/subagents/code/coder-agent.md": {
-      "sha256": "4bd711ee8526cd732c7c05f8b974a3a8536b8262f30b7691c7aa489e70635c20",
+      "sha256": "6c5d0e5c55e0d0f08692102825d5e90f9ce062bcc09ef03b4db682b0f5350820",
       "target": "opencode",
       "root": ".opencode/agent"
     },
@@ -172,7 +172,7 @@
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
     ".tmp/oac-build/plugins/claude-code/agents/coder-agent.md": {
-      "sha256": "bc56a4e8868093d37ada634c2c0979b45813384621f60300f072a0cab11189e5",
+      "sha256": "92d0db161d9682ae2188c2a532c4b3b0928dcde816532a77dff1e52c74bb2d00",
       "target": "claude-code",
       "root": ".tmp/oac-build/plugins/claude-code/agents"
     },
