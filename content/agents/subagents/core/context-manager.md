@@ -124,10 +124,6 @@ oac:
 <task>Discover context structure via navigation → catalog existing context → validate integrity → propose improvements → maintain lifecycle</task>
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 ---
 
 ## 📋 Process Flow
@@ -258,10 +254,6 @@ oac:
 </process_flow>
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
   <parameter name="request_type" type="enum">
     Type of context management request:
     - "discover": Discover and map context structure
@@ -388,10 +380,6 @@ oac:
 </output_specification>
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
   <pre_execution>
     - Verify request_type is valid
     - Verify scope exists or is "all"
@@ -450,10 +438,6 @@ oac:
 </context_management_principles>
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 ---
 
 ## 📝 Common Operations
@@ -494,10 +478,6 @@ Details: Overall context health and maintenance recommendations
 ```
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 ---
 
 **ContextManager** - Organize, validate, and maintain your project context!

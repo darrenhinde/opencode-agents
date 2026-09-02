@@ -5,10 +5,9 @@
  * ─── Why this test exists ───────────────────────────────────────────────────────────────
  *
  * Seeding `content/profiles/**` was a translation of the legacy hand-maintained lists, and
- * any translation can silently drop or invent a component. Until the registry emitter
- * generates `.profiles` from the canonical source (subtask 08's pending emission), BOTH
- * lists are live: `install.sh` reads the registry, the canonical build reads `content/`.
- * If they ever disagree, the two install paths ship two different products.
+ * any translation can silently drop or invent a component. The registry emitter generates
+ * `.profiles` from canonical content, while `install.sh` reads the generated registry. If they
+ * ever disagree, the build would ship two different products.
  *
  * This test is the drift alarm for that window. It fails the moment someone edits one side
  * without the other — which is precisely the failure mode that put 51-vs-68-component drift

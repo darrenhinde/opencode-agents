@@ -183,44 +183,6 @@ function extractSections(markdown: string): AgentSections {
   return sections;
 }
 
-// ============================================================================
-// METADATA LOADER (from agent-metadata.json)
-// ============================================================================
-
-interface AgentMetadataFile {
-  agents?: Record<string, Partial<OpenAgent["metadata"]>>;
-}
-
-let cachedMetadata: Record<string, Partial<OpenAgent["metadata"]>> = {};
-let metadataLoaded = false;
-
-/**
- * Load agent metadata from .opencode/config/agent-metadata.json
- * @param projectRoot - Optional project root path
- * @returns Metadata object keyed by agent ID
- */
-function loadMetadataFile(projectRoot?: string): Record<string, Partial<OpenAgent["metadata"]>> {
-  if (metadataLoaded) {
-    return cachedMetadata;
-  }
-
-  const metadataPath = projectRoot
-    ? join(projectRoot, ".opencode/config/agent-metadata.json")
-    : ".opencode/config/agent-metadata.json";
-
-  try {
-    const content = readFileSync(metadataPath, "utf-8");
-    const parsed = JSON.parse(content) as AgentMetadataFile;
-    cachedMetadata = parsed.agents || {};
-  } catch (error) {
-    // Metadata file is optional
-    cachedMetadata = {};
-  }
-
-  metadataLoaded = true;
-  return cachedMetadata;
-}
-
 /**
  * Infer agent ID from file path
  * @param filePath - Path to agent file
@@ -240,11 +202,11 @@ function inferAgentId(filePath: string): string {
  * Loads and parses OpenAgent files from the filesystem
  */
 export class AgentLoader {
-  private projectRoot?: string;
-
-  constructor(projectRoot?: string) {
-    this.projectRoot = projectRoot;
-  }
+  /**
+   * @deprecated The project-root option was used only for retired sidecar enrichment and now
+   * has no effect. Omit it; the constructor remains temporarily compatible with callers.
+   */
+  constructor(_projectRoot?: string) {}
 
   /**
    * Load and parse a single agent file
@@ -281,12 +243,9 @@ export class AgentLoader {
       throw error;
     }
 
-    // Load extended metadata from agent-metadata.json
     const agentId = inferAgentId(filePath);
-    const metadataFile = loadMetadataFile(this.projectRoot);
-    const extendedMetadata = metadataFile[agentId] || {};
 
-    // Merge metadata with defaults
+    // Legacy metadata is derived only from the loaded file and stable defaults.
     const metadata: OpenAgent["metadata"] = {
       id: agentId,
       name: validatedFrontmatter.name,
@@ -294,7 +253,6 @@ export class AgentLoader {
       author: "opencode",
       tags: [],
       dependencies: [],
-      ...extendedMetadata,
     };
 
     // Extract sections from markdown body
@@ -339,7 +297,7 @@ export class AgentLoader {
           await scanDirectory(fullPath);
         } else if (entry.isFile() && entry.name.endsWith(".md")) {
           try {
-            const agent = await new AgentLoader(this.projectRoot).loadFromFile(fullPath);
+            const agent = await new AgentLoader().loadFromFile(fullPath);
             agents.push(agent);
           } catch (error) {
             if (error instanceof AgentLoadError) {
@@ -447,13 +405,12 @@ function listMarkdownFiles(dir: string): string[] {
 /**
  * Loads canonical agent files (OpenCode frontmatter + the `oac:` block) from a content tree.
  *
- * Separate from {@link AgentLoader} on purpose: `AgentLoader` speaks the legacy shape, where
- * identity lives in the `.opencode/config/agent-metadata.json` sidecar and is inferred from
- * the FILENAME. Canonical files carry their own identity in `oac.id`, and the two do not
- * always agree — `content/agents/subagents/code/test-engineer.md` declares `id: tester`, which
- * is what `registry.json`, the profiles and the context docs all reference. Resolving by
- * filename here would silently mint a `test-engineer` that nothing refers to, so this class
- * never infers identity from a path.
+ * Separate from {@link AgentLoader} on purpose: `AgentLoader` preserves the legacy shape and
+ * derives its identity from the filename. Canonical files carry their own identity in `oac.id`,
+ * and the two do not always agree — `content/agents/subagents/code/test-engineer.md` declares
+ * `id: tester`, which is what `registry.json`, the profiles and the context docs all reference.
+ * Resolving by filename here would silently mint a `test-engineer` that nothing refers to, so
+ * this class never infers identity from a path.
  */
 export class CanonicalAgentLoader {
   private readonly contentRoot: string;

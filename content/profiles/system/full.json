@@ -45,7 +45,6 @@
     "notify"
   ],
   "config": [
-    "agent-metadata",
     "env-example",
     "readme"
   ]

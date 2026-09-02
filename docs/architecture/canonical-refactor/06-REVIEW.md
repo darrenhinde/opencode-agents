@@ -1,5 +1,7 @@
 # 06 — Adversarial Cold Review
 
+> **Current state (2026-09-02):** This review records the prior architecture. The active metadata workflow is canonical `content/agents/**` `oac:` blocks emitted by RegistryEmitter; sidecar metadata and sidecar merging are superseded. `eval-runner.md` remains an intentionally registry-carried, non-canonical evaluation harness—not a sidecar replacement.
+
 > **Reviewer:** independent; no involvement in the conversation that produced `00`–`05`.
 > **Method:** every load-bearing claim re-derived from the working tree. Where I could not
 > verify, I say "unverifiable" rather than guess.

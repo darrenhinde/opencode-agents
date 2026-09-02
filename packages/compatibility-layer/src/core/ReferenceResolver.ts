@@ -27,8 +27,8 @@
  *
  * The canonical `content/agents/**` tree is NOT part of that corpus — it is not yet wired
  * into any install path. Scan it explicitly with {@link ReferenceResolver.resolveMany} if you
- * want its verdict; be aware it surfaces `subagent:batch-executor`, which exists on disk and
- * in `.opencode/config/agent-metadata.json` but is absent from `registry.json`.
+ * want its verdict; be aware it surfaces `subagent:batch-executor`, which exists on disk but
+ * is absent from `registry.json`.
  */
 
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";

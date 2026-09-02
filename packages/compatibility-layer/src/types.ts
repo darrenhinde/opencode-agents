@@ -330,8 +330,7 @@ export const AgentFrontmatterSchema = z.object({
 // ============================================================================
 
 /**
- * Stable machine identity. Kebab-case slug — verified against all 28 entries in
- * `.opencode/config/agent-metadata.json`.
+ * Stable machine identity. Kebab-case slug, verified against the canonical agent corpus.
  */
 export const OacIdSchema = z
   .string()
@@ -358,9 +357,8 @@ const CATEGORY_SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
  * Organizational category. Mirrors the agent's directory under `.opencode/agent/`:
  * a closed root vocabulary, optionally followed by one `/`-joined sub-segment.
  *
- * ⚠️ Deliberately a superset of {@link AgentCategorySchema}, which cannot express the
- * corpus: 21 of the 28 entries in `.opencode/config/agent-metadata.json` use values that
- * enum rejects (`subagents/core`, `subagents/code`, …, `testing`). The ratified
+ * ⚠️ Deliberately a superset of {@link AgentCategorySchema}, which cannot express categories
+ * the corpus uses (`subagents/core`, `subagents/code`, …, `testing`). The ratified
  * "the schema must accept its own corpus" rule (02-canonical-schema.md v3) wins over the
  * brief's "reuses AgentCategorySchema". The root stays closed so typos are still caught.
  */
@@ -395,7 +393,7 @@ export const BuildTargetSchema = z.enum([
  * Which platforms this component is emitted to. At least one target is required;
  * `targets: []` is rejected because a component that emits nowhere is dead weight the
  * build would silently skip. Defaults to `["opencode"]` — true of all 34 agents on disk —
- * so an `agent-metadata.json` entry validates as an `oac:` block verbatim.
+ * so a minimal authored `oac:` block needs no boilerplate for the common target.
  */
 export const BuildTargetsSchema = z
   .array(BuildTargetSchema)
@@ -407,8 +405,7 @@ export const BuildTargetsSchema = z
  * - the flat typed string the corpus uses today (`"subagent:tester"`, `"context:standards-code"`)
  * - the structured {@link DependencyReferenceSchema} form
  *
- * Both normalize to `{ type, id }`, so `.opencode/config/agent-metadata.json` round-trips
- * byte-for-byte with zero migration.
+ * Both normalize to `{ type, id }`, giving canonical consumers one stable representation.
  */
 export const DependencyRefInputSchema = z.union([
   z.string().transform((value, ctx): z.infer<typeof DependencyReferenceSchema> => {
@@ -491,9 +488,8 @@ export const TargetOverridesSchema = z
 
 /**
  * The canonical `oac:` frontmatter block — everything a component needs that OpenCode's
- * frontmatter schema rejects as an unknown field. This is precisely the content of
- * `.opencode/config/agent-metadata.json`; carrying it here is what lets that sidecar be
- * dissolved. `oac build` strips this block when emitting OpenCode agent files.
+ * frontmatter schema rejects as an unknown field. `oac build` strips this block when emitting
+ * OpenCode agent files.
  *
  * Strict: an unknown key is an error, never silently dropped.
  */
@@ -612,25 +608,6 @@ export const SystemProfileSchema = z
   .strict();
 
 // ============================================================================
-// Agent Metadata Schema
-// ============================================================================
-
-/**
- * Agent metadata contains identification and organizational information.
- * Stored separately from frontmatter in agent-metadata.json.
- */
-export const AgentMetadataSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  category: AgentCategorySchema,
-  type: AgentTypeSchema,
-  version: z.string(),
-  author: z.string(),
-  tags: z.array(z.string()).optional().default([]),
-  dependencies: z.array(DependencyReferenceSchema).optional().default([]),
-});
-
-// ============================================================================
 // OpenAgent Schema
 // ============================================================================
 
@@ -638,8 +615,7 @@ export const AgentMetadataSchema = z.object({
  * Complete OpenAgent schema combining frontmatter, metadata, system prompt,
  * contexts, and optional sections.
  * 
- * This represents the full agent definition after parsing and merging all
- * configuration sources.
+ * This represents the full agent definition after parsing an agent file.
  */
 export const OpenAgentSchema = z.object({
   frontmatter: AgentFrontmatterSchema,
@@ -716,7 +692,6 @@ export type OacBlockInput = z.input<typeof OacBlockSchema>;
 export type CanonicalAgent = z.infer<typeof CanonicalAgentSchema>;
 export type ContextProfile = z.infer<typeof ContextProfileSchema>;
 export type SystemProfile = z.infer<typeof SystemProfileSchema>;
-export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
 export type OpenAgent = z.infer<typeof OpenAgentSchema>;
 export type ToolConfig = z.infer<typeof ToolConfigSchema>;
 

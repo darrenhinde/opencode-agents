@@ -27,7 +27,7 @@
  * All Zod schemas and TypeScript types for OpenAgents Control.
  * 
  * Includes:
- * - OpenAgent, AgentFrontmatter, AgentMetadata
+ * - OpenAgent, AgentFrontmatter
  * - ToolAccess, PermissionRule, GranularPermission
  * - ContextReference, DependencyReference
  * - ModelIdentifier, TemperatureSchema
@@ -105,11 +105,11 @@ export type { CanonicalAgentFile } from "./core/AgentLoader.js";
 // ============================================================================
 
 /**
- * Generates `registry.json` from the canonical `content/agents/**` tree, replacing the
+ * Generates `registry.json` from canonical component and profile trees, replacing the
  * hand-editing that `scripts/registry/auto-detect-components.sh` only ever appended to.
  *
- * Phase 1 owns `components.agents` and `components.subagents`; contexts, commands, tools,
- * plugins, skills, config and profiles are carried through verbatim from the committed file.
+ * It owns `components.agents`, `components.subagents`, and profile component lists; contexts,
+ * commands, tools, plugins, skills, config, and profile metadata remain carried from the base.
  * Output is byte-stable and a fixed point over itself, so `oac build && git diff --exit-code`
  * is a real drift gate.
  *

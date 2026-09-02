@@ -1,5 +1,7 @@
 # 04 — CLI, Build Pipeline & Distribution
 
+> **Current state (2026-09-02):** This build/distribution analysis is historical. The active metadata workflow is canonical `content/agents/**` `oac:` blocks emitted by RegistryEmitter; sidecar metadata and sidecar merging are superseded.
+
 > **Owner:** Agent D
 > **Status:** Specification (no implementation)
 > **Scope:** The `oac` npm CLI, the neutral-source → per-tool **build pipeline**, full

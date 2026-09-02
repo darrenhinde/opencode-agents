@@ -60,8 +60,8 @@ const NONDETERMINISM = [
  * Verified on disk 2026-07-15. `batch-executor` is the load-bearing one: both `openagent` and
  * `opencoder` declare `subagent:batch-executor`, so the registry advertised a dependency on a
  * component it did not contain. The other six were in neither the registry nor
- * `.opencode/config/agent-metadata.json` — they were added to `.opencode/agent/` and nothing
- * ever noticed. `auto-detect-components.sh --dry-run` reported all 7 as "New Components".
+  * the canonical corpus — they were added to `.opencode/agent/` and nothing ever noticed.
+  * `auto-detect-components.sh --dry-run` reported all 7 as "New Components".
  *
  * ─── Updated by subtask 10, deliberately ────────────────────────────────────────────────
  *
@@ -163,6 +163,25 @@ describe("serializeRegistry", () => {
 // ============================================================================
 
 describe("determinism", () => {
+  it("emits canonical agent entries without an agent-metadata sidecar", async () => {
+    // The scratch root has only registry.json: canonical agent metadata is loaded from content.
+    const root = scratchRoot(COMMITTED_JSON);
+
+    try {
+      const document = await new RegistryEmitter(root, {
+        contentRoot: repoPath("content/agents"),
+      }).emit();
+
+      expect(byId(document, "agents").get("openagent")).toMatchObject({
+        id: "openagent",
+        name: "OpenAgent",
+        type: "agent",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("emits byte-identical output across two runs", async () => {
     expect(await emitRegistry(repoPath())).toBe(await emitRegistry(repoPath()));
   });
@@ -212,14 +231,16 @@ describe("determinism", () => {
 });
 
 // ============================================================================
-// CARRY-THROUGH — phase 1 owns agents only
+// CARRY-THROUGH — canonical trees own agents and profile components
 // ============================================================================
 
 describe("carry-through of everything the canonical tree does not own", () => {
-  it("leaves non-agent component categories byte-identical", async () => {
+  it("leaves non-agent component categories byte-identical except retired config", async () => {
     const document = await new RegistryEmitter(repoPath()).emit();
     const carried = Object.keys(COMMITTED.components).filter(
-      (category) => !GENERATED_CATEGORIES.includes(category as (typeof GENERATED_CATEGORIES)[number])
+      (category) =>
+        category !== "config" &&
+        !GENERATED_CATEGORIES.includes(category as (typeof GENERATED_CATEGORIES)[number])
     );
 
     expect(carried).toContain("contexts");
@@ -230,11 +251,20 @@ describe("carry-through of everything the canonical tree does not own", () => {
     }
   });
 
-  it("leaves every non-components top-level key untouched, in order", async () => {
+  it("does not carry the retired agent-metadata config entry", async () => {
+    const document = await new RegistryEmitter(repoPath()).emit();
+
+    expect(byId(document, "config").has("agent-metadata")).toBe(false);
+    expect(entries(document, "config")).toEqual(
+      entries(COMMITTED, "config").filter((entry) => entry.id !== "agent-metadata")
+    );
+  });
+
+  it("leaves every non-components, non-profiles top-level key untouched, in order", async () => {
     const document = await new RegistryEmitter(repoPath()).emit();
 
     expect(Object.keys(document)).toEqual(Object.keys(COMMITTED));
-    for (const key of Object.keys(COMMITTED).filter((k) => k !== "components")) {
+    for (const key of Object.keys(COMMITTED).filter((k) => k !== "components" && k !== "profiles")) {
       expect(document[key], `top-level "${key}" was modified`).toEqual(COMMITTED[key]);
     }
   });
@@ -259,21 +289,31 @@ describe("carry-through of everything the canonical tree does not own", () => {
     ]);
   });
 
-  it("keeps registry profiles verbatim and never consults profile.json", async () => {
-    // `.profiles` is what install.sh reads (get_profile_components, install.sh:292).
-    // `.opencode/profiles/<name>/profile.json` has drifted from it on all 5 profiles and is
-    // read only by check-dependencies.ts, which no install path invokes. Reconciling them is
-    // a content decision; generating from the wrong one silently changes what users install.
+  it("preserves registry-owned profile metadata while regenerating components", async () => {
     const document = await new RegistryEmitter(repoPath()).emit();
+    const profiles = document.profiles as Record<string, RegistryEntry>;
+    const committedProfiles = COMMITTED.profiles as Record<string, RegistryEntry>;
 
-    expect(document.profiles).toEqual(COMMITTED.profiles);
+    for (const id of Object.keys(committedProfiles)) {
+      const { components: expectedComponents, ...expectedMetadata } = committedProfiles[id];
+      const { components: actualComponents, ...actualMetadata } = profiles[id];
+      expect(actualMetadata, `${id} metadata changed`).toEqual(expectedMetadata);
+      expect(actualComponents).toBeDefined();
+    }
+  });
+
+  it("does not emit retired config references for canonical profiles", async () => {
+    const document = await new RegistryEmitter(repoPath()).emit();
+    const profiles = document.profiles as Record<string, { components: string[] }>;
+
+    for (const id of ["essential", "developer", "business", "advanced", "full"]) {
+      expect(profiles[id]?.components).not.toContain("config:agent-metadata");
+    }
   });
 
   it("leaves the advanced-profile wildcard exactly as authored", async () => {
-    // This ref spent 2026-07-15..17 authored as the dead `context:context-system/*`, and the
-    // emitter carried THAT verbatim too — the repair to `core/context-system/*` was a content
-    // edit to the committed registry.json, not an emitter rewrite. Profile lists pass through
-    // untouched either way; that is the contract this test pins.
+    // Wildcards are directory subscriptions, so canonical profile emission preserves them
+    // literally rather than expanding today's matching contexts.
     const document = await new RegistryEmitter(repoPath()).emit();
     const advanced = document.profiles as Record<string, { components: string[] }>;
 
@@ -281,23 +321,32 @@ describe("carry-through of everything the canonical tree does not own", () => {
     expect(advanced.advanced?.components).not.toContain("context:context-system/*");
   });
 
-  it("carries agents that have no canonical counterpart", async () => {
+  it("carries eval-runner even though it is deliberately absent from canonical content", async () => {
     // `agent:eval-runner` ships in `.opencode/agent/eval-runner.md` and is in the committed
-    // registry, but `content/agents/` does not carry it yet. Generating agents purely from the
-    // canonical tree would delete it and uninstall the eval harness.
-    const document = await new RegistryEmitter(repoPath()).emit();
+    // registry, but retirement deliberately keeps it out of `content/agents/`. Generating
+    // agents purely from the canonical tree would delete it and uninstall the eval harness.
 
-    expect(byId(document, "agents").get("eval-runner")).toEqual(
-      byId(COMMITTED, "agents").get("eval-runner")
-    );
+    // Arrange
+    const document = await new RegistryEmitter(repoPath()).emit();
+    const canonical = await new CanonicalAgentLoader(repoPath("content/agents")).loadFromDirectory();
+
+    // Act
+    const canonicalIds = new Set(canonical.map((agent) => agent.oac.id));
+    const emitted = byId(document, "agents").get("eval-runner");
+
+    // Assert
+    expect(canonicalIds.has("eval-runner")).toBe(false);
+
+    expect(emitted).toEqual(byId(COMMITTED, "agents").get("eval-runner"));
   });
 
-  it("never drops an id the committed registry publishes", async () => {
+  it("never drops a non-retired id the committed registry publishes", async () => {
     const document = await new RegistryEmitter(repoPath()).emit();
 
     for (const category of Object.keys(COMMITTED.components)) {
       const generated = byId(document, category);
       const dropped = entries(COMMITTED, category)
+        .filter((entry) => category !== "config" || entry.id !== "agent-metadata")
         .map((entry) => entry.id)
         .filter((id) => !generated.has(id));
 
@@ -434,25 +483,26 @@ describe("withdrawal of entries the build itself generated", () => {
 // ============================================================================
 
 describe("generation from the canonical tree", () => {
-  it("derives every field of an entry from the canonical file", async () => {
+  it("derives each canonical entry's identity, tags, category, version, and dependencies from content", async () => {
+    // Arrange
     const document = await new RegistryEmitter(repoPath()).emit();
     const agents = await new CanonicalAgentLoader(repoPath("content/agents")).loadFromDirectory();
-    const tester = agents.find((agent) => agent.oac.id === "tester");
+    const emitted = new Map(
+      [...entries(document, "agents"), ...entries(document, "subagents")].map((entry) => [
+        entry.id,
+        entry,
+      ])
+    );
 
-    expect(tester).toBeDefined();
-    expect(byId(document, "subagents").get("tester")).toEqual({
-      id: "tester",
-      name: "TestEngineer",
-      type: "subagent",
-      // Identity is oac.id, never the filename: the file is `test-engineer.md` but the
-      // registry, the profiles and every context doc reference `tester`.
-      path: ".opencode/agent/subagents/code/test-engineer.md",
-      version: "1.0.0",
-      description: tester!.frontmatter.description,
-      tags: ["testing", "tdd", "quality"],
-      dependencies: ["context:standards-tests"],
-      category: "subagents/code",
-    });
+    // Act
+    const mismatches = agents
+      .map((agent) => ({ id: agent.oac.id, expected: entryForAgent(agent, ".opencode/agent") }))
+      .filter(({ id, expected }) => JSON.stringify(emitted.get(id)) !== JSON.stringify(expected));
+
+    // Assert
+    expect(mismatches, "canonical registry entries must be wholly derived from their content file").toEqual(
+      []
+    );
   });
 
   it("emits entry keys in the committed field order", async () => {

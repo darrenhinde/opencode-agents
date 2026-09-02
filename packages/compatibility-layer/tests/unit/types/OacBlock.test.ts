@@ -1,47 +1,24 @@
 /**
  * Unit tests for the canonical `oac:` frontmatter block.
  *
- * The block carries what `.opencode/config/agent-metadata.json` holds today. The sidecar
- * exists only because OpenCode rejects unknown frontmatter keys; `oac build` strips the
- * block on emit, which is what lets the sidecar be dissolved.
+ * The block is the canonical metadata carried by every authored agent. OpenCode rejects
+ * unknown frontmatter keys, so `oac build` strips this authoring-only block on emit.
  *
  * The load-bearing test here is `accepts every entry in the real corpus` — a schema that
  * does not accept its own corpus is not a schema, it is a wish.
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
-  OacBlockFieldsSchema,
   OacBlockSchema,
   CanonicalAgentSchema,
   OacCategorySchema,
   BuildTargetsSchema,
 } from "../../../src/types.js";
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = join(HERE, "../../../../..");
-const METADATA_PATH = join(REPO_ROOT, ".opencode/config/agent-metadata.json");
-
-interface MetadataEntry {
-  id: string;
-  name: string;
-  category: string;
-  type: string;
-  version: string;
-  author: string;
-  tags?: string[];
-  dependencies?: string[];
-}
-
-function corpus(): Record<string, MetadataEntry> {
-  const raw = JSON.parse(readFileSync(METADATA_PATH, "utf-8")) as {
-    agents: Record<string, MetadataEntry>;
-  };
-  return raw.agents;
-}
+import { AgentLoader, CanonicalAgentLoader } from "../../../src/core/AgentLoader.js";
 
 const VALID_BLOCK = {
   id: "openagent",
@@ -54,6 +31,54 @@ const VALID_BLOCK = {
   dependencies: ["subagent:contextscout", "context:standards-code"],
   targets: ["opencode", "claude-code"],
 };
+
+/**
+ * A customer-style tree whose retired sidecar deliberately contradicts the authored agent.
+ * The fixture, rather than a filesystem spy, makes sidecar use observable in loaded output.
+ */
+function createConflictingSidecarFixture(): {
+  root: string;
+  agentPath: string;
+  contentRoot: string;
+} {
+  const root = mkdtempSync(join(tmpdir(), "oac-retired-sidecar-"));
+  const agentPath = join(root, "content/agents/fixture-agent.md");
+  const contentRoot = join(root, "content/agents");
+
+  mkdirSync(dirname(agentPath), { recursive: true });
+  writeFileSync(
+    agentPath,
+    `---
+name: Canonical Fixture Agent
+description: Canonical fixture metadata wins
+mode: subagent
+oac:
+  id: canonical-fixture-agent
+  name: Canonical Fixture Agent
+  category: core
+  type: agent
+---
+Fixture body.\n`,
+    "utf-8"
+  );
+  mkdirSync(join(root, ".opencode/config"), { recursive: true });
+  writeFileSync(
+    join(root, ".opencode/config/agent-metadata.json"),
+    `${JSON.stringify({
+      agents: {
+        "fixture-agent": {
+          id: "sidecar-fixture-agent",
+          name: "Sidecar Override",
+          category: "meta",
+          type: "subagent",
+        },
+      },
+    })}\n`,
+    "utf-8"
+  );
+
+  return { root, agentPath, contentRoot };
+}
 
 describe("OacBlockSchema", () => {
   describe("valid blocks", () => {
@@ -241,34 +266,43 @@ describe("OacBlockSchema", () => {
     });
   });
 
-  describe("the real corpus", () => {
-    it("accepts every entry in .opencode/config/agent-metadata.json", () => {
-      const entries = Object.entries(corpus());
-      expect(entries.length).toBeGreaterThan(0);
+  describe("retired sidecar isolation", () => {
+    it("loads canonical identity from the authored oac block when a conflicting sidecar exists", async () => {
+      // Arrange
+      const fixture = createConflictingSidecarFixture();
+      const loader = new CanonicalAgentLoader(fixture.contentRoot);
 
-      const rejected = entries
-        .map(([key, entry]) => ({ key, result: OacBlockSchema.safeParse(entry) }))
-        .filter(({ result }) => !result.success)
-        .map(({ key, result }) => `${key}: ${JSON.stringify(result.error?.issues)}`);
+      try {
+        // Act
+        const agents = await loader.loadFromDirectory();
 
-      expect(rejected).toEqual([]);
+        // Assert
+        expect(agents).toHaveLength(1);
+        expect(agents[0]?.oac).toMatchObject({
+          id: "canonical-fixture-agent",
+          name: "Canonical Fixture Agent",
+        });
+      } finally {
+        rmSync(fixture.root, { recursive: true, force: true });
+      }
     });
 
-    it("covers every field the sidecar uses, so nothing is lost dissolving it", () => {
-      const used = new Set(Object.values(corpus()).flatMap((entry) => Object.keys(entry)));
-      // OacBlockSchema carries cross-field refinements, which makes it a ZodEffects with no
-      // `.shape`. The field list lives on the object it wraps.
-      const known = new Set(Object.keys(OacBlockFieldsSchema.shape));
+    it("does not merge retired sidecar metadata into the legacy runtime loader", async () => {
+      // Arrange
+      const fixture = createConflictingSidecarFixture();
+      const loader = new AgentLoader(fixture.root);
 
-      expect([...used].filter((field) => !known.has(field))).toEqual([]);
-    });
+      try {
+        // Act
+        const agent = await loader.loadFromFile(fixture.agentPath);
 
-    it("round-trips sidecar dependency strings back to their authored form", () => {
-      for (const entry of Object.values(corpus())) {
-        const parsed = OacBlockSchema.parse(entry);
-        const reemitted = parsed.dependencies.map((dep) => `${dep.type}:${dep.id}`);
-
-        expect(reemitted).toEqual(entry.dependencies ?? []);
+        // Assert — intentionally RED until subtask 03 retires the runtime sidecar merge.
+        expect(agent.metadata).toMatchObject({
+          id: "fixture-agent",
+          name: "Canonical Fixture Agent",
+        });
+      } finally {
+        rmSync(fixture.root, { recursive: true, force: true });
       }
     });
   });

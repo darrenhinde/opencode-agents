@@ -17,36 +17,28 @@
  * This emitter inverts that: the canonical file is the input, the registry entry is OUTPUT.
  * Adding an agent becomes "add one file under `content/agents/`, run the build".
  *
- * ─── Phase 1 scope: agents only ─────────────────────────────────────────────────────────
+ * ─── Phase 2 scope: agents and profiles ─────────────────────────────────────────────────
  *
  * `install.sh` reads `registry.json` and is the only shipping install path, so the blast
- * radius of a mistake here is "nobody can install". Phase 1 therefore regenerates ONLY the
- * `components.agents` and `components.subagents` arrays — the two the canonical tree actually
- * owns — and carries every other part of the document (contexts, commands, tools, plugins,
- * skills, config, profiles, categories, metadata) through verbatim from the committed file.
- * Later subtasks canonicalise the rest.
+ * radius of a mistake here is "nobody can install". The emitter regenerates the
+ * `components.agents` and `components.subagents` arrays and profile component lists from the
+ * canonical trees that own them. It carries all other component categories, profile metadata,
+ * categories, and document metadata through from the committed file. Later subtasks
+ * canonicalise the rest.
  *
  * ─── Which profile list is authoritative ────────────────────────────────────────────────
  *
- * Profiles are authored twice — `.opencode/profiles/<name>/profile.json` and
- * `registry.json` `.profiles.<name>.components` — and they have drifted on all 5 profiles
- * (`advanced`: 51 vs 68), with neither a superset of the other. This emitter treats
- * `registry.json` as authoritative and never consults `profile.json`, because
- * `registry.json` is the list `install.sh` actually reads (`get_profile_components`,
- * install.sh:292) and `profile.json` is read only by `scripts/registry/check-dependencies.ts`,
- * a script no install path invokes. Generating from `profile.json` would silently change what
- * five profiles install. See {@link ProfileLoader.drift} for the disagreement itself; the
- * reconciliation is a content decision, not an emitter one.
+ * Canonical system profiles under `content/profiles/system/` now own install component lists.
+ * Their resolution includes context-profile subscriptions and validates every ref against the
+ * registry. The legacy registry profile retains ownership of presentation metadata such as
+ * `name`, `description`, `badge`, and `additionalPaths`, which canonical profile schemas do
+ * not model yet.
  *
  * ─── Dead refs are repaired in the SOURCE, never here ───────────────────────────────────
  *
- * "Carry non-agent data through verbatim" is the phase-1 contract: this emitter never edits
- * profile lists, even broken ones. The live example was `.profiles.advanced.components`
- * carrying `context:context-system/*`, which expanded to zero matches (the real subtree is
- * `.opencode/context/core/context-system/`). It was repaired 2026-07-17 as a content edit to
- * the committed `registry.json` — the authoritative profile source — not by rewriting it
- * here. Dead refs are reported by {@link ReferenceResolver.resolve} and gated at zero in
- * `tests/unit/build/reference-resolution.test.ts`.
+ * Canonical profile resolution fails closed for dead refs before anything is emitted. Context
+ * wildcards remain literal directory subscriptions (`context:core/*`), rather than expanding
+ * to today's matching files, so profiles also subscribe to future files in that directory.
  *
  * ─── Withdrawing an entry, and why it is manifest-gated ─────────────────────────────────
  *
@@ -78,7 +70,8 @@
  * --exit-code`, so any per-run variation turns that gate into a coin flip (07 Stage 3 /
  * 04 §2.1). Three things guarantee byte-stability here:
  *
- *   - Agent order comes from `oac.id`, not from `readdir`.
+ *   - Agent and profile order comes from canonical ids, not from `readdir`; component refs use
+ *     the same ASCII ordering.
  *   - Key order is fixed: owned entries by literal declaration order, everything else by the
  *     base document's own order, which makes the emitter a fixed point over its own output.
  *   - `metadata.lastUpdated` is carried from the base, never stamped from the clock. The bash
@@ -86,10 +79,11 @@
  *     every rebuild a diff.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { CanonicalAgentLoader, type CanonicalAgentFile } from "./AgentLoader.js";
 import { generatedPaths } from "./BuildManifest.js";
+import { ProfileLoader, type SystemProfileResolution } from "./ProfileLoader.js";
 
 // ============================================================================
 // TYPES
@@ -123,6 +117,11 @@ export interface RegistryDocument {
   [key: string]: unknown;
 }
 
+interface RegistryProfile {
+  components?: string[];
+  [key: string]: unknown;
+}
+
 export interface RegistryEmitterOptions {
   /** Root of the canonical agent tree, relative to the repo root. */
   contentRoot?: string;
@@ -151,6 +150,12 @@ const DEFAULTS = {
   registryFile: "registry.json",
 } as const;
 
+const PROFILES_ROOT = "content/profiles";
+const SYSTEM_PROFILES_ROOT = `${PROFILES_ROOT}/system`;
+
+/** Retired config entries must not survive carry-through from the base registry. */
+const RETIRED_CONFIG_IDS = new Set(["agent-metadata"]);
+
 /** `oac.type` -> the `components` key its entries live under. */
 const CATEGORY_FOR_TYPE: Readonly<Record<string, string>> = {
   agent: "agents",
@@ -160,6 +165,10 @@ const CATEGORY_FOR_TYPE: Readonly<Record<string, string>> = {
 /** Locale-independent ordering. `localeCompare` is locale-dependent — never use it here. */
 function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 // ============================================================================
@@ -211,8 +220,7 @@ export function serializeRegistry(document: RegistryDocument): string {
  *
  * `description` comes from the OpenCode frontmatter rather than the `oac:` block: it is the
  * text the agent itself ships with and the one an installer shows. Everything else comes from
- * `oac:`, which is precisely the content of the `.opencode/config/agent-metadata.json` sidecar
- * this refactor dissolves.
+ * `oac:`, the canonical metadata authored alongside the agent.
  */
 export function entryForAgent(agent: CanonicalAgentFile, agentInstallRoot: string): RegistryEntry {
   return {
@@ -276,10 +284,10 @@ export class RegistryEmitter {
   /**
    * Generate the registry document.
    *
-   * Owned arrays (`agents`, `subagents`) are rebuilt from the canonical tree. Everything else
-   * — including the document's own key order — comes from the base, which is what makes this a
-   * fixed point over its own output: emitting, writing, and emitting again yields the same
-   * bytes.
+   * Owned component arrays and profile component lists are rebuilt from their canonical trees.
+   * Everything else — including the document's own key order — comes from the base, which is
+   * what makes this a fixed point over its own output: emitting, writing, and emitting again
+   * yields the same bytes.
    */
   async emit(): Promise<RegistryDocument> {
     const base = this.base();
@@ -295,7 +303,9 @@ export class RegistryEmitter {
     for (const category of Object.keys(base.components)) {
       const existing = base.components[category] ?? [];
       const owned = generated.get(category);
-      components[category] = owned === undefined ? existing : merge(owned, existing, ours);
+      components[category] = owned === undefined
+        ? this.carried(category, existing)
+        : merge(owned, existing, ours);
     }
 
     // A canonical `oac.type` whose category the base has never seen. Not reachable today
@@ -307,10 +317,20 @@ export class RegistryEmitter {
 
     const document: RegistryDocument = {} as RegistryDocument;
     for (const key of Object.keys(base)) {
-      document[key] = key === "components" ? components : base[key];
+      document[key] = key === "components"
+        ? components
+        : key === "profiles"
+          ? await this.profiles(base, agents)
+          : base[key];
     }
 
     return document;
+  }
+
+  /** Preserve non-owned entries except explicit retirement decisions. */
+  private carried(category: string, entries: readonly RegistryEntry[]): RegistryEntry[] {
+    if (category !== "config") return [...entries];
+    return entries.filter((entry) => !RETIRED_CONFIG_IDS.has(entry.id));
   }
 
   /** The generated registry document, serialised exactly as the committed file is written. */
@@ -334,6 +354,84 @@ export class RegistryEmitter {
     for (const entries of byCategory.values()) entries.sort((a, b) => compare(a.id, b.id));
 
     return byCategory;
+  }
+
+  /** Generate profile component lists when canonical profile content is available. */
+  private async profiles(
+    base: RegistryDocument,
+    agents: readonly CanonicalAgentFile[]
+  ): Promise<unknown> {
+    if (!existsSync(resolve(this.root, PROFILES_ROOT))) return base.profiles;
+
+    const baseProfiles = isRecord(base.profiles) ? base.profiles : {};
+    const loader = new ProfileLoader(this.root);
+    const agentTypes = new Map(agents.map((agent) => [agent.oac.id, agent.oac.type]));
+    const ids = readdirSync(resolve(this.root, SYSTEM_PROFILES_ROOT), { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+      .map((entry) => entry.name.slice(0, -".json".length))
+      .sort(compare);
+
+    const profiles = await Promise.all(
+      ids.map(async (id) => {
+        const resolved = await loader.resolveSystemProfile(id);
+        const baseProfile = baseProfiles[id];
+        return [id, this.profile(baseProfile, resolved, agentTypes, base)] as const;
+      })
+    );
+
+    return Object.fromEntries(profiles);
+  }
+
+  /** Preserve registry-owned profile metadata while replacing the canonical component list. */
+  private profile(
+    base: unknown,
+    resolved: SystemProfileResolution,
+    agentTypes: ReadonlyMap<string, string>,
+    registry: RegistryDocument
+  ): RegistryProfile {
+    const metadata = isRecord(base) ? base : {};
+    return {
+      ...metadata,
+      components: this.references(resolved, agentTypes, registry),
+    };
+  }
+
+  /** Convert a resolved canonical profile closure to install.sh-compatible typed refs. */
+  private references(
+    resolved: SystemProfileResolution,
+    agentTypes: ReadonlyMap<string, string>,
+    registry: RegistryDocument
+  ): string[] {
+    const agentRefs = resolved.agents.map((id) => this.agentReference(id, agentTypes, registry));
+    const refs = [
+      ...agentRefs,
+      ...resolved.contexts.map((id) => `context:${id}`),
+      ...resolved.commands.map((id) => `command:${id}`),
+      ...resolved.tools.map((id) => `tool:${id}`),
+      ...resolved.skills.map((id) => `skill:${id}`),
+      ...resolved.plugins.map((id) => `plugin:${id}`),
+      ...resolved.config.map((id) => `config:${id}`),
+    ];
+
+    return [...new Set(refs)].sort(compare);
+  }
+
+  /** Resolve collapsed canonical agents back to their install.sh registry category. */
+  private agentReference(
+    id: string,
+    agentTypes: ReadonlyMap<string, string>,
+    registry: RegistryDocument
+  ): string {
+    const canonicalType = agentTypes.get(id);
+    if (canonicalType === "agent" || canonicalType === "subagent") return `${canonicalType}:${id}`;
+
+    const category = ["agents", "subagents"].find((key) =>
+      (registry.components[key] ?? []).some((entry) => entry.id === id)
+    );
+    if (category === "agents") return `agent:${id}`;
+    if (category === "subagents") return `subagent:${id}`;
+
+    throw new Error(`Cannot emit profile reference for unknown agent "${id}"`);
   }
 }
 

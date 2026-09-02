@@ -1,5 +1,7 @@
 # 01 — Feature & Content Inventory
 
+> **Current state (2026-09-02):** This inventory records the pre-migration architecture. The active metadata workflow is canonical `content/agents/**` `oac:` blocks emitted by RegistryEmitter; sidecar metadata and sidecar merging are superseded.
+
 > **Owner:** Agent A
 > **Status:** Spec only — no implementation. **v2** (2026-07-15): census re-verified from
 > disk; `{pattern, effect}` terminology aligned to Locked Decision #5's `{scope, decision}`;

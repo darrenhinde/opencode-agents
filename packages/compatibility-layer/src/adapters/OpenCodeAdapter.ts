@@ -45,8 +45,7 @@
  * - **Unknown keys are NOT rejected.** The Agent schema ends in `.catchall(z.any())`
  *   (config.ts:633) and sweeps anything outside `knownKeys` into `options` (config.ts:654-658).
  *   So `oac:` would not actually break OpenCode. Stripping it is hygiene — keeping build-time
- *   metadata out of an agent's runtime `options` — not a hard requirement. See the report in
- *   the subtask notes: the premise that justified `agent-metadata.json` does not hold.
+ *   metadata out of an agent's runtime `options` — not a hard requirement.
  *
  * - **The permission vocabulary is OPEN.** `Permission` is a `z.object({...}).catchall(
  *   PermissionRule).or(PermissionAction)` (config.ts:553-580), and `skill` (config.ts:575) and

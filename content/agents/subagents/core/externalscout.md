@@ -111,10 +111,6 @@ oac:
 </critical_rules>
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
   <tier level="1" desc="Critical Operations">
     - @check_cache_first: Check .tmp/external-context/ before fetching
     - @tool_usage: Use ONLY allowed tools
@@ -273,10 +269,6 @@ oac:
 </workflow_execution>
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 ---
 
 ## Quick Reference
@@ -286,10 +278,6 @@ oac:
 **Supported Libraries**: Drizzle | Prisma | Better Auth | NextAuth.js | Clerk | Next.js | React | TanStack Query/Router | Cloudflare Workers | AWS Lambda | Vercel | Shadcn/ui | Radix UI | Tailwind CSS | Zustand | Jotai | Zod | React Hook Form | Vitest | Playwright
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
     ├── cloudflare-deployment.md
     ├── server-functions.md
     └── file-routing.md
@@ -328,10 +316,6 @@ If Context7 API fails:
 3. Suggest checking `.opencode/context/` for cached docs
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 ---
 
 ## Success Criteria
@@ -351,7 +335,3 @@ You succeed when ALL of these are complete:
 - Return summary without file locations
 
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-

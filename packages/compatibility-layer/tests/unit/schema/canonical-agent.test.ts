@@ -141,7 +141,7 @@ describe("canonical agent files", () => {
 });
 
 // ============================================================================
-// RED — the real content/ corpus (subtask 09)
+// CANONICAL CORPUS — real authored files and the registry-carried exception
 // ============================================================================
 
 describe("content/agents corpus", () => {
@@ -166,32 +166,23 @@ describe("content/agents corpus", () => {
     expect(rejected.join("\n") || "", "files rejected by CanonicalAgentSchema").toBe("");
   });
 
-  // SKIPPED — one known gap, deliberate: eval-runner.md has uncommitted user work in the
-  // working tree, so subtask 09 did not seed it. It is a real remaining gap, not a permanent
-  // exclusion. Un-skip once that work is committed and eval-runner is seeded into content/.
-  it.skip("covers every agent under .opencode/agent/ [BLOCKED: eval-runner has uncommitted work]", () => {
+  it("deliberately excludes registry-carried eval-runner from the canonical corpus", () => {
+    // Arrange
     const dir = requireDir(
       "content/agents",
       OWED_BY,
-      "every agent under .opencode/agent/ has been seeded into content/agents/ — task.json's " +
-        "exit criterion is that all 34 load from content/"
+      "the canonical corpus must be available to verify its registry-carried exception"
     );
+    const canonical = new Set(listFiles(dir).map((file) => basename(file, ".md")));
 
-    // Compared against .opencode/agent/ directly rather than a literal 34, so this tracks the
-    // tree instead of a number that goes stale.
-    const seeded = new Set(listFiles(dir).map((file) => basename(file)));
-    const missing = listFiles(requireDir(".opencode/agent", "n/a — already on disk", "n/a"))
-      .map((file) => basename(file))
-      .filter((file) => !seeded.has(file));
+    // Act
+    const hasEvalRunner = canonical.has("eval-runner");
 
+    // Assert
     expect(
-      missing,
-      "agents not yet seeded into content/agents/.\n" +
-        "  Known gap as of 2026-07-15: eval-runner.md is skipped because it has uncommitted\n" +
-        "  user work in the working tree. It IS in agent-metadata.json and task.json's exit\n" +
-        "  criteria require all 34 in content/, so this is a real remaining gap, not a\n" +
-        "  permanent exclusion — subtask 09 must seed it once that work is committed."
-    ).toEqual([]);
+      hasEvalRunner,
+      "eval-runner is deliberately registry-carried and must not become a canonical source requirement"
+    ).toBe(false);
   });
 
   it("gives every agent a unique oac id", () => {
@@ -201,9 +192,8 @@ describe("content/agents corpus", () => {
       "agent ids are unique, so the build can address each agent unambiguously"
     );
 
-    // NB: the id deliberately does NOT have to match the filename. `test-engineer.md` has
-    // id `tester` in .opencode/config/agent-metadata.json, and `subagent:tester` is what the
-    // profiles and registry reference. The id is the identity; the path is just where it sits.
+    // NB: the id deliberately does NOT have to match the filename. `test-engineer.md` declares
+    // id `tester`; the id is the identity and the path is just where it sits.
     const ids = listFiles(dir).flatMap((file) => {
       const { data } = matter(readFileSync(file, "utf-8"));
       const parsed = OacBlockSchema.safeParse(data.oac);
@@ -216,37 +206,6 @@ describe("content/agents corpus", () => {
 
     expect(duplicated, "two agents share an oac id").toEqual([]);
     expect(ids.length, "no agent file parsed — is content/agents/ populated?").toBeGreaterThan(0);
-  });
-
-  // SKIPPED — same single gap as above: eval-runner is the only sidecar id content/ does not
-  // carry, because its file has uncommitted user work. Un-skip with the test above.
-  it.skip("keeps every id that agent-metadata.json already knows [BLOCKED: eval-runner has uncommitted work]", () => {
-    const dir = requireDir(
-      "content/agents",
-      OWED_BY,
-      "seeding content/agents/ preserves the ids the sidecar already published, so registry " +
-        "and profile references keep resolving once the sidecar is dissolved"
-    );
-
-    const sidecar = JSON.parse(
-      readFileSync(packagePath("../../.opencode/config/agent-metadata.json"), "utf-8")
-    ) as { agents: Record<string, { id: string }> };
-
-    const seeded = new Set(
-      listFiles(dir).flatMap((file) => {
-        const { data } = matter(readFileSync(file, "utf-8"));
-        const parsed = OacBlockSchema.safeParse(data.oac);
-        return parsed.success ? [parsed.data.id] : [];
-      })
-    );
-
-    const lost = Object.values(sidecar.agents)
-      .map((entry) => entry.id)
-      .filter((id) => !seeded.has(id));
-
-    expect(lost, "ids published by agent-metadata.json that content/agents/ no longer carries").toEqual(
-      []
-    );
   });
 
   it("emits no oac: key into any generated OpenCode agent file", () => {

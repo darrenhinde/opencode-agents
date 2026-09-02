@@ -1,5 +1,7 @@
 # 05 — Impact Analysis, Migration Staging & Test Spec
 
+> **Current state (2026-09-02):** This migration plan is historical. The active metadata workflow is canonical `content/agents/**` `oac:` blocks emitted by RegistryEmitter; sidecar metadata and sidecar merging are superseded.
+
 > **Owner:** Agent E
 > **Status:** Spec only — no implementation code. **v2** (2026-07-15): the false "160 agents"
 > figure purged (real count: **34**, disk-verified — see `06-REVIEW` F1); Stage 3 rewritten as

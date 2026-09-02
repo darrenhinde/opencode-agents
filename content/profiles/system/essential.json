@@ -23,7 +23,6 @@
   ],
   "plugins": [],
   "config": [
-    "agent-metadata",
     "env-example"
   ]
 }

@@ -1,5 +1,7 @@
 # OAC Canonical Refactor — Master Spec Index
 
+> **Current state (2026-09-02):** This is historical refactor documentation. The active metadata workflow is canonical `content/agents/**` `oac:` blocks emitted by RegistryEmitter; sidecar metadata and sidecar merging are superseded.
+
 > **Status:** Specification — v2 (post spec-pass reconciliation). No implementation yet.
 > **Goal:** Re-architect OAC from an OpenCode-specific project into a tool-agnostic,
 > npm-distributed system with a single neutral source of truth that generates
