@@ -159,14 +159,14 @@ export async function initCommand(options: InitOptions): Promise<void> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     error(`Could not locate bundled files: ${msg}`);
-    error('Fix: ensure @nextsystems/oac is installed correctly (try reinstalling).');
+    error('Fix: ensure @controlstack/oac is installed correctly (try reinstalling).');
     process.exit(1);
     return;
   }
 
   if (bundledFiles.length === 0) {
     warn('No bundled files found — nothing to install.');
-    warn('Fix: the @nextsystems/oac package may be missing its bundled assets.');
+    warn('Fix: the @controlstack/oac package may be missing its bundled assets.');
     process.exit(1);
   }
 

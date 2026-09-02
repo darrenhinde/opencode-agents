@@ -1,14 +1,14 @@
 /**
- * @openagents-control/compatibility-layer
+ * @controlstack/compatibility-layer
  * 
  * A TypeScript library for converting OpenAgents Control agent definitions
  * to and from other AI coding tool formats (Cursor, Claude, Windsurf, etc.).
  * 
- * @module @openagents-control/compatibility-layer
+ * @module @controlstack/compatibility-layer
  * 
  * @example
  * ```typescript
- * import { loadAgent, registry, CursorAdapter } from '@openagents-control/compatibility-layer';
+ * import { loadAgent, registry, CursorAdapter } from '@controlstack/compatibility-layer';
  * 
  * // Load an OAC agent
  * const agent = await loadAgent('.opencode/agent/opencoder.md');
@@ -27,7 +27,7 @@
  * All Zod schemas and TypeScript types for OpenAgents Control.
  * 
  * Includes:
- * - OpenAgent, AgentFrontmatter, AgentMetadata
+ * - OpenAgent, AgentFrontmatter
  * - ToolAccess, PermissionRule, GranularPermission
  * - ContextReference, DependencyReference
  * - ModelIdentifier, TemperatureSchema
@@ -45,7 +45,7 @@ export * from "./types.js";
  * 
  * @example
  * ```typescript
- * import { loadAgent, loadAgents } from '@openagents-control/compatibility-layer';
+ * import { loadAgent, loadAgents } from '@controlstack/compatibility-layer';
  * 
  * // Load single agent
  * const agent = await loadAgent('.opencode/agent/opencoder.md');
@@ -70,8 +70,156 @@ export {
 export {
   AgentLoadError,
   FrontmatterParseError,
+  MissingOacBlockError,
   ValidationError,
 } from "./core/AgentLoader.js";
+
+// ============================================================================
+// CORE - Canonical Agent Loading (`oac:` block)
+// ============================================================================
+
+/**
+ * Loads canonical agent files — OpenCode frontmatter plus the `oac:` block — from a
+ * configurable content root (`content/agents/**` by default).
+ *
+ * Identity comes from `oac.id`, never the filename: `subagents/code/test-engineer.md`
+ * declares `id: tester`, and `tester` is what the registry, profiles and context docs
+ * reference.
+ *
+ * @example
+ * ```typescript
+ * const agents = await loadCanonicalAgents('content/agents');
+ * // sorted by oac.id, deterministic regardless of filesystem enumeration order
+ * ```
+ */
+export {
+  CanonicalAgentLoader,
+  loadCanonicalAgents,
+  DEFAULT_CONTENT_ROOT,
+} from "./core/AgentLoader.js";
+
+export type { CanonicalAgentFile } from "./core/AgentLoader.js";
+
+// ============================================================================
+// CORE - Registry Emission
+// ============================================================================
+
+/**
+ * Generates `registry.json` from canonical component and profile trees, replacing the
+ * hand-editing that `scripts/registry/auto-detect-components.sh` only ever appended to.
+ *
+ * It owns `components.agents`, `components.subagents`, and profile component lists; contexts,
+ * commands, tools, plugins, skills, config, and profile metadata remain carried from the base.
+ * Output is byte-stable and a fixed point over itself, so `oac build && git diff --exit-code`
+ * is a real drift gate.
+ *
+ * @example
+ * ```typescript
+ * import { emitRegistry } from '@controlstack/compatibility-layer';
+ *
+ * // The bytes to write to registry.json — identical across runs.
+ * const json = await emitRegistry(process.cwd());
+ * ```
+ */
+export {
+  RegistryEmitter,
+  emitRegistry,
+  serializeRegistry,
+  entryForAgent,
+} from "./core/RegistryEmitter.js";
+
+export type {
+  RegistryDocument,
+  RegistryEntry,
+  RegistryEmitterOptions,
+} from "./core/RegistryEmitter.js";
+
+// ============================================================================
+// CORE - Build Pipeline
+// ============================================================================
+
+/**
+ * The whole of `oac build`: load `content/agents/**`, honour each agent's `oac.targets`, run
+ * the matching adapter, and reconcile the generated trees.
+ *
+ * {@link plan} computes; {@link write} reconciles; {@link check} compares without touching
+ * anything. Splitting them is what makes `--check` and `--dry-run` share the build's code path
+ * rather than re-implement it.
+ *
+ * Orphan removal is gated on {@link BuildManifest}: the build removes a file only if a
+ * previous build recorded writing that exact path with those exact bytes. A file it never
+ * generated can never become a prune candidate.
+ *
+ * @example
+ * ```typescript
+ * import { plan, write } from '@controlstack/compatibility-layer';
+ *
+ * const built = await plan({ root: process.cwd() });
+ * // Emit .opencode/** and registry.json in place; stage claude-code for review.
+ * const result = write(built, {
+ *   root: process.cwd(),
+ *   outputRoots: { "claude-code": ".tmp/oac-build" },
+ * });
+ * ```
+ */
+export {
+  BUILD_TARGETS,
+  build,
+  buildAgent,
+  buildAgentIn,
+  check,
+  plan,
+  readManifest,
+  repoRelative,
+  serializeManifest,
+  write,
+} from "./core/BuildPipeline.js";
+
+export type {
+  BuildFile,
+  BuildManifest,
+  BuildOptions,
+  BuildPlan,
+  BuildTarget,
+  BuildWarning,
+  Drift,
+  ManifestEntry,
+  OutputRoots,
+  WriteOptions,
+  WriteResult,
+} from "./core/BuildPipeline.js";
+
+// ============================================================================
+// CORE - Reference Resolution & Profiles
+// ============================================================================
+
+/**
+ * Resolves `type:id` references against `registry.json`, catching the reference rot that
+ * `scripts/registry/validate-registry.sh` reports as 244/244 green.
+ */
+export { ReferenceResolver, formatResolutions } from "./core/ReferenceResolver.js";
+
+export type {
+  Reference,
+  Registry,
+  RegistryComponent,
+  Resolution,
+  ResolutionStatus,
+  ResolveResult,
+} from "./core/ReferenceResolver.js";
+
+/**
+ * Loads install profiles and computes their transitive closures — what "install this
+ * profile" actually means.
+ */
+export { ProfileLoader, ProfileLoadError, ProfileSchema } from "./core/ProfileLoader.js";
+
+export type {
+  ClosureResult,
+  LoadedProfile,
+  Profile,
+  ProfileDrift,
+} from "./core/ProfileLoader.js";
 
 // ============================================================================
 // CORE - Adapter Registry
@@ -82,7 +230,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { registry, getAdapter } from '@openagents-control/compatibility-layer';
+ * import { registry, getAdapter } from '@controlstack/compatibility-layer';
  * 
  * // Get adapter from registry
  * const adapter = getAdapter('cursor');
@@ -118,7 +266,7 @@ export type { AdapterInfo } from "./core/AdapterRegistry.js";
  * 
  * @example
  * ```typescript
- * import { BaseAdapter } from '@openagents-control/compatibility-layer';
+ * import { BaseAdapter } from '@controlstack/compatibility-layer';
  * 
  * class MyAdapter extends BaseAdapter {
  *   readonly name = 'my-tool';
@@ -149,7 +297,7 @@ export { BaseAdapter } from "./adapters/BaseAdapter.js";
  * @example
  * ```typescript
  * // Available in Phase 2:
- * // import { CursorAdapter, ClaudeAdapter, WindsurfAdapter } from '@openagents-control/compatibility-layer';
+ * // import { CursorAdapter, ClaudeAdapter, WindsurfAdapter } from '@controlstack/compatibility-layer';
  * ```
  */
 
@@ -157,6 +305,28 @@ export { BaseAdapter } from "./adapters/BaseAdapter.js";
 export { CursorAdapter } from "./adapters/CursorAdapter.js";
 export { ClaudeAdapter } from "./adapters/ClaudeAdapter.js";
 export { WindsurfAdapter } from "./adapters/WindsurfAdapter.js";
+
+/**
+ * OpenCodeAdapter — emits `.opencode/agent/**` from the canonical `content/agents/**` tree by
+ * stripping the `oac:` block. The canonical build target.
+ *
+ * @example
+ * ```typescript
+ * import { OpenCodeAdapter } from '@controlstack/compatibility-layer';
+ *
+ * const { content } = await new OpenCodeAdapter().fromCanonical(source);
+ * ```
+ */
+export {
+  OpenCodeAdapter,
+  OpenCodeEmitError,
+  OPENCODE_AGENT_ROOT,
+} from "./adapters/OpenCodeAdapter.js";
+
+export type {
+  CanonicalEmitResult,
+  FromCanonicalOptions,
+} from "./adapters/OpenCodeAdapter.js";
 
 // ============================================================================
 // MAPPERS - Feature Translation (Phase 3)
@@ -167,7 +337,7 @@ export { WindsurfAdapter } from "./adapters/WindsurfAdapter.js";
  * 
  * @example
  * ```typescript
- * import { mapToolFromOAC, mapToolToOAC } from '@openagents-control/compatibility-layer';
+ * import { mapToolFromOAC, mapToolToOAC } from '@controlstack/compatibility-layer';
  * 
  * mapToolFromOAC('bash', 'cursor'); // => { name: 'terminal', exact: true }
  * ```
@@ -190,7 +360,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { mapPermissionsFromOAC } from '@openagents-control/compatibility-layer';
+ * import { mapPermissionsFromOAC } from '@controlstack/compatibility-layer';
  * 
  * mapPermissionsFromOAC({ bash: { "*": "allow" } }, 'claude');
  * // => { permissions: { bash: true }, warnings: [...] }
@@ -218,7 +388,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { mapModelFromOAC, getModelsForPlatform } from '@openagents-control/compatibility-layer';
+ * import { mapModelFromOAC, getModelsForPlatform } from '@controlstack/compatibility-layer';
  * 
  * mapModelFromOAC('claude-sonnet-4', 'cursor');
  * // => { id: 'claude-sonnet-4', exact: true }
@@ -244,7 +414,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { mapContextPathFromOAC } from '@openagents-control/compatibility-layer';
+ * import { mapContextPathFromOAC } from '@controlstack/compatibility-layer';
  * 
  * mapContextPathFromOAC('.opencode/context/core/standards.md', 'claude');
  * // => { path: '.claude/skills/core-standards.md', exact: true }
@@ -277,7 +447,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { analyzeCompatibility, getToolCapabilities } from '@openagents-control/compatibility-layer';
+ * import { analyzeCompatibility, getToolCapabilities } from '@controlstack/compatibility-layer';
  * 
  * const result = analyzeCompatibility(agent, 'cursor');
  * // => { compatible: false, warnings: [...], blockers: [...] }
@@ -304,7 +474,7 @@ export {
  * 
  * @example
  * ```typescript
- * import { TranslationEngine, translate } from '@openagents-control/compatibility-layer';
+ * import { TranslationEngine, translate } from '@controlstack/compatibility-layer';
  * 
  * // Using the engine
  * const engine = new TranslationEngine();

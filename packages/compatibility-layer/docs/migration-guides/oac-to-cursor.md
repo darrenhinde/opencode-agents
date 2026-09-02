@@ -16,11 +16,11 @@ Export to Cursor format when you:
 | Requirement | Version | Notes |
 |-------------|---------|-------|
 | Node.js | >= 18 | Required for CLI |
-| @openagents-control/compatibility-layer | Latest | Install via npm |
+| @controlstack/compatibility-layer | Latest | Install via npm |
 | Cursor IDE | Any | Target platform |
 
 ```bash
-npm install -g @openagents-control/compatibility-layer
+npm install -g @controlstack/compatibility-layer
 ```
 
 ## Quick Migration
@@ -445,7 +445,7 @@ ls -la .cursorrules
 ### Programmatic Validation
 
 ```typescript
-import { CursorAdapter, loadAgent } from '@openagents-control/compatibility-layer';
+import { CursorAdapter, loadAgent } from '@controlstack/compatibility-layer';
 
 async function validateConversion() {
   const agent = await loadAgent('./agent.md');

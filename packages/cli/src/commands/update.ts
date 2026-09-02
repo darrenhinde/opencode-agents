@@ -119,7 +119,7 @@ async function runUpdate(projectRoot: string, opts: UpdateOptions): Promise<Inst
     spinner.fail('Update failed.');
     const msg = err instanceof Error ? err.message : String(err);
     error(`Update failed: ${msg}`);
-    error('Check that @nextsystems/oac is installed correctly and try again.');
+    error('Check that @controlstack/oac is installed correctly and try again.');
     process.exit(1);
     return {} as InstallResult; // unreachable — satisfies TypeScript
   }

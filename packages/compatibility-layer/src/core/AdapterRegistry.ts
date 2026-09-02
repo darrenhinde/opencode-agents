@@ -312,29 +312,43 @@ export class AdapterRegistry {
    * ```
    */
   async registerBuiltInAdapters(): Promise<void> {
-    // Dynamic imports to avoid circular dependencies
-    try {
-      // Cursor IDE
-      const { CursorAdapter } = await import("../adapters/CursorAdapter.js");
-      this.register(new CursorAdapter(), ["cursor-ide", "cursor-editor"]);
-    } catch (error) {
-      // Adapter not yet implemented - skip silently
-    }
+    // Dynamic imports to avoid circular dependencies.
+    //
+    // These four used to be wrapped in `try { … } catch { /* skip silently */ }`, dating from
+    // when the adapters genuinely might not exist yet. All four now ship, and the swallow had
+    // become a hazard rather than tolerance: it ate the duplicate-registration
+    // AdapterRegistryError from register() as readily as a bad import path, so a typo could
+    // leave registry.get("opencode") returning undefined with nothing written anywhere. For a
+    // build whose entire value is determinism, a silent missing target is the worst outcome
+    // available — worse than a crash, which at least tells you.
+    //
+    // A failure here means the package is broken, not that a target is unavailable. Let it throw.
+    const [{ CursorAdapter }, { ClaudeAdapter }, { WindsurfAdapter }, { OpenCodeAdapter }] =
+      await Promise.all([
+        import("../adapters/CursorAdapter.js"),
+        import("../adapters/ClaudeAdapter.js"),
+        import("../adapters/WindsurfAdapter.js"),
+        import("../adapters/OpenCodeAdapter.js"),
+      ]);
 
-    try {
-      // Claude Code
-      const { ClaudeAdapter } = await import("../adapters/ClaudeAdapter.js");
-      this.register(new ClaudeAdapter(), ["claude-code", "anthropic-claude"]);
-    } catch (error) {
-      // Adapter not yet implemented - skip silently
-    }
+    const builtIns: ReadonlyArray<{ adapter: BaseAdapter; aliases: string[] }> = [
+      { adapter: new CursorAdapter(), aliases: ["cursor-ide", "cursor-editor"] },
+      { adapter: new ClaudeAdapter(), aliases: ["claude-code", "anthropic-claude"] },
+      { adapter: new WindsurfAdapter(), aliases: ["windsurf-ide"] },
+      { adapter: new OpenCodeAdapter(), aliases: ["open-code"] },
+    ];
 
-    try {
-      // Windsurf (experimental)
-      const { WindsurfAdapter } = await import("../adapters/WindsurfAdapter.js");
-      this.register(new WindsurfAdapter(), ["windsurf-ide"]);
-    } catch (error) {
-      // Adapter not yet implemented - skip silently
+    for (const { adapter, aliases } of builtIns) {
+      // Registering the built-ins twice is a no-op, not an error. This has to be explicit:
+      // `registry` is a module singleton and BOTH cli/commands/convert.ts and
+      // cli/commands/migrate.ts call this on it, so a process touching both used to hit
+      // "Adapter 'cursor' is already registered". The old blanket catch swallowed that
+      // duplicate error, which is the only reason it never surfaced — the non-idempotence
+      // was real, just hidden. Skipping a name that is already present keeps this callable
+      // from anywhere while leaving register()'s duplicate check meaningful for everyone else
+      // (including a caller who deliberately overrode a built-in before calling this).
+      if (this.has(adapter.name)) continue;
+      this.register(adapter, aliases);
     }
   }
 }

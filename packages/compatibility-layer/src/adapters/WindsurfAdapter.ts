@@ -1,4 +1,5 @@
 import { BaseAdapter } from "./BaseAdapter.js";
+import { getToolCapabilities } from "../core/CapabilityMatrix.js";
 import type {
   OpenAgent,
   ConversionResult,
@@ -186,21 +187,16 @@ export class WindsurfAdapter extends BaseAdapter {
 
   /**
    * Get Windsurf capabilities.
+   *
+   * Derived from {@link getToolCapabilities} rather than restated, so this adapter and the
+   * matrix cannot disagree about Windsurf the way Cursor's hand-written body disagreed about
+   * Cursor. Note `07-EXECUTION-PLAN.md` cuts Windsurf from v1 (its format was never verified
+   * against a live install) — deriving keeps it honest and cheap until that is settled.
    */
   getCapabilities(): ToolCapabilities {
     return {
-      name: this.name,
+      ...getToolCapabilities("windsurf"),
       displayName: this.displayName,
-      supportsMultipleAgents: true, // ✅ Supports .windsurf/agents/
-      supportsSkills: true, // ⚠️ Partial - basic context support
-      supportsHooks: false, // ❌ Not supported
-      supportsGranularPermissions: false, // ⚠️ Binary only
-      supportsContexts: true, // ✅ .windsurf/context/
-      supportsCustomModels: true, // ✅ Model selection
-      supportsTemperature: true, // ⚠️ Via creativity setting
-      supportsMaxSteps: false, // ❌ Not supported
-      configFormat: "json",
-      outputStructure: "directory",
       notes: [
         "Multiple agents supported via .windsurf/agents/",
         "Permissions are binary (on/off) - granular rules degraded",

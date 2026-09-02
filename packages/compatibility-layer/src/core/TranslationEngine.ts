@@ -17,7 +17,7 @@ import type {
   OpenAgent,
   AgentFrontmatter,
   ToolAccess,
-  GranularPermission,
+  PermissionMap,
   ContextReference,
   SkillReference,
 } from "../types.js";
@@ -60,7 +60,22 @@ import {
 /**
  * Target platform for translation (excludes OAC since we translate TO/FROM OAC)
  */
-export type TranslationTarget = Exclude<Platform, "oac">;
+/**
+ * The targets this engine can translate an {@link OpenAgent} to.
+ *
+ * `opencode` is excluded deliberately, and it is NOT an oversight to be fixed by widening this
+ * later. This engine translates from `OpenAgent`, whose `permission` is an unordered `Record`;
+ * OpenCode's permission semantics are ordered last-match-wins. Emitting OpenCode from an
+ * unordered map would silently reorder a security-critical rule block — the exact corruption the
+ * canonical refactor exists to remove. `OpenCodeAdapter.fromOAC()` therefore refuses outright
+ * and directs callers to `fromCanonical(source)`, which the `oac build` path uses instead.
+ *
+ * Previously this read `Exclude<Platform, "oac">` and so tracked the matrix's platform list by
+ * accident. Adding `opencode` to {@link Platform} on 2026-07-15 widened it silently and the
+ * compiler caught it: this engine's mappers (`ToolMapper.ToolPlatform`) never knew OpenCode.
+ * The coupling was the bug; this union is now stated outright.
+ */
+export type TranslationTarget = Exclude<Platform, "oac" | "opencode">;
 
 /**
  * Configuration options for translation
@@ -282,13 +297,13 @@ export class TranslationEngine {
     }
 
     // Translate permissions
-    let oacPermissions: GranularPermission | undefined;
+    let oacPermissions: PermissionMap | undefined;
     if (source.permissions) {
       const permResult = mapPermissionsToOAC(
         source.permissions,
         platform
       );
-      oacPermissions = permResult.permissions as GranularPermission;
+      oacPermissions = permResult.permissions as PermissionMap;
       warnings.push(...permResult.warnings);
     }
 

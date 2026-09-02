@@ -9,15 +9,15 @@
  */
 
 import type { Command } from 'commander'
-import { join } from 'node:path'
-import { stat } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { copyFile, mkdir, stat, writeFile } from 'node:fs/promises'
 import {
   loadAgents,
   CursorAdapter,
   ClaudeAdapter,
   WindsurfAdapter,
-} from '@openagents-control/compatibility-layer'
-import type { OpenAgent, ConversionResult } from '@openagents-control/compatibility-layer'
+} from '@controlstack/compatibility-layer'
+import type { OpenAgent, ConversionResult } from '@controlstack/compatibility-layer'
 import {
   detectIdes,
   getIdeOutputFile,
@@ -73,9 +73,10 @@ function reportFileSize(ide: IdeType, outputPath: string, sizeBytes: number): vo
 
 /** Backs up an existing file to `{file}.bak` before overwriting. */
 async function backupIfExists(filePath: string): Promise<void> {
-  if (await Bun.file(filePath).exists()) {
+  const exists = await stat(filePath).then((s) => s.isFile()).catch(() => false)
+  if (exists) {
     const backupPath = `${filePath}.bak`
-    await Bun.write(backupPath, Bun.file(filePath))
+    await copyFile(filePath, backupPath)
     dim(`  Backed up existing file → ${backupPath}`)
   }
 }
@@ -161,7 +162,8 @@ async function applyToIde(
       printDryRunPreview(outputPath, content)
     } else {
       await backupIfExists(outputPath)
-      await Bun.write(outputPath, content)
+      await mkdir(dirname(outputPath), { recursive: true })
+      await writeFile(outputPath, content)
     }
 
     reportWarnings(result, options.verbose)

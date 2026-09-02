@@ -15,7 +15,7 @@ Claude Code uses `.claude/config.json` for primary agents and `.claude/agents/*.
 **Install the compatibility layer:**
 
 ```bash
-npm install @openagents-control/compatibility-layer
+npm install @controlstack/compatibility-layer
 ```
 
 ## Quick Migration
@@ -452,7 +452,7 @@ oac-compat convert agent.md -f claude -o .claude/config.test.json
 **Programmatic validation:**
 
 ```typescript
-import { loadAgent, validateAgent } from '@openagents-control/compatibility-layer';
+import { loadAgent, validateAgent } from '@controlstack/compatibility-layer';
 
 const agent = await loadAgent('./agent.md');
 const errors = validateAgent(agent);
@@ -467,7 +467,7 @@ if (errors.length === 0) {
 **Verify feature preservation:**
 
 ```typescript
-import { ClaudeAdapter } from '@openagents-control/compatibility-layer';
+import { ClaudeAdapter } from '@controlstack/compatibility-layer';
 
 const adapter = new ClaudeAdapter();
 const capabilities = adapter.getCapabilities();

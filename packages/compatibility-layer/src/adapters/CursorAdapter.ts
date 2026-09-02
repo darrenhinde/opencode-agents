@@ -1,4 +1,5 @@
 import { BaseAdapter } from "./BaseAdapter.js";
+import { getToolCapabilities } from "../core/CapabilityMatrix.js";
 import type {
   OpenAgent,
   ConversionResult,
@@ -164,21 +165,22 @@ export class CursorAdapter extends BaseAdapter {
 
   /**
    * Get Cursor IDE capabilities.
+   *
+   * Derived from {@link getToolCapabilities}, never restated. This body used to hand-write all
+   * ten booleans and drifted: it claimed `supportsContexts: true` ("can inline context") while
+   * the matrix said `externalContext: none` ("context must be inline in .cursorrules"). Both
+   * described the same fact and disagreed about it — the same class of bug as the earlier
+   * claude json/markdown split, and it survived because the agreement test pinned only
+   * claude.configFormat.
+   *
+   * Ruled 2026-07-15 in favour of the matrix: the feature is external *references*. Inlining
+   * delivers the bytes but loses the reference, the file boundary and the priority, so it is
+   * degradation. `supportsContexts` is now `false` here, and a compatibility report will say so.
    */
   getCapabilities(): ToolCapabilities {
     return {
-      name: this.name,
+      ...getToolCapabilities("cursor"),
       displayName: this.displayName,
-      supportsMultipleAgents: false, // ❌ Single file only
-      supportsSkills: false, // ❌ No skills system
-      supportsHooks: false, // ❌ No hooks
-      supportsGranularPermissions: false, // ⚠️ Binary only
-      supportsContexts: true, // ✅ Can inline context
-      supportsCustomModels: true, // ✅ Model selection
-      supportsTemperature: true, // ✅ Limited support
-      supportsMaxSteps: false, // ❌ Not supported
-      configFormat: "plain",
-      outputStructure: "single-file",
       notes: [
         "Single .cursorrules file in project root",
         "Multiple agents must be merged into one",

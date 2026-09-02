@@ -515,7 +515,7 @@ describe("info command", () => {
       expect(result.data?.platform?.capabilities?.outputStructure).toBe("single-file");
     });
 
-    it("Claude uses JSON format and directory structure", async () => {
+    it("Claude uses markdown format and directory structure", async () => {
       // Act
       const result = await executeInfo(
         "claude",
@@ -525,9 +525,11 @@ describe("info command", () => {
 
       // Assert
       expect(result.success).toBe(true);
-      // Note: CapabilityMatrix defines Claude as 'json' format (not markdown)
-      // because Claude Code settings.json uses JSON configuration
-      expect(result.data?.platform?.capabilities?.configFormat).toBe("json");
+      // Claude Code agents are markdown files with YAML frontmatter under
+      // plugins/claude-code/agents/. This previously asserted 'json' on the reasoning that
+      // settings.json is JSON — but settings.json is not what the adapter emits, and
+      // ClaudeAdapter reported 'markdown' at the same time. The emitted artifact decides.
+      expect(result.data?.platform?.capabilities?.configFormat).toBe("markdown");
       expect(result.data?.platform?.capabilities?.outputStructure).toBe("directory");
     });
   });

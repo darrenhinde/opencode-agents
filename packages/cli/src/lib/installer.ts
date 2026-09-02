@@ -1,5 +1,5 @@
 import path from "node:path";
-import { stat } from "node:fs/promises";
+import { copyFile, mkdir, stat } from "node:fs/promises";
 import { computeFileHash, hashesMatch } from "./sha256.js";
 import {
   type ManifestFile,
@@ -103,7 +103,18 @@ export async function installFile(
     log(options, `[dry-run] would copy: ${sourcePath} → ${destPath}`);
     return;
   }
-  await Bun.write(destPath, Bun.file(sourcePath));
+  await copyFileCreatingDirs(sourcePath, destPath);
+}
+
+/**
+ * Copies `src` to `dest`, creating `dest`'s parent directories first.
+ *
+ * `fs.copyFile` fails when the destination directory does not exist, so the
+ * mkdir is required — every caller here writes into a tree that may not exist yet.
+ */
+async function copyFileCreatingDirs(src: string, dest: string): Promise<void> {
+  await mkdir(path.dirname(dest), { recursive: true });
+  await copyFile(src, dest);
 }
 
 /**
@@ -117,7 +128,7 @@ export async function backupFile(
   const timestamp = buildTimestamp();
   const relativePath = path.relative(projectRoot, filePath);
   const backupPath = buildBackupPath(projectRoot, timestamp, relativePath);
-  await Bun.write(backupPath, Bun.file(filePath));
+  await copyFileCreatingDirs(filePath, backupPath);
   return backupPath;
 }
 
@@ -147,7 +158,7 @@ async function decideFileAction(
   }
 
   // File is in manifest — check if user modified it
-  const diskExists = await Bun.file(destPath).exists();
+  const diskExists = await stat(destPath).then((s) => s.isFile()).catch(() => false);
   if (!diskExists) {
     // File was deleted by user — treat as new install
     return { action: "install" };
@@ -237,7 +248,7 @@ async function processOneFile(
       log(options, `yolo: backing up and overwriting ${relativePath}`);
       const backupPath = buildBackupPath(options.projectRoot, timestamp, relativePath);
       if (!options.dryRun) {
-        await Bun.write(backupPath, Bun.file(destPath));
+        await copyFileCreatingDirs(destPath, backupPath);
       } else {
         log(options, `[dry-run] would backup: ${destPath} → ${backupPath}`);
       }
@@ -405,9 +416,8 @@ export async function updateFiles(
  */
 export async function isProjectRoot(dir: string): Promise<boolean> {
   const [hasPackageJson, hasGit] = await Promise.all([
-    Bun.file(path.join(dir, "package.json")).exists(),
+    stat(path.join(dir, "package.json")).then((s) => s.isFile()).catch(() => false),
     // stat() works for both files (.git in worktrees) and directories (.git in normal repos)
-    // Bun.file().exists() returns false for directories, so we must use stat() here
     stat(path.join(dir, ".git")).then(() => true).catch(() => false),
   ]);
   return hasPackageJson || hasGit;

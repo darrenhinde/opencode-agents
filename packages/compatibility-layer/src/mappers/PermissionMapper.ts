@@ -13,7 +13,7 @@
  * ```
  */
 
-import type { GranularPermission, PermissionRule } from "../types.js";
+import type { PermissionMap, PermissionRule } from "../types.js";
 
 // ============================================================================
 // Types
@@ -38,7 +38,7 @@ export interface BinaryPermissions {
  * Result of permission mapping
  */
 export interface PermissionMappingResult {
-  permissions: BinaryPermissions | GranularPermission;
+  permissions: BinaryPermissions | PermissionMap;
   warnings: string[];
 }
 
@@ -135,7 +135,7 @@ export function isGranularRule(rule: PermissionRule): boolean {
  * @returns Binary permissions with warnings
  */
 export function mapPermissionsFromOAC(
-  permissions: GranularPermission,
+  permissions: PermissionMap,
   platform: Exclude<PermissionPlatform, "oac">,
   strategy: DegradationStrategy = "permissive"
 ): PermissionMappingResult {
@@ -179,7 +179,7 @@ export function mapPermissionsToOAC(
   permissions: BinaryPermissions,
   _platform: Exclude<PermissionPlatform, "oac">
 ): PermissionMappingResult {
-  const result: GranularPermission = {};
+  const result: PermissionMap = {};
 
   for (const [tool, enabled] of Object.entries(permissions)) {
     if (enabled !== undefined) {
@@ -302,7 +302,7 @@ export function mergePermissionRules(...rules: PermissionRule[]): PermissionRule
  * @param permissions - OAC permissions to check
  * @returns True if any granular rules exist
  */
-export function hasGranularPermissions(permissions: GranularPermission): boolean {
+export function hasGranularPermissions(permissions: PermissionMap): boolean {
   return Object.values(permissions).some(isGranularRule);
 }
 
@@ -312,7 +312,7 @@ export function hasGranularPermissions(permissions: GranularPermission): boolean
  * @param permissions - OAC permissions to check
  * @returns True if any 'ask' rules exist
  */
-export function hasAskPermissions(permissions: GranularPermission): boolean {
+export function hasAskPermissions(permissions: PermissionMap): boolean {
   const checkRule = (rule: PermissionRule): boolean => {
     if (rule === "ask") return true;
     if (typeof rule === "object" && rule !== null) {
@@ -332,7 +332,7 @@ export function hasAskPermissions(permissions: GranularPermission): boolean {
  * @returns Array of warning messages
  */
 export function analyzePermissionDegradation(
-  permissions: GranularPermission,
+  permissions: PermissionMap,
   platform: Exclude<PermissionPlatform, "oac">
 ): string[] {
   const warnings: string[] = [];

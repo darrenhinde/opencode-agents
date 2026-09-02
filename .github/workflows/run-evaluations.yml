@@ -1,0 +1,146 @@
+name: Run Evaluations
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: 'Agent to test'
+        required: false
+        default: 'openagent'
+        type: choice
+        options:
+          - openagent
+          - opencoder
+          - system-builder
+      pattern:
+        description: 'Test pattern (glob)'
+        required: false
+        default: '**/golden/*.yaml'
+        type: string
+      model:
+        description: 'Model to use (provider/model)'
+        required: false
+        default: 'opencode/grok-code'
+        type: string
+      seed:
+        description: 'Seed for reproducible randomness'
+        required: false
+        default: 'ci-evaluation-seed'
+        type: string
+      timeout:
+        description: 'Test timeout in milliseconds'
+        required: false
+        default: '120000'
+        type: string
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'evals/framework/**'
+      - 'evals/agents/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/run-evaluations.yml'
+
+jobs:
+  run-evaluations:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      with:
+        persist-credentials: false
+      
+    - name: Setup pnpm
+      uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+        cache-dependency-path: pnpm-lock.yaml
+        
+    - name: Install workspace dependencies
+      run: pnpm install --frozen-lockfile
+      
+    - name: Build framework
+      run: pnpm --dir evals/framework run build
+      
+    - name: Install OpenCode CLI
+      run: |
+        pnpm add --global opencode-ai@1.17.20
+        opencode --version
+        
+    - name: Run evaluations
+      working-directory: evals/framework
+      env:
+        EVAL_AGENT: ${{ inputs.agent || 'openagent' }}
+        EVAL_MODEL: ${{ inputs.model || 'opencode/grok-code' }}
+        EVAL_PATTERN: ${{ inputs.pattern || '**/golden/*.yaml' }}
+        EVAL_SEED: ${{ inputs.seed || 'ci-evaluation-seed' }}
+        EVAL_TIMEOUT: ${{ inputs.timeout || '120000' }}
+        OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        OPENCODE_SESSION_STORAGE: /tmp/opencode-sessions
+      run: |
+        # Create isolated session directory
+        mkdir -p /tmp/opencode-sessions
+        
+        # Run evaluations with isolation and seeding
+        pnpm run eval:sdk \
+          -- --agent="$EVAL_AGENT" \
+          --pattern="$EVAL_PATTERN" \
+          --model="$EVAL_MODEL" \
+          --seed="$EVAL_SEED" \
+          --timeout="$EVAL_TIMEOUT" \
+          --isolate-environment \
+          --debug
+          
+    - name: Upload results
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      if: always()
+      with:
+        name: evaluation-results
+        path: |
+          evals/results/
+          evals/test_tmp/
+        retention-days: 30
+        
+    - name: Generate summary
+      if: always()
+      run: |
+        if [ -f "evals/results/latest.json" ]; then
+          echo "## Evaluation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('node:fs')
+          const results = JSON.parse(fs.readFileSync('evals/results/latest.json', 'utf8'))
+
+          console.log(`| ✅ ${results.summary.passed}/${results.summary.total} tests passed`)
+          console.log(`| ❌ ${results.summary.failed} failures`)
+          console.log('')
+
+          if (results.summary.failed > 0) {
+            console.log('### Failed Tests')
+            for (const test of results.tests.filter((result) => !result.passed)) {
+              const messages = (test.violations.details ?? []).map((detail) => detail.message)
+              const reason = messages.length > 0 ? messages.join(', ') : `${test.violations.errors} error violations`
+              console.log(`- ${test.id}: ${reason}`)
+            }
+          }
+          NODE
+        else
+          echo "## No Results Generated" >> $GITHUB_STEP_SUMMARY
+          echo "Evaluation run may have failed to complete." >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        # Clean up temporary session storage
+        rm -rf /tmp/opencode-sessions

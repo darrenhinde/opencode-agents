@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 
 export const OacPreferencesSchema = z.object({
@@ -34,8 +34,9 @@ export const isAutoBackup = (config: OacConfig): boolean =>
 
 export async function readConfig(projectRoot: string): Promise<OacConfig | null> {
   const configPath = getConfigPath(projectRoot);
-  if (!(await Bun.file(configPath).exists())) return null;
-  const raw = await Bun.file(configPath).json() as unknown;
+  const exists = await stat(configPath).then((s) => s.isFile()).catch(() => false);
+  if (!exists) return null;
+  const raw = JSON.parse(await readFile(configPath, "utf8")) as unknown;
   const result = OacConfigSchema.safeParse(raw);
   if (!result.success) {
     throw new Error(`Invalid config at "${configPath}": ${result.error.message}`);
@@ -46,5 +47,5 @@ export async function readConfig(projectRoot: string): Promise<OacConfig | null>
 export async function writeConfig(projectRoot: string, config: OacConfig): Promise<void> {
   const configPath = getConfigPath(projectRoot);
   await mkdir(dirname(configPath), { recursive: true });
-  await Bun.write(configPath, JSON.stringify(config, null, 2));
+  await writeFile(configPath, JSON.stringify(config, null, 2));
 }
