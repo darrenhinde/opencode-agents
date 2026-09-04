@@ -198,8 +198,8 @@ Add a login endpoint
 
 **Documentation:**
 - [Plugin README](./plugins/claude-code/README.md) - Complete plugin documentation
-- [First-Time Setup](./plugins/claude-code/FIRST-TIME-SETUP.md) - Step-by-step guide
-- [Quick Start](./plugins/claude-code/QUICK-START.md) - Quick reference
+- [Installation](./plugins/claude-code/README.md#-installation) - Step-by-step setup guide
+- [Quick Start](./plugins/claude-code/README.md#-quick-start) - Quick reference
 
 **Status:** BETA - Actively tested and ready for early adopters
 
